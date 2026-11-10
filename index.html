@@ -166,6 +166,14 @@ label input,label select{margin-top:4px}
 .food{display:flex;gap:10px;padding:7px 0;border-top:1px solid var(--line);font-size:15px}
 .food:first-of-type{margin-top:8px}
 .back{font-size:28px;line-height:1;color:var(--accent);margin-right:6px;vertical-align:-2px;padding:0 4px 0 0}
+#flash{position:fixed;inset:0;z-index:40;pointer-events:none;background:var(--accent);opacity:0}
+#flash.on{animation:flash 1.6s ease-out}
+@keyframes flash{0%,40%{opacity:.55}20%,60%{opacity:.1}100%{opacity:0}}
+.backup-card{border:1px solid rgba(251,191,36,.35);background:rgba(251,191,36,.08)}
+.set .del{height:40px;border-radius:10px;background:var(--card2);color:var(--danger);font-size:16px}
+.edit-meta{display:grid;grid-template-columns:1.6fr 1fr;gap:8px;margin-top:8px;align-items:end}
+.edit-meta label{white-space:nowrap}
+.edit-meta label{margin-top:0}
 #toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 60px);transform:translateX(-50%) translateY(-20px);background:#fff;color:#111;padding:10px 16px;border-radius:12px;font-weight:600;font-size:15px;opacity:0;pointer-events:none;transition:.25s;z-index:30;max-width:90vw;text-align:center}
 #toast.show{opacity:1;transform:translateX(-50%)}
 </style>
@@ -187,6 +195,7 @@ label input,label select{margin-top:4px}
 <nav id="tabs"></nav>
 <div id="sheet" hidden><div class="sheet-bg" data-act="closeSheet"></div><div class="sheet-panel" id="sheetPanel"></div></div>
 <div id="toast"></div>
+<div id="flash" aria-hidden="true"></div>
 <input type="file" id="importFile" accept="application/json,.json" hidden>
 
 <script src="data.js"></script>
@@ -222,9 +231,27 @@ let restEnd = S.active?.restEnd || 0, restTotal = S.active?.restTotal || S.setti
 
 /* ---------- helpers ---------- */
 function lastSets(name) {
-  for (const w of S.workouts) { const ex = w.exercises.find(e => e.name === name); if (ex && ex.sets.length) return ex.sets; }
+  for (const w of S.workouts) {
+    // While editing a saved workout, "last time" means the session before it.
+    if (tab === 'edit' && editW && (w.id === editW.id || w.startedAt >= editW.startedAt)) continue;
+    const ex = w.exercises.find(e => e.name === name); if (ex && ex.sets.length) return ex.sets;
+  }
   return null;
 }
+// PR = heavier than every earlier session of that exercise. Recomputed after edits/deletes/imports.
+function recomputePRs() {
+  const best = {};
+  for (const w of [...S.workouts].sort((a, b) => a.startedAt - b.startedAt)) {
+    w.prs = [];
+    for (const e of w.exercises) {
+      const m = Math.max(...e.sets.map(s => s.w));
+      if (best[e.name] > 0 && m > best[e.name]) w.prs.push(e.name);
+      best[e.name] = Math.max(best[e.name] || 0, m);
+    }
+  }
+}
+let editW = null, editOrig = '', pendingImport = null;
+const target = () => tab === 'edit' ? editW : S.active; // workout the set editor is working on
 function bestOf(name) {
   let maxW = 0, best = 0;
   for (const w of S.workouts) for (const e of w.exercises) if (e.name === name) for (const s of e.sets) { maxW = Math.max(maxW, s.w); best = Math.max(best, e1rm(s.w, s.r)); }
@@ -297,7 +324,7 @@ function recovery(now = Date.now()) {
 const recColor = p => p >= 90 ? '#4ade80' : p >= 60 ? '#fbbf24' : '#f87171';
 
 let toastT;
-function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2400); }
+function toast(msg, ms = 2400) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), ms); }
 
 /* ---------- views ---------- */
 function weekSummary() {
@@ -312,9 +339,21 @@ function weekSummary() {
   </div>`;
 }
 
+function backupCard() {
+  if (S.workouts.length < 3) return '';
+  const since = S.lastBackup || Math.min(...S.workouts.map(w => w.startedAt));
+  const days = Math.floor((Date.now() - since) / 864e5);
+  if (days < 7 || (S.backupSnooze && Date.now() - S.backupSnooze < 3 * 864e5)) return '';
+  return `<div class="card backup-card">
+    <div class="title">💾 ${S.lastBackup ? `Đã ${days} ngày chưa sao lưu` : 'Bạn chưa sao lưu lần nào'}</div>
+    <div class="muted small" style="margin:4px 0 10px">${S.workouts.length} buổi tập chỉ đang nằm trên iPhone này. Xóa app khỏi màn hình chính là mất hết. Bấm "Sao lưu ngay" → Lưu vào Tệp → iCloud Drive.</div>
+    <div class="row gap"><button class="btn" data-act="snoozeBackup">Để sau</button><button class="btn primary grow" data-act="exportData">Sao lưu ngay</button></div>
+  </div>`;
+}
+
 function viewWorkout() {
   const a = S.active;
-  if (!a) return `
+  if (!a) return `${backupCard()}
     <button class="btn primary big" data-act="startEmpty">＋ Bắt đầu buổi tập trống</button>
     <div class="section-h"><h2>Routine của tôi</h2><button class="link" data-act="newRoutine">＋ Tạo mới</button></div>
     ${S.routines.length ? S.routines.map(r => `
@@ -335,22 +374,39 @@ function viewWorkout() {
     <div class="row gap mt"><button class="btn danger" data-act="cancelWorkout">Hủy</button><button class="btn primary grow" data-act="finishWorkout">Kết thúc buổi tập</button></div>`;
 }
 
+function viewEdit() {
+  const w = editW, d = new Date(w.startedAt);
+  const local = new Date(d - d.getTimezoneOffset() * 6e4).toISOString().slice(0, 16);
+  return `
+    <div class="card">
+      <input class="name-input" data-bind="editName" value="${esc(w.name)}" aria-label="Tên buổi tập">
+      <div class="edit-meta">
+        <label>Bắt đầu<input type="datetime-local" id="editStart" value="${local}"></label>
+        <label>Số phút tập<input id="editDur" inputmode="numeric" value="${esc(w._dur)}"></label>
+      </div>
+    </div>
+    ${w.exercises.map(exCard).join('') || '<div class="empty">Chưa có bài tập</div>'}
+    <button class="btn big" data-act="addExercise">＋ Thêm bài tập</button>
+    <div class="row gap mt"><button class="btn" data-act="cancelEdit">Hủy</button><button class="btn primary grow" data-act="saveEdit">Lưu thay đổi</button></div>`;
+}
+
 function exCard(ex, i) {
-  const last = lastSets(ex.name), b = bestOf(ex.name);
+  const last = lastSets(ex.name), b = bestOf(ex.name), editing = tab === 'edit';
   return `<div class="card">
     <div class="row gap"><button class="title grow ex-name" data-act="showEx" data-name="${esc(ex.name)}">${exImg(ex.name, 0) ? `<img class="ex-mini" src="${exImg(ex.name, 0)}" alt="">` : ''}<span>${esc(ex.name)}${getEx(ex.name)?.steps?.length ? ' <span class="info">ⓘ</span>' : ''}</span></button>
       ${i > 0 ? `<button class="icon" data-act="moveEx" data-i="${i}" aria-label="Chuyển lên">↑</button>` : ''}
       <button class="icon" data-act="removeEx" data-i="${i}" aria-label="Xóa bài tập">✕</button></div>
     ${b.best ? `<div class="muted small">🏆 Tạ cao nhất ${fmtNum(b.maxW)} kg · 1RM ~${fmtNum(Math.round(b.best * 10) / 10)} kg</div>` : ''}
     <div class="sets">
-      <div class="set head"><span>Set</span><span>Trước</span><span>kg</span><span>Reps</span><span>✓</span></div>
+      <div class="set head"><span>Set</span><span>Trước</span><span>kg</span><span>Reps</span><span>${editing ? '' : '✓'}</span></div>
       ${ex.sets.map((s, j) => { const p = last && (last[j] || last[last.length - 1]), pj = last && last[j]; return `
-      <div class="set ${s.done ? 'done' : ''}">
+      <div class="set ${s.done && !editing ? 'done' : ''}">
         <span class="setno">${j + 1}</span>
         <button class="prev" data-act="copyLast" data-i="${i}" data-j="${j}" ${pj ? '' : 'disabled'} aria-label="Dùng lại mức tạ lần trước">${pj ? fmtSet(pj) : '—'}</button>
         <input type="text" inputmode="decimal" data-i="${i}" data-j="${j}" data-f="w" value="${esc(s.w)}" placeholder="${p ? esc(fmtNum(p.w)) : '0'}">
         <input type="text" inputmode="numeric" data-i="${i}" data-j="${j}" data-f="r" value="${esc(s.r)}" placeholder="${p ? esc(p.r) : '0'}">
-        <button class="check" data-act="toggleSet" data-i="${i}" data-j="${j}" aria-label="Hoàn thành set">✓</button>
+        ${editing ? `<button class="del" data-act="delSetAt" data-i="${i}" data-j="${j}" aria-label="Xóa set này">✕</button>`
+          : `<button class="check" data-act="toggleSet" data-i="${i}" data-j="${j}" aria-label="Hoàn thành set">✓</button>`}
       </div>`; }).join('')}
     </div>
     <div class="set-actions"><button class="btn" data-act="delSet" data-i="${i}">− Bớt set</button><button class="btn" data-act="addSet" data-i="${i}">＋ Thêm set</button></div>
@@ -374,6 +430,7 @@ function viewHistory() {
       ${open ? `<div class="hist-body">
         ${w.exercises.map(e => `<div class="hist-ex"><div>${esc(e.name)}${(w.prs || []).includes(e.name) ? '<span class="badge">PR</span>' : ''}</div><div class="muted small">${e.sets.map(s => `${fmtNum(s.w)}kg × ${s.r}`).join(' · ')}</div></div>`).join('')}
         <div class="row gap mt" style="flex-wrap:wrap">
+          <button class="btn" data-act="editWorkout" data-id="${w.id}">✏️ Sửa</button>
           <button class="btn" data-act="repeatWorkout" data-id="${w.id}">Tập lại</button>
           <button class="btn" data-act="histToRoutine" data-id="${w.id}">Lưu làm routine</button>
           <button class="btn danger" data-act="deleteWorkout" data-id="${w.id}">Xóa</button>
@@ -442,7 +499,8 @@ function viewSettings() {
     </div>
     <div class="card">
       <div class="title" style="margin-bottom:4px">Sao lưu dữ liệu</div>
-      <div class="muted small" style="margin-bottom:10px">Dữ liệu chỉ nằm trên điện thoại này. Thỉnh thoảng hãy xuất file sao lưu (lưu vào Tệp / iCloud Drive).</div>
+      <div class="muted small" style="margin-bottom:6px">Dữ liệu chỉ nằm trên iPhone này. <b style="color:var(--warn)">Xóa app khỏi màn hình chính là mất toàn bộ dữ liệu.</b> Hãy sao lưu mỗi tuần: Xuất dữ liệu → Lưu vào Tệp → iCloud Drive.</div>
+      <div class="small" style="margin-bottom:10px">Lần sao lưu cuối: <b>${S.lastBackup ? fmtDate(S.lastBackup) + ' (' + agoText((Date.now() - S.lastBackup) / 36e5) + ')' : 'chưa có'}</b></div>
       <div class="row gap"><button class="btn grow" data-act="exportData">Xuất dữ liệu</button><button class="btn grow" data-act="importData">Nhập dữ liệu</button></div>
     </div>
     <div class="card">
@@ -636,12 +694,12 @@ function viewMore() {
 }
 
 const TABS = [['workout', '🏋️', 'Tập'], ['recovery', '🔋', 'Phục hồi'], ['nutrition', '🥗', 'Thực đơn'], ['library', '📖', 'Thư viện'], ['more', '☰', 'Thêm']];
-const TITLES = { workout: 'Tập luyện', recovery: 'Phục hồi cơ', nutrition: 'Thực đơn', library: 'Thư viện bài tập', more: 'Thêm', history: 'Lịch sử', progress: 'Tiến độ', settings: 'Cài đặt' };
+const TITLES = { workout: 'Tập luyện', recovery: 'Phục hồi cơ', nutrition: 'Thực đơn', library: 'Thư viện bài tập', more: 'Thêm', history: 'Lịch sử', progress: 'Tiến độ', settings: 'Cài đặt', edit: 'Sửa buổi tập' };
 const SUB = ['history', 'progress', 'settings'];
 function render() {
   $('#title').innerHTML = (SUB.includes(tab) ? '<button class="back" data-act="tab" data-tab="more" aria-label="Quay lại">‹</button>' : '') + (tab === 'workout' && S.active ? 'Đang tập' : TITLES[tab]);
-  main.innerHTML = ({ workout: viewWorkout, recovery: viewRecovery, nutrition: viewNutrition, library: viewLibrary, more: viewMore, history: viewHistory, progress: viewProgress, settings: viewSettings })[tab]();
-  const cur = SUB.includes(tab) ? 'more' : tab;
+  main.innerHTML = ({ workout: viewWorkout, recovery: viewRecovery, nutrition: viewNutrition, library: viewLibrary, more: viewMore, history: viewHistory, progress: viewProgress, settings: viewSettings, edit: viewEdit })[tab]();
+  const cur = SUB.includes(tab) || tab === 'edit' ? 'more' : tab;
   $('#tabs').innerHTML = TABS.map(([k, i, l]) => `<button class="${cur === k ? 'on' : ''}" data-act="tab" data-tab="${k}"><span class="ti">${i}</span>${l}${k === 'workout' && S.active && tab !== 'workout' ? '<span class="dot"></span>' : ''}</button>`).join('');
 }
 
@@ -696,6 +754,7 @@ function beep() {
   } catch (e) {}
   if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
 }
+function flash() { const f = $('#flash'); f.classList.remove('on'); void f.offsetWidth; f.classList.add('on'); }
 function persistRest() { if (S.active) { S.active.restEnd = restEnd; S.active.restTotal = restTotal; save(); } }
 function startRest(sec) { restTotal = sec; restEnd = Date.now() + sec * 1000; persistRest(); tick(); }
 function stopRest() { restEnd = 0; persistRest(); tick(); }
@@ -705,8 +764,11 @@ function tick() {
   if (!restEnd || !S.active) { bar.hidden = true; document.body.classList.remove('has-rest'); return; }
   const left = restEnd - Date.now();
   if (left <= 0) {
-    // Only alert if it just ended (not when returning to the app long after).
-    if (left > -5000) { beep(); toast('Hết giờ nghỉ! 💪 Vào set tiếp'); }
+    // iOS has no vibration for web apps and suspends JS in the background, so:
+    // just ended -> beep + full-screen flash; came back later -> say how long ago it ended.
+    const over = -left;
+    if (over < 5000) { beep(); flash(); toast('Hết giờ nghỉ! 💪 Vào set tiếp'); }
+    else if (over < 30 * 60e3) { flash(); toast(`⏰ Đã hết giờ nghỉ ${over < 60e3 ? Math.round(over / 1000) + ' giây' : Math.round(over / 60e3) + ' phút'} trước`, 4000); }
     restEnd = 0; persistRest(); bar.hidden = true; document.body.classList.remove('has-rest'); return;
   }
   bar.hidden = false; document.body.classList.add('has-rest');
@@ -730,14 +792,35 @@ function startFrom(name, exercises) {
   restEnd = 0; save(); tab = 'workout'; requestWake(); render(); window.scrollTo(0, 0);
 }
 const A = {
-  tab: d => { tab = d.tab; render(); window.scrollTo(0, 0); },
+  tab: d => {
+    if (tab === 'edit' && d.tab !== 'edit') { if (JSON.stringify(editW) !== editOrig && !confirm('Bỏ các thay đổi chưa lưu?')) return; editW = null; }
+    tab = d.tab; render(); window.scrollTo(0, 0);
+  },
+  editWorkout: d => {
+    const w = S.workouts.find(x => x.id === d.id); if (!w) return;
+    editW = JSON.parse(JSON.stringify(w));
+    editW._dur = String(Math.max(1, Math.round((w.endedAt - w.startedAt) / 6e4)));
+    editW.exercises.forEach(e => e.sets.forEach(s => { s.w = String(s.w); s.r = String(s.r); s.done = true; }));
+    editOrig = JSON.stringify(editW); tab = 'edit'; render(); window.scrollTo(0, 0);
+  },
+  cancelEdit: () => { if (JSON.stringify(editW) !== editOrig && !confirm('Bỏ các thay đổi chưa lưu?')) return; const id = editW.id; editW = null; tab = 'history'; openId = id; render(); },
+  saveEdit: () => {
+    const exs = editW.exercises.map(e => ({ name: e.name, sets: e.sets.map(s => ({ w: num(s.w), r: num(s.r) })).filter(s => s.r > 0) })).filter(e => e.sets.length);
+    if (!exs.length) { toast('Cần ít nhất 1 set có số reps'); return; }
+    if (!isFinite(editW.startedAt) || editW.startedAt > Date.now()) { toast('Ngày giờ bắt đầu không hợp lệ'); return; }
+    const dur = num(editW._dur); if (dur < 1 || dur > 600) { toast('Thời lượng phải từ 1 đến 600 phút'); return; }
+    const w = { id: editW.id, name: editW.name.trim() || 'Buổi tập', startedAt: editW.startedAt, endedAt: editW.startedAt + dur * 6e4, exercises: exs };
+    S.workouts = S.workouts.map(x => x.id === w.id ? w : x).sort((a, b) => b.startedAt - a.startedAt);
+    recomputePRs(); save(); editW = null; tab = 'history'; openId = w.id; render(); window.scrollTo(0, 0); toast('Đã lưu thay đổi');
+  },
+  delSetAt: d => { const ex = target().exercises[+d.i]; if (ex.sets.length > 1) { ex.sets.splice(+d.j, 1); render(); } else toast('Mỗi bài cần ít nhất 1 set (hoặc xóa cả bài)'); },
   startEmpty: () => startFrom('Buổi tập ' + new Date().toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }), []),
   startRoutine: d => { const r = S.routines.find(x => x.id === d.id); if (r) startFrom(r.name, r.exercises); },
-  addExercise: () => openPicker(name => { S.active.exercises.push({ name, sets: newSets(lastSets(name)?.length || 3) }); save(); render(); window.scrollTo(0, document.body.scrollHeight); }),
-  removeEx: d => { const ex = S.active.exercises[+d.i]; if (confirm(`Xóa "${ex.name}" khỏi buổi tập?`)) { S.active.exercises.splice(+d.i, 1); save(); render(); } },
-  moveEx: d => { const i = +d.i, a = S.active.exercises; [a[i - 1], a[i]] = [a[i], a[i - 1]]; save(); render(); },
-  addSet: d => { const ex = S.active.exercises[+d.i], p = ex.sets[ex.sets.length - 1]; ex.sets.push({ w: p ? p.w : '', r: p ? p.r : '', done: false }); save(); render(); },
-  delSet: d => { const ex = S.active.exercises[+d.i]; if (ex.sets.length > 1) { ex.sets.pop(); save(); render(); } },
+  addExercise: () => openPicker(name => { target().exercises.push({ name, sets: newSets(lastSets(name)?.length || 3) }); save(); render(); window.scrollTo(0, document.body.scrollHeight); }),
+  removeEx: d => { const ex = target().exercises[+d.i]; if (confirm(`Xóa "${ex.name}" khỏi buổi tập?`)) { target().exercises.splice(+d.i, 1); save(); render(); } },
+  moveEx: d => { const i = +d.i, a = target().exercises; [a[i - 1], a[i]] = [a[i], a[i - 1]]; save(); render(); },
+  addSet: d => { const ex = target().exercises[+d.i], p = ex.sets[ex.sets.length - 1]; ex.sets.push({ w: p ? p.w : '', r: p ? p.r : '', done: tab === 'edit' }); save(); render(); },
+  delSet: d => { const ex = target().exercises[+d.i]; if (ex.sets.length > 1) { ex.sets.pop(); save(); render(); } },
   toggleSet: d => {
     const ex = S.active.exercises[+d.i], s = ex.sets[+d.j];
     if (!s.done) {
@@ -764,7 +847,7 @@ const A = {
     toast(prs.length ? `🏆 PR mới: ${prs.join(', ')}` : 'Đã lưu buổi tập 🎉');
   },
   toggleHist: d => { openId = openId === d.id ? null : d.id; render(); },
-  deleteWorkout: d => { if (confirm('Xóa buổi tập này vĩnh viễn?')) { S.workouts = S.workouts.filter(w => w.id !== d.id); save(); render(); } },
+  deleteWorkout: d => { if (confirm('Xóa buổi tập này vĩnh viễn?')) { S.workouts = S.workouts.filter(w => w.id !== d.id); recomputePRs(); save(); render(); } },
   repeatWorkout: d => {
     if (S.active) { toast('Đang có buổi tập dở — kết thúc trước đã'); return; }
     const w = S.workouts.find(x => x.id === d.id); startFrom(w.name, w.exercises.map(e => ({ name: e.name, sets: e.sets.length })));
@@ -793,7 +876,7 @@ const A = {
   recSide: d => { recSide = d.v; render(); },
   muscle: d => openMuscle(d.m),
   copyLast: d => {
-    const ex = S.active.exercises[+d.i], s = ex.sets[+d.j], p = lastSets(ex.name)?.[+d.j];
+    const ex = target().exercises[+d.i], s = ex.sets[+d.j], p = lastSets(ex.name)?.[+d.j];
     if (p) { s.w = String(p.w); s.r = String(p.r); save(); render(); }
   },
   chooseMuscle: d => { const f = muscleCb; muscleCb = null; if (f) f(d.m); },
@@ -816,8 +899,25 @@ const A = {
   exportData: async () => {
     const name = `gym-backup-${new Date().toISOString().slice(0, 10)}.json`;
     const file = new File([JSON.stringify(S)], name, { type: 'application/json' });
-    if (navigator.canShare && navigator.canShare({ files: [file] })) { try { await navigator.share({ files: [file], title: name }); } catch (e) {} return; }
-    const a = document.createElement('a'); a.href = URL.createObjectURL(file); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    const done = () => { S.lastBackup = Date.now(); save(); render(); toast('Đã sao lưu ✅'); };
+    if (navigator.canShare && navigator.canShare({ files: [file] })) { try { await navigator.share({ files: [file], title: name }); done(); } catch (e) { /* user cancelled */ } return; }
+    const a = document.createElement('a'); a.href = URL.createObjectURL(file); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 5000); done();
+  },
+  snoozeBackup: () => { S.backupSnooze = Date.now(); save(); render(); },
+  importMerge: () => {
+    const d = pendingImport; pendingImport = null; if (!d) return;
+    const ids = new Set(S.workouts.map(w => w.id)), add = d.workouts.filter(w => !ids.has(w.id));
+    S.workouts = [...S.workouts, ...add].sort((a, b) => b.startedAt - a.startedAt);
+    const rids = new Set(S.routines.map(r => r.id)); S.routines.push(...d.routines.filter(r => !rids.has(r.id)));
+    S.customEx = [...new Set([...S.customEx, ...(d.customEx || [])])];
+    S.exMeta = { ...(d.exMeta || {}), ...S.exMeta };
+    if (!S.profile && d.profile) S.profile = d.profile;
+    recomputePRs(); save(); sheetOnClose = null; closeSheet(); render(); toast(`Đã thêm ${add.length} buổi tập mới`);
+  },
+  importReplace: () => {
+    const d = pendingImport; if (!d || !confirm('Thay thế TOÀN BỘ dữ liệu hiện tại bằng file này?')) return; pendingImport = null;
+    S = Object.assign(defaults(), d); S.settings = Object.assign(defaults().settings, d.settings); restEnd = 0;
+    recomputePRs(); save(); sheetOnClose = null; closeSheet(); render(); toast('Đã nhập dữ liệu');
   },
   importData: () => $('#importFile').click(),
   clearAll: () => { if (confirm('Xóa TOÀN BỘ dữ liệu? Không thể hoàn tác.') && confirm('Chắc chắn chứ?')) { S = defaults(); restEnd = 0; save(); render(); toast('Đã xóa'); } },
@@ -830,22 +930,33 @@ document.addEventListener('click', e => {
 });
 document.addEventListener('input', e => {
   const t = e.target, d = t.dataset;
-  if (d.f && S.active) { const s = S.active.exercises[+d.i].sets[+d.j]; s[d.f] = t.value; save(); }
+  if (d.f && target()) { const s = target().exercises[+d.i].sets[+d.j]; s[d.f] = t.value; save(); }
   else if (d.bind === 'activeName' && S.active) { S.active.name = t.value; save(); }
+  else if (d.bind === 'editName' && editW) editW.name = t.value;
+  else if (t.id === 'editStart' && editW) { const ts = new Date(t.value).getTime(); editW.startedAt = isFinite(ts) ? ts : NaN; }
+  else if (t.id === 'editDur' && editW) editW._dur = t.value;
   else if (d.bind === 'draftName' && draft) draft.name = t.value;
   else if (t.id === 'pickQ') renderPick(t.value);
   else if (t.id === 'libQ') { libQ = t.value; $('#libList').innerHTML = libList(); }
   else if (pDraft && { pAge: 'age', pHeight: 'height', pWeight: 'weight', pAct: 'act' }[t.id]) pDraft[{ pAge: 'age', pHeight: 'height', pWeight: 'weight', pAct: 'act' }[t.id]] = t.value;
 });
 document.addEventListener('change', e => { if (e.target.dataset.bind === 'progEx') { progEx = e.target.value; render(); } });
-document.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.id === 'pickQ') { const f = document.querySelector('#pickList .pick'); if (f) f.click(); } });
+document.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.id === 'pickQ') { const f = document.querySelector('#pickList .pick, #pickList .ex-row'); if (f) f.click(); } });
 $('#importFile').addEventListener('change', async e => {
   const f = e.target.files[0]; e.target.value = ''; if (!f) return;
   try {
     const d = JSON.parse(await f.text());
     if (!Array.isArray(d.workouts) || !Array.isArray(d.routines)) throw 0;
-    if (!confirm(`Nhập ${d.workouts.length} buổi tập và ${d.routines.length} routine? Dữ liệu hiện tại sẽ bị thay thế.`)) return;
-    S = Object.assign(defaults(), d); S.settings = Object.assign(defaults().settings, d.settings); restEnd = 0; save(); render(); toast('Đã nhập dữ liệu');
+    d.workouts = d.workouts.filter(w => w && w.id && isFinite(w.startedAt) && Array.isArray(w.exercises));
+    d.routines = d.routines.filter(r => r && r.id && Array.isArray(r.exercises));
+    pendingImport = d;
+    const ids = new Set(S.workouts.map(w => w.id)), fresh = d.workouts.filter(w => !ids.has(w.id)).length;
+    openSheet(`<div class="sheet-h"><h3>Nhập dữ liệu</h3><button class="link" data-act="closeSheet">Hủy</button></div>
+      <div class="muted" style="margin-bottom:14px">File có <b style="color:var(--text)">${d.workouts.length} buổi tập</b> và ${d.routines.length} routine${d.lastBackup ? `, sao lưu ngày ${fmtDate(d.lastBackup)}` : ''}.</div>
+      <button class="btn primary big" data-act="importMerge">Gộp: thêm ${fresh} buổi chưa có</button>
+      <div class="muted small" style="margin:6px 0 14px">Giữ nguyên dữ liệu hiện tại, chỉ thêm những gì chưa có.</div>
+      <button class="btn danger big" data-act="importReplace">Thay thế toàn bộ</button>
+      <div class="muted small" style="margin-top:6px">Xóa dữ liệu hiện tại (${S.workouts.length} buổi) và dùng dữ liệu trong file.</div>`, () => { pendingImport = null; });
   } catch (err) { toast('File không hợp lệ'); }
 });
 

@@ -30,6 +30,20 @@ Dữ liệu bài tập và món ăn nằm trong `data.js`.
 5. Bấm nút **Chia sẻ** → **Thêm vào MH chính** → **Thêm**.
 6. Mở app từ icon trên màn hình chính một lần khi đang có mạng. Từ lần sau app dùng được cả khi không có mạng.
 
+## Kiểm tra trong buổi tập đầu tiên
+Mở app từ icon trên màn hình chính (không mở trong Safari) rồi thử lần lượt:
+- [ ] **Bật chế độ máy bay** rồi mở app: app vẫn chạy, ảnh bài tập vẫn hiện.
+- [ ] Bắt đầu buổi tập, đặt iPhone xuống khoảng 1 phút: **màn hình không tự tắt**.
+- [ ] Tick ✓ một set rồi chờ hết giờ nghỉ: **nghe tiếng bíp** và **màn hình nháy xanh**. Nhớ tắt chế độ im lặng (công tắc bên hông máy), vì khi bật im lặng sẽ không nghe tiếng bíp.
+- [ ] Tick ✓ một set, chuyển sang app khác khoảng 2 phút rồi quay lại: app báo **"Đã hết giờ nghỉ … trước"**.
+- [ ] Vuốt tắt hẳn app giữa buổi rồi mở lại: **buổi đang tập vẫn còn**.
+- [ ] Kết thúc buổi, vào **Thêm → Lịch sử → ✏️ Sửa**: đổi một mức tạ rồi lưu.
+- [ ] **Cài đặt → Xuất dữ liệu → Lưu vào Tệp → iCloud Drive**: file sao lưu nằm trong app Tệp.
+
+Mục nào không đúng như mô tả thì chụp màn hình lại để sửa.
+
+Giới hạn của web app trên iOS: không rung được, và không gửi được thông báo khi app chạy nền. Vì vậy app giữ màn hình luôn sáng trong lúc tập.
+
 ## Chạy thử trên máy tính
 ```bash
 node serve.js

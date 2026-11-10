@@ -133,6 +133,13 @@ const EX_DB = [
    'Quỳ gối, hai tay cầm con lăn|Siết bụng, lăn ra trước chậm|Lăn xa nhất có thể mà lưng không võng|Kéo con lăn về bằng bụng',
    'Mới tập thì lăn biên độ ngắn'],
 ];
+// Sample workouts used by the home suggestion when the user has no routine yet (3 sets each).
+const SPLITS = {
+  push: { name: 'Push day', desc: 'Ngực, vai, tay sau', muscles: ['chest', 'shoulders', 'triceps'], ex: ['Bench Press', 'Overhead Press', 'Incline Dumbbell Press', 'Lateral Raise', 'Tricep Pushdown'] },
+  pull: { name: 'Pull day', desc: 'Lưng, tay trước', muscles: ['lats', 'midBack', 'biceps'], ex: ['Lat Pulldown', 'Barbell Row', 'Seated Cable Row', 'Face Pull', 'Bicep Curl'] },
+  legs: { name: 'Leg day', desc: 'Đùi, mông, bắp chân', muscles: ['quads', 'hamstrings', 'glutes'], ex: ['Squat', 'Romanian Deadlift', 'Leg Press', 'Leg Curl', 'Calf Raise'] },
+  core: { name: 'Bụng & core', desc: 'Bụng, bụng chéo', muscles: ['abs', 'obliques'], ex: ['Plank', 'Hanging Leg Raise', 'Cable Crunch', 'Ab Wheel'] },
+};
 // Image files: img/ex/<slug>-0.jpg (start position) and -1.jpg (end position), from free-exercise-db (Unlicense).
 const exSlug = name => name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
 const EX_MAP =Object.fromEntries(EX_DB.map(([n, g, p, s, st, tp]) => [n, { name: n, g, p, s, steps: st.split('|'), tips: tp ? tp.split('|') : [] }]));

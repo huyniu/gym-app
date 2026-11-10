@@ -1,6 +1,6 @@
 // Network-first with cache fallback: always gets updates when online, works offline at the gym.
 importScripts('data.js'); // for EX_DB / exSlug: pre-cache every exercise image so demos work offline
-const CACHE = 'gymlog-v5';
+const CACHE = 'gymlog-v6';
 const ASSETS = ['./', './index.html', './data.js', './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png',
   ...EX_DB.flatMap(([n]) => [0, 1].map(k => `./img/ex/${exSlug(n)}-${k}.jpg`))];
 

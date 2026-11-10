@@ -72,6 +72,9 @@ input::placeholder{color:#55585e}
 .go{background:var(--accent-ink);color:var(--accent);border-radius:999px;padding:12px 20px;font-weight:800;font-size:15px;display:inline-flex;gap:8px;align-items:center}
 .quick{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px}
 .quick .btn{white-space:nowrap;padding:12px 8px}
+.qbtn{flex-direction:column;gap:2px}
+.qbtn span{display:inline-flex;align-items:center;gap:6px}
+.qbtn small{font-size:12px;color:var(--muted);font-weight:600}
 @media (max-width:340px){.quick .btn{font-size:14px}.stat b{font-size:19px}.hero h3{font-size:21px}}
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
 .stat{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 12px}
@@ -319,7 +322,7 @@ function recomputePRs() {
     }
   }
 }
-let editW = null, editOrig = '', pendingImport = null;
+let editW = null, editOrig = '', pendingImport = null, routineOffer = null;
 const target = () => tab === 'edit' ? editW : S.active; // workout the set editor is working on
 function bestOf(name) {
   let maxW = 0, best = 0;
@@ -428,10 +431,10 @@ function homeSuggestion() {
     return { k: S.workouts.length ? `Gợi ý theo phục hồi cơ · ${Math.round(score(best))}% sẵn sàng` : 'Bắt đầu nhanh', title: best.name,
       sub: `${best.exercises.length} bài${ms ? ' · ' + ms : ''}`, act: `data-act="startRoutine" data-id="${best.id}"` };
   }
-  const split = [['Push', 'Ngực, vai, tay sau', ['chest', 'shoulders', 'triceps']], ['Pull', 'Lưng, tay trước', ['lats', 'midBack', 'biceps']], ['Legs', 'Đùi, mông, bắp chân', ['quads', 'hamstrings', 'glutes']]]
-    .find(([, , g]) => g.every(m => r[m].pct >= 90));
-  return { k: S.workouts.length ? 'Gợi ý theo phục hồi cơ' : 'Buổi tập đầu tiên', title: split ? split[0] + ' day' : 'Tập nhẹ / cardio',
-    sub: !S.workouts.length ? 'Bắt đầu với: ' + split[1].toLowerCase() : split ? split[1] + ' đã hồi phục' : 'Phần lớn cơ còn đang hồi phục', act: 'data-act="startEmpty"' };
+  // No routine yet: offer a sample workout for the first fully recovered split (core if none).
+  const key = ['push', 'pull', 'legs'].find(k => SPLITS[k].muscles.every(m => r[m].pct >= 90)) || 'core', sp = SPLITS[key];
+  return { k: !S.workouts.length ? 'Buổi tập đầu tiên · bài mẫu' : key === 'core' ? 'Cơ lớn còn đang hồi phục · tập nhẹ' : 'Gợi ý theo phục hồi cơ · bài mẫu',
+    title: sp.name, sub: `${sp.ex.length} bài × 3 set · ${sp.desc}`, act: `data-act="startSplit" data-k="${key}"` };
 }
 
 function activeBar() {
@@ -467,8 +470,8 @@ function viewWorkout() {
       <button class="go" ${g.act}>${ic('play')} Bắt đầu</button>
     </div>
     <div class="quick">
-      <button class="btn" data-act="startEmpty">${ic('plus')} Buổi trống</button>
-      <button class="btn" data-act="newRoutine">${ic('edit')} Tạo routine</button>
+      <button class="btn qbtn" data-act="startEmpty"><span>${ic('plus')} Tự chọn bài</span><small>Thêm bài trong lúc tập</small></button>
+      <button class="btn qbtn" data-act="newRoutine"><span>${ic('edit')} Tạo routine</span><small>Soạn sẵn danh sách bài</small></button>
     </div>
     ${weekSummary()}
     <div class="section-h"><h2>Routine của tôi</h2>${S.routines.length ? `<span class="muted small">${S.routines.length} routine</span>` : ''}</div>
@@ -908,8 +911,8 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
 
 /* ---------- actions ---------- */
 function newSets(n, name) { return Array.from({ length: Math.max(1, n) }, () => ({ w: '', r: '', done: false })); }
-function startFrom(name, exercises) {
-  S.active = { name, startedAt: Date.now(), exercises: exercises.map(e => ({ name: e.name, sets: newSets(e.sets) })) };
+function startFrom(name, exercises, extra = {}) {
+  S.active = { name, startedAt: Date.now(), exercises: exercises.map(e => ({ name: e.name, sets: newSets(e.sets) })), ...extra };
   restEnd = 0; save(); tab = 'workout'; requestWake(); render(); window.scrollTo(0, 0);
 }
 const A = {
@@ -936,7 +939,8 @@ const A = {
   },
   delSetAt: d => { const ex = target().exercises[+d.i]; if (ex.sets.length > 1) { ex.sets.splice(+d.j, 1); render(); } else toast('Mỗi bài cần ít nhất 1 set (hoặc xóa cả bài)'); },
   startEmpty: () => startFrom('Buổi tập ' + new Date().toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }), []),
-  startRoutine: d => { const r = S.routines.find(x => x.id === d.id); if (r) startFrom(r.name, r.exercises); },
+  startRoutine: d => { const r = S.routines.find(x => x.id === d.id); if (r) startFrom(r.name, r.exercises, { routineId: r.id }); },
+  startSplit: d => { const sp = SPLITS[d.k]; if (sp) startFrom(sp.name, sp.ex.map(name => ({ name, sets: 3 }))); },
   addExercise: () => openPicker(name => { target().exercises.push({ name, sets: newSets(lastSets(name)?.length || 3) }); save(); render(); window.scrollTo(0, document.body.scrollHeight); }),
   removeEx: d => { const ex = target().exercises[+d.i]; if (confirm(`Xóa "${ex.name}" khỏi buổi tập?`)) { target().exercises.splice(+d.i, 1); save(); render(); } },
   moveEx: d => { const i = +d.i, a = target().exercises; [a[i - 1], a[i]] = [a[i], a[i - 1]]; save(); render(); },
@@ -966,7 +970,17 @@ const A = {
     S.workouts.unshift(w); S.active = null; restEnd = 0; save(); releaseWake();
     tab = 'history'; openId = w.id; render(); window.scrollTo(0, 0);
     toast(prs.length ? `🏆 PR mới: ${prs.join(', ')}` : 'Đã lưu buổi tập 🎉');
+    // Not started from a routine -> offer to keep it as one for next time.
+    // Use the planned exercises/sets (not only the ones ticked) so the routine is complete.
+    const plan = a.exercises.map(e => ({ name: e.name, sets: e.sets.length }));
+    if (!a.routineId && !S.routines.some(r => r.name.toLowerCase() === w.name.toLowerCase())) setTimeout(() => {
+      routineOffer = { name: w.name, exercises: plan };
+      openSheet(`<div class="sheet-h"><h3>Lưu thành routine?</h3><button class="link" data-act="closeSheet">Không</button></div>
+        <div class="muted" style="margin-bottom:14px">Lần sau chỉ cần bấm một lần là có đủ ${plan.length} bài của "${esc(w.name)}".</div>
+        <button class="btn primary big" data-act="saveOffer">${ic('edit')} Lưu thành routine</button>`, () => { routineOffer = null; });
+    }, 700);
   },
+  saveOffer: () => { if (!routineOffer) return; draft = { id: null, ...routineOffer }; routineOffer = null; renderRoutineSheet(); },
   toggleHist: d => { openId = openId === d.id ? null : d.id; render(); },
   deleteWorkout: d => { if (confirm('Xóa buổi tập này vĩnh viễn?')) { S.workouts = S.workouts.filter(w => w.id !== d.id); recomputePRs(); save(); render(); } },
   repeatWorkout: d => {

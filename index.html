@@ -7,179 +7,220 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Gym Log">
-<meta name="theme-color" content="#0f1115">
+<meta name="theme-color" content="#0a0a0b">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" href="icon-192.png">
 <title>Gym Log</title>
 <style>
-:root{--bg:#0f1115;--card:#1a1d24;--card2:#232731;--line:#2c313c;--text:#f2f4f8;--muted:#8b93a3;--accent:#4ade80;--accent-ink:#052e14;--danger:#f87171;--warn:#fbbf24}
+:root{--bg:#0a0a0b;--card:#16171a;--card2:#212227;--line:#2a2b30;--text:#f5f5f5;--muted:#8a8d93;--accent:#c6f432;--accent-ink:#121403;--accent-soft:rgba(198,244,50,.12);--danger:#ff6b6b;--warn:#ffc53d;--ok:#4ade80;--frame:480px}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;background:var(--bg);color:var(--text);font:16px/1.4 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%}
-body{padding-bottom:calc(64px + env(safe-area-inset-bottom));overscroll-behavior-y:none}
-body.has-rest{padding-bottom:calc(136px + env(safe-area-inset-bottom))}
-header{position:sticky;top:0;z-index:5;background:rgba(15,17,21,.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);padding:calc(env(safe-area-inset-top) + 10px) 16px 10px;border-bottom:1px solid var(--line)}
-header h1{margin:0;font-size:22px;font-weight:700}
-main{padding:12px 16px 24px;max-width:640px;margin:0 auto}
-h2{font-size:17px;margin:0}
-.card{background:var(--card);border-radius:14px;padding:14px;margin-bottom:12px}
+html{background:#000}
+html,body{margin:0;color:var(--text);font:16px/1.45 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%;font-feature-settings:"tnum" 0}
+body{background:var(--bg);max-width:var(--frame);margin:0 auto;min-height:100vh;padding-bottom:calc(72px + env(safe-area-inset-bottom));overscroll-behavior-y:none}
+body.has-rest{padding-bottom:calc(146px + env(safe-area-inset-bottom))}
+.ic{width:1.25em;height:1.25em;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;vertical-align:-.25em;flex:none}
+.ic.fill{fill:currentColor;stroke:none}
+/* header */
+header{position:sticky;top:0;z-index:5;background:rgba(10,10,11,.88);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);padding:calc(env(safe-area-inset-top) + 12px) 18px 12px}
+header h1{margin:0;font-size:28px;font-weight:800;letter-spacing:-.02em;display:flex;align-items:center;gap:6px}
+.back{color:var(--accent);font-size:24px;display:inline-flex;margin-left:-6px}
+.abar{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.abar-label{font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60vw}
+.abar-time{font-size:30px;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums;line-height:1.1}
+.abar-stats{display:flex;gap:18px;margin-top:8px;font-size:13px;color:var(--muted)}
+.abar-stats b{color:var(--text);font-size:15px;font-variant-numeric:tabular-nums}
+.done-btn{background:var(--accent);color:var(--accent-ink);border-radius:999px;padding:11px 20px;font-weight:800;font-size:15px}
+main{padding:6px 16px 28px}
+h2{font-size:19px;font-weight:800;letter-spacing:-.01em;margin:0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:12px}
 .row{display:flex;align-items:center}
 .gap{gap:8px}.grow{flex:1;min-width:0}.mt{margin-top:12px}
-.title{font-weight:600;font-size:17px}
+.title{font-weight:700;font-size:17px;letter-spacing:-.01em}
 .muted{color:var(--muted)}.small{font-size:13px}
-.empty{color:var(--muted);text-align:center;padding:28px 12px;font-size:15px}
-.section-h{display:flex;justify-content:space-between;align-items:center;margin:20px 0 10px}
+.empty{color:var(--muted);text-align:center;padding:32px 16px;font-size:15px}
+.section-h{display:flex;justify-content:space-between;align-items:center;margin:24px 2px 10px}
 button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
-.btn{background:var(--card2);color:var(--text);border-radius:12px;padding:12px 14px;font-weight:600;font-size:15px}
-.btn:active,.icon:active,.check:active{opacity:.7}
+button:active{transform:scale(.98)}
+.btn{background:var(--card2);color:var(--text);border-radius:14px;padding:12px 14px;font-weight:700;font-size:15px;display:inline-flex;align-items:center;justify-content:center;gap:6px}
 .btn.primary{background:var(--accent);color:var(--accent-ink)}
 .btn.danger{color:var(--danger)}
 .btn.big{width:100%;padding:15px;font-size:16px}
-.link{color:var(--accent);font-weight:600;padding:6px 0}
-.icon{width:36px;height:36px;border-radius:10px;color:var(--muted);font-size:16px;flex:none}
-input,select{font:inherit;font-size:16px;color:var(--text);background:var(--card2);border:1px solid transparent;border-radius:10px;padding:10px 12px;width:100%;outline:none;-webkit-appearance:none;appearance:none}
+.btn.ghost{background:transparent;border:1px dashed var(--line);color:var(--muted)}
+.link{color:var(--accent);font-weight:700;padding:6px 0;display:inline-flex;align-items:center;gap:4px}
+.text-btn{display:block;margin:18px auto 0;color:var(--muted);font-size:14px;font-weight:600;padding:8px}
+.icon{width:38px;height:38px;border-radius:12px;color:var(--muted);font-size:18px;flex:none;display:inline-flex;align-items:center;justify-content:center}
+.icon:active{background:var(--card2)}
+input,select{font:inherit;font-size:16px;color:var(--text);background:var(--card2);border:1.5px solid transparent;border-radius:12px;padding:11px 12px;width:100%;outline:none;-webkit-appearance:none;appearance:none}
 input:focus,select:focus{border-color:var(--accent)}
-select{padding-right:36px;font-weight:600;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%238b93a3' stroke-width='2'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center}
-input::placeholder{color:#5d6574}
-.name-input{background:transparent;padding:0;font-size:20px;font-weight:700;border:0;margin-bottom:4px}
-.sets{margin-top:10px}
-.set{display:grid;grid-template-columns:26px 60px 1fr 1fr 44px;gap:6px;align-items:center;padding:4px 0}
-.prev{font-size:13px;color:var(--muted);padding:10px 0;border-radius:8px;font-variant-numeric:tabular-nums;white-space:nowrap}
+select{padding-right:36px;font-weight:700;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%238a8d93' stroke-width='2'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center}
+input::placeholder{color:#55585e}
+.name-input{background:transparent;padding:0;font-size:22px;font-weight:800;letter-spacing:-.01em;border:0}
+/* home */
+.today{color:var(--muted);font-size:14px;font-weight:600;text-transform:capitalize}
+.week{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin:4px 0 16px}
+.day{text-align:center;font-size:12px;color:var(--muted);font-weight:600}
+.day i{display:flex;width:36px;height:36px;margin:6px auto 0;border-radius:50%;border:1.5px solid var(--line);align-items:center;justify-content:center;font-style:normal;color:var(--muted);font-size:13px;font-variant-numeric:tabular-nums}
+.day.done i{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.day.today:not(.done) i{color:var(--text)}
+.day.today{color:var(--text)}
+.day.today:not(.done) i{border-color:var(--accent)}
+.hero{background:var(--accent);color:var(--accent-ink);border-radius:24px;padding:20px;margin-bottom:12px}
+.hero-k{font-size:13px;font-weight:700;opacity:.65}
+.hero h3{font-size:24px;font-weight:800;letter-spacing:-.02em;margin:4px 0 2px;line-height:1.15}
+.hero p{margin:0 0 16px;opacity:.7;font-size:14px;font-weight:600}
+.go{background:var(--accent-ink);color:var(--accent);border-radius:999px;padding:12px 20px;font-weight:800;font-size:15px;display:inline-flex;gap:8px;align-items:center}
+.quick{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px}
+.quick .btn{white-space:nowrap;padding:12px 8px}
+@media (max-width:340px){.quick .btn{font-size:14px}.stat b{font-size:19px}.hero h3{font-size:21px}}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 12px}
+.stat b{display:block;font-size:22px;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.stat span{font-size:12px;color:var(--muted);font-weight:600}
+.rt{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:12px;margin-bottom:8px}
+.rt-main{display:flex;align-items:center;gap:12px;flex:1;min-width:0;text-align:left}
+.rt-ic{width:46px;height:46px;border-radius:14px;background:var(--accent-soft);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:22px;flex:none}
+.rt-name{font-weight:800;font-size:16px}
+.rt-sub{font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* sets */
+.sets{margin-top:12px}
+.set{display:grid;grid-template-columns:24px 60px 1fr 1fr 46px;gap:6px;align-items:center;padding:3px 0}
+.prev{font-size:13px;color:var(--muted);padding:10px 0;border-radius:10px;font-variant-numeric:tabular-nums;white-space:nowrap}
 .prev:not([disabled]):active{background:var(--card2)}
 .prev[disabled]{opacity:.5}
-.set.head{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;padding-bottom:0}
+.set.head{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:700;padding-bottom:2px}
 .set.head span{text-align:center}
-.set input{text-align:center;padding:9px 4px;font-weight:600}
-.setno{text-align:center;color:var(--muted);font-weight:600}
-.check{height:40px;border-radius:10px;background:var(--card2);color:var(--muted);font-size:18px;font-weight:700}
-.set.done input{background:rgba(74,222,128,.12)}
+.set input{text-align:center;padding:10px 4px;font-weight:800;font-variant-numeric:tabular-nums}
+.setno{text-align:center;color:var(--muted);font-weight:800;font-size:14px}
+.check,.set .del{height:42px;border-radius:12px;background:var(--card2);color:var(--muted);font-size:18px;display:flex;align-items:center;justify-content:center}
+.set .del{color:var(--danger)}
+.set.done input{background:var(--accent-soft);color:var(--accent)}
 .set.done .check{background:var(--accent);color:var(--accent-ink)}
-.set-actions{display:flex;gap:8px;margin-top:8px}
-.set-actions .btn{flex:1;padding:9px;font-size:14px}
-.pill{background:var(--card2);border-radius:999px;padding:4px 10px;font-size:13px;white-space:nowrap}
+.set.done .setno{color:var(--accent)}
+.set-actions{display:flex;gap:8px;margin-top:10px}
+.set-actions .btn{flex:1;padding:10px;font-size:14px}
+.pr-line{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--warn);font-weight:600;margin-top:6px}
+.pill{background:var(--card2);border-radius:999px;padding:4px 10px;font-size:13px;white-space:nowrap;font-weight:700}
 .r-ex{padding:8px 0;border-bottom:1px solid var(--line);gap:4px}
 .hist-h{display:flex;width:100%;text-align:left;align-items:center;gap:8px}
-.chev{color:var(--muted)}
-.hist-body{margin-top:10px;border-top:1px solid var(--line);padding-top:8px}
-.hist-ex{padding:6px 0}
-.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
-.stat{background:var(--card);border-radius:12px;padding:12px 10px}
-.stat b{display:block;font-size:20px}
-.stat span{font-size:12px;color:var(--muted)}
+.chev{color:var(--muted);display:inline-flex}
+.hist-body{margin-top:12px;border-top:1px solid var(--line);padding-top:8px}
+.hist-ex{padding:7px 0}
 .chart{width:100%;height:auto;display:block}
-.seg{display:flex;background:var(--card2);border-radius:10px;padding:3px;gap:3px}
-.seg button{flex:1;padding:8px 0;border-radius:8px;font-weight:600;font-size:14px;color:var(--muted)}
+.seg{display:flex;background:var(--card2);border-radius:14px;padding:4px;gap:4px}
+.seg button{flex:1;padding:9px 0;border-radius:10px;font-weight:700;font-size:14px;color:var(--muted)}
 .seg button.on{background:var(--accent);color:var(--accent-ink)}
-.badge{display:inline-block;background:rgba(251,191,36,.15);color:var(--warn);border-radius:6px;padding:1px 6px;font-size:12px;font-weight:700;margin-left:6px}
+.badge{display:inline-block;background:rgba(255,197,61,.15);color:var(--warn);border-radius:6px;padding:1px 6px;font-size:11px;font-weight:800;margin-left:6px;letter-spacing:.03em}
 /* tabs */
-nav#tabs{position:fixed;left:0;right:0;bottom:0;z-index:10;display:flex;background:rgba(20,22,28,.95);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
-nav#tabs button{flex:1;min-width:0;height:58px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:10.5px;white-space:nowrap;color:var(--muted);position:relative}
-nav#tabs button .ti{font-size:20px;line-height:1}
+nav#tabs{position:fixed;left:0;right:0;bottom:0;margin:0 auto;max-width:var(--frame);z-index:10;display:flex;background:rgba(14,14,16,.94);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid var(--line);padding:4px 4px env(safe-area-inset-bottom)}
+nav#tabs button{flex:1;min-width:0;height:58px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:11px;font-weight:700;white-space:nowrap;color:#6b6e74;position:relative}
+nav#tabs button .ic{font-size:22px}
 nav#tabs button.on{color:var(--accent)}
-nav#tabs .dot{position:absolute;top:8px;right:calc(50% - 18px);width:8px;height:8px;border-radius:50%;background:var(--accent)}
+nav#tabs .dot{position:absolute;top:8px;right:calc(50% - 18px);width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 2px var(--bg)}
 /* rest timer */
-#rest{position:fixed;left:12px;right:12px;bottom:calc(66px + env(safe-area-inset-bottom));z-index:9;background:var(--card2);border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:0 8px 30px rgba(0,0,0,.4)}
-#restFill{position:absolute;left:0;top:0;bottom:0;background:rgba(74,222,128,.14);transition:width .25s linear}
+#rest{position:fixed;left:0;right:0;margin:0 auto;width:calc(min(100vw, var(--frame)) - 24px);bottom:calc(74px + env(safe-area-inset-bottom));z-index:9;background:#1b1c20;border:1px solid var(--line);border-radius:20px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.5)}
+#restFill{position:absolute;left:0;top:0;bottom:0;background:var(--accent-soft);transition:width .25s linear}
 .rest-in{position:relative;display:flex;align-items:center;gap:6px;padding:8px}
-.rest-in button{background:var(--card);border-radius:10px;padding:10px 12px;font-weight:600;font-size:14px}
+.rest-in button{background:var(--card2);border-radius:12px;padding:11px 12px;font-weight:700;font-size:14px}
 .rest-mid{flex:1;text-align:center}
-#restTime{font-size:24px;font-weight:700;font-variant-numeric:tabular-nums}
+#restTime{font-size:26px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--accent);line-height:1.1}
 /* sheet */
 #sheet{position:fixed;inset:0;z-index:20}
-.sheet-bg{position:absolute;inset:0;background:rgba(0,0,0,.55)}
-.sheet-panel{position:absolute;left:0;right:0;bottom:0;max-height:88vh;overflow:auto;background:var(--card);border-radius:18px 18px 0 0;padding:14px 16px calc(20px + env(safe-area-inset-bottom));animation:up .2s ease-out}
+.sheet-bg{position:absolute;inset:0;background:rgba(0,0,0,.65)}
+.sheet-panel{position:absolute;left:0;right:0;bottom:0;margin:0 auto;max-width:var(--frame);max-height:88vh;overflow:auto;background:#141518;border:1px solid var(--line);border-bottom:0;border-radius:24px 24px 0 0;padding:10px 16px calc(20px + env(safe-area-inset-bottom));animation:up .22s ease-out}
+.sheet-panel::before{content:"";display:block;width:40px;height:5px;border-radius:3px;background:#3a3b40;margin:0 auto 10px}
 @keyframes up{from{transform:translateY(40px);opacity:.5}to{transform:none;opacity:1}}
 .sheet-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
-.sheet-h h3{margin:0;font-size:18px}
+.sheet-h h3{margin:0;font-size:20px;font-weight:800;letter-spacing:-.01em}
 .search{margin-bottom:10px}
 .pick-list{display:flex;flex-direction:column}
 .pick{text-align:left;padding:13px 4px;border-bottom:1px solid var(--line)}
-.pick.new{color:var(--accent);font-weight:600}
+.pick.new{color:var(--accent);font-weight:700;display:flex;align-items:center;gap:8px}
 /* body map */
 .bodies{display:flex;justify-content:center;gap:12px;margin:4px 0}
 .bodies figure{margin:0;flex:1;max-width:150px;text-align:center}
 .body{width:100%;height:auto;display:block}
 .bodies figcaption{font-size:12px;color:var(--muted);margin-top:2px}
-.legend{display:flex;flex-wrap:wrap;gap:6px 14px;justify-content:center;font-size:12px;color:var(--muted);margin-top:8px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;justify-content:center;font-size:12px;color:var(--muted);margin-top:10px;font-weight:600}
 .legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
 .bodymap{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.9fr) minmax(0,1fr);gap:2px;align-items:stretch}
 .mcol{display:flex;flex-direction:column;justify-content:space-around;padding:6px 0}
 .mlabel{display:flex;flex-direction:column;align-items:flex-start;text-align:left;padding:5px 0;line-height:1.25}
 .mcol.right .mlabel{align-items:flex-end;text-align:right}
-.mname{font-size:13px;font-weight:600}
-.mlabel b{font-size:17px}
+.mname{font-size:13px;font-weight:700}
+.mlabel b{font-size:18px;font-weight:800}
 .mago{font-size:11px;color:var(--muted)}
 .mfig .body{width:100%;height:auto;display:block}
 .body [data-act]{cursor:pointer}
 .body [data-act]:active{opacity:.75}
-.mstat{display:flex;align-items:center;gap:14px;background:var(--card2);border-radius:12px;padding:12px 14px}
-.mstat>b{font-size:30px;min-width:70px}
+.mstat{display:flex;align-items:center;gap:14px;background:var(--card2);border-radius:16px;padding:14px}
+.mstat>b{font-size:32px;font-weight:800;min-width:76px}
 .mhist{padding:10px 0;border-bottom:1px solid var(--line)}
 .mhist-ex{display:flex;justify-content:space-between;gap:10px;margin-top:4px;font-size:15px}
 .mhist-ex .muted{text-align:right}
-.rec-row{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:9px 0;border-bottom:1px solid var(--line)}
+.rec-row{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:10px 0;border-bottom:1px solid var(--line)}
 .rec-row:last-child{border-bottom:0}
 .rec-bar{width:70px;height:6px;border-radius:3px;background:var(--card2);overflow:hidden;flex:none}
 .rec-bar i{display:block;height:100%;border-radius:3px}
-.rec-pct{width:40px;text-align:right;font-size:14px;font-variant-numeric:tabular-nums}
+.rec-pct{width:42px;text-align:right;font-size:15px;font-weight:800;font-variant-numeric:tabular-nums}
 /* library */
 .chips{display:flex;gap:6px;overflow-x:auto;margin:0 -16px 12px;padding:0 16px;scrollbar-width:none}
 .chips::-webkit-scrollbar{display:none}
 .chips.wrap{flex-wrap:wrap;margin:0;padding:0}
-.chip{background:var(--card2);border-radius:999px;padding:8px 14px;font-size:14px;font-weight:600;white-space:nowrap;color:var(--muted)}
+.chip{background:var(--card2);border-radius:999px;padding:9px 15px;font-size:14px;font-weight:700;white-space:nowrap;color:var(--muted)}
 .chip.on{background:var(--accent);color:var(--accent-ink)}
-.lib-item{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:12px 0;border-bottom:1px solid var(--line)}
+.lib-item{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:13px 0;border-bottom:1px solid var(--line)}
 .lib-item:last-child{border-bottom:0}
-.ti-big{font-size:22px;width:30px;text-align:center}
-.ex-name{text-align:left;padding:0;display:flex;align-items:center;gap:10px}
-.ex-mini{width:46px;height:36px;object-fit:cover;border-radius:8px;flex:none}
-.ex-row{display:flex;align-items:center;gap:14px;width:100%;text-align:left;padding:8px 0}
-.ex-row-name{font-size:16px;font-weight:600;margin-bottom:2px}
+.ti-big{width:40px;height:40px;border-radius:12px;background:var(--accent-soft);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:20px;flex:none}
+.ex-name{text-align:left;padding:0;display:flex;align-items:center;gap:12px}
+.ex-mini{width:52px;height:40px;object-fit:cover;border-radius:10px;flex:none}
+.ex-row{display:flex;align-items:center;gap:14px;width:100%;text-align:left;padding:9px 0;border-bottom:1px solid var(--line)}
+.ex-row:last-child{border-bottom:0}
+.ex-row-name{font-size:16px;font-weight:700;margin-bottom:2px}
 .thumb{position:relative;width:84px;height:64px;flex:none;margin-right:8px}
-.thumb img{width:100%;height:100%;object-fit:cover;border-radius:12px;background:var(--card2);display:block}
-.thumb-ph{display:flex;align-items:center;justify-content:center;width:100%;height:100%;border-radius:12px;background:var(--card2);font-size:24px}
-.mthumb{position:absolute;right:-10px;bottom:-6px;width:32px;height:44px;border-radius:8px;background:#e8ebf0;border:2px solid var(--card);display:flex;justify-content:center;overflow:hidden}
-.sheet-panel .mthumb{border-color:var(--card)}
+.thumb img{width:100%;height:100%;object-fit:cover;border-radius:14px;background:var(--card2);display:block}
+.thumb-ph{display:flex;align-items:center;justify-content:center;width:100%;height:100%;border-radius:14px;background:var(--card2);color:var(--muted);font-size:26px}
+.mthumb{position:absolute;right:-10px;bottom:-6px;width:32px;height:44px;border-radius:9px;background:#e8ebf0;border:2px solid var(--bg);display:flex;justify-content:center;overflow:hidden}
+.sheet-panel .mthumb{border-color:#141518}
 .mthumb .body{height:100%;width:auto}
-.demo{position:relative;aspect-ratio:3/2;border-radius:14px;overflow:hidden;background:var(--card2)}
+.demo{position:relative;aspect-ratio:3/2;border-radius:18px;overflow:hidden;background:var(--card2)}
 .demo img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .demo .f2{animation:demoflip 2.4s steps(1) infinite}
 @keyframes demoflip{0%{opacity:0}50%{opacity:1}}
-.demo-tag{position:absolute;left:8px;top:8px;background:rgba(0,0,0,.6);color:#fff;font-size:12px;font-weight:600;padding:3px 8px;border-radius:999px}
-.info{color:var(--accent);font-size:14px;font-weight:400}
-.yt{display:block;text-align:center;text-decoration:none;margin:14px 0 4px;background:#3b1d1d;color:#fca5a5}
-.sheet-panel h4{margin:16px 0 6px;font-size:15px}
+.demo-tag{position:absolute;left:10px;top:10px;background:var(--accent);color:var(--accent-ink);font-size:12px;font-weight:800;padding:4px 10px;border-radius:999px}
+.info{color:var(--muted);display:inline-flex;font-size:15px;vertical-align:-1px}
+.yt{width:100%;margin:14px 0 4px;background:#2a1414;color:#ff8a8a}
+.sheet-panel h4{margin:18px 0 6px;font-size:16px;font-weight:800}
 .steps,.tips{margin:0;padding-left:22px}
-.steps li,.tips li{margin:6px 0;line-height:1.45}
-.tips li{color:#d6dae3}
+.steps li,.tips li{margin:7px 0;line-height:1.5}
+.steps li::marker{color:var(--accent);font-weight:800}
+.tips li{color:#cfd2d8}
 /* nutrition */
 .form3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-label,.lbl{display:block;font-size:13px;color:var(--muted);margin-top:10px}
+label,.lbl{display:block;font-size:13px;color:var(--muted);margin-top:10px;font-weight:600}
 label input,label select{margin-top:4px}
 .form3 label{margin-top:0}
-.kcal{font-size:32px;font-weight:800;line-height:1.1}
-.kcal span{font-size:14px;font-weight:500;color:var(--muted)}
-.macros{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:12px}
-.macros div{background:var(--card2);border-radius:10px;padding:8px 4px;text-align:center}
-.macros b{display:block;font-size:17px}
-.macros span{font-size:12px;color:var(--muted)}
-.food{display:flex;gap:10px;padding:7px 0;border-top:1px solid var(--line);font-size:15px}
+.kcal{font-size:38px;font-weight:800;line-height:1.05;letter-spacing:-.03em;color:var(--accent)}
+.kcal span{font-size:14px;font-weight:600;color:var(--muted);letter-spacing:0}
+.macros{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:14px}
+.macros div{background:var(--card2);border-radius:14px;padding:10px 4px;text-align:center}
+.macros b{display:block;font-size:18px;font-weight:800}
+.macros span{font-size:12px;color:var(--muted);font-weight:600}
+.food{display:flex;gap:10px;padding:8px 0;border-top:1px solid var(--line);font-size:15px}
 .food:first-of-type{margin-top:8px}
-.back{font-size:28px;line-height:1;color:var(--accent);margin-right:6px;vertical-align:-2px;padding:0 4px 0 0}
 #flash{position:fixed;inset:0;z-index:40;pointer-events:none;background:var(--accent);opacity:0}
 #flash.on{animation:flash 1.6s ease-out}
 @keyframes flash{0%,40%{opacity:.55}20%,60%{opacity:.1}100%{opacity:0}}
-.backup-card{border:1px solid rgba(251,191,36,.35);background:rgba(251,191,36,.08)}
-.set .del{height:40px;border-radius:10px;background:var(--card2);color:var(--danger);font-size:16px}
-.edit-meta{display:grid;grid-template-columns:1.6fr 1fr;gap:8px;margin-top:8px;align-items:end}
-.edit-meta label{white-space:nowrap}
-.edit-meta label{margin-top:0}
-#toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 60px);transform:translateX(-50%) translateY(-20px);background:#fff;color:#111;padding:10px 16px;border-radius:12px;font-weight:600;font-size:15px;opacity:0;pointer-events:none;transition:.25s;z-index:30;max-width:90vw;text-align:center}
+.backup-card{border-color:rgba(255,197,61,.35);background:rgba(255,197,61,.07)}
+.backup-card .title{display:flex;align-items:center;gap:8px;color:var(--warn)}
+.edit-meta{display:grid;grid-template-columns:1.6fr 1fr;gap:8px;margin-top:10px;align-items:end}
+.edit-meta label{white-space:nowrap;margin-top:0}
+#toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 64px);transform:translateX(-50%) translateY(-20px);background:var(--text);color:#0a0a0b;padding:11px 18px;border-radius:14px;font-weight:700;font-size:15px;opacity:0;pointer-events:none;transition:.25s;z-index:30;max-width:min(90vw,440px);text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.4)}
 #toast.show{opacity:1;transform:translateX(-50%)}
 </style>
 </head>
 <body>
-<header><h1 id="title">Tập luyện</h1></header>
+<header id="hdr"></header>
 <main id="main"></main>
 
 <div id="rest" hidden>
@@ -206,6 +247,34 @@ const DEFAULT_EX = EX_DB.map(e => e[0]);
 
 const $ = s => document.querySelector(s);
 const main = $('#main');
+/* ---------- line icons (inline SVG, work offline) ---------- */
+const ICONS = {
+  barbell: '<path d="M8.5 12h7M2 12h1.5M20.5 12H22"/><rect x="3.5" y="8.5" width="2.5" height="7" rx="1"/><rect x="18" y="8.5" width="2.5" height="7" rx="1"/><rect x="6" y="6" width="2.5" height="12" rx="1"/><rect x="15.5" y="6" width="2.5" height="12" rx="1"/>',
+  pulse: '<path d="M3 12h4l2.5-6 4 12 2.5-6H21"/>',
+  apple: '<path d="M12 7.5c-1.6-1.8-6.2-1.6-7 2.4-.9 4.6 2 10.1 4.8 10.1.9 0 1.4-.5 2.2-.5s1.3.5 2.2.5c2.8 0 5.7-5.5 4.8-10.1-.8-4-5.4-4.2-7-2.4z"/><path d="M12 7.5c0-2 1-3.8 3-4.5"/>',
+  book: '<path d="M4 4.5h5.5A2.5 2.5 0 0 1 12 7v13a2 2 0 0 0-2-2H4z"/><path d="M20 4.5h-5.5A2.5 2.5 0 0 0 12 7v13a2 2 0 0 1 2-2h6z"/>',
+  grid: '<rect x="4" y="4" width="6.5" height="6.5" rx="2"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="2"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="2"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="2"/>',
+  check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+  play: '<path d="M8 5.5v13l10.5-6.5z" fill="currentColor"/>',
+  chev: '<path d="M9.5 6l6 6-6 6"/>',
+  back: '<path d="M15 5l-7 7 7 7"/>',
+  x: '<path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  minus: '<path d="M5 12h14"/>',
+  up: '<path d="M12 19V5M6 11l6-6 6 6"/>',
+  trophy: '<path d="M8 21h8M12 16.5V21M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M17 5.5h3V7a3 3 0 0 1-3 3M7 5.5H4V7a3 3 0 0 0 3 3"/>',
+  download: '<path d="M12 4v11M7 10.5l5 5 5-5M5 20h14"/>',
+  edit: '<path d="M4 20h4L19.5 8.5a2.8 2.8 0 0 0-4-4L4 16z"/>',
+  calendar: '<rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
+  chart: '<path d="M4 20V11M10 20V5M16 20v-6M3 20h18"/>',
+  sliders: '<path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/>',
+  info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',
+  clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  flame: '<path d="M12 21c3.9 0 7-2.9 7-6.8 0-4.6-4.5-6.6-4.5-11.2-2.9 1.9-4.8 4.6-4.8 7.6-1-.8-1.9-1.9-2.1-3.6C5.8 9 5 10.9 5 14.2 5 18.1 8.1 21 12 21z"/>',
+  refresh: '<path d="M20 11a8 8 0 0 0-14.9-3M4 4v4h4M4 13a8 8 0 0 0 14.9 3M20 20v-4h-4"/>',
+  bolt: '<path d="M13 3L5 13.5h6L10 21l8-10.5h-6z"/>',
+};
+const ic = (n, cls = '') => `<svg class="ic ${cls}" viewBox="0 0 24 24" aria-hidden="true">${ICONS[n]}</svg>`;
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const num = v => { const n = parseFloat(String(v ?? '').replace(',', '.')); return isFinite(n) ? n : 0; };
@@ -285,7 +354,7 @@ function muscleThumb(name) {
 }
 function exThumb(name) {
   const src = exImg(name, 0);
-  return `<div class="thumb">${src ? `<img src="${src}" alt="" loading="lazy">` : '<span class="thumb-ph">🏋️</span>'}
+  return `<div class="thumb">${src ? `<img src="${src}" alt="" loading="lazy">` : `<span class="thumb-ph">${ic('barbell')}</span>`}
     ${getEx(name) ? `<div class="mthumb">${muscleThumb(name)}</div>` : ''}</div>`;
 }
 function lastDoneH(name) { const w = S.workouts.find(w => w.exercises.some(e => e.name === name)); return w ? (Date.now() - w.endedAt) / 36e5 : null; }
@@ -331,12 +400,47 @@ function weekSummary() {
   const since = Date.now() - 7 * 864e5;
   const ws = S.workouts.filter(w => w.startedAt >= since);
   if (!S.workouts.length) return '';
+  const kg = ws.reduce((a, w) => a + volume(w), 0), mins = Math.round(ws.reduce((a, w) => a + (w.endedAt - w.startedAt), 0) / 6e4);
   return `<div class="section-h"><h2>7 ngày qua</h2></div>
   <div class="stats">
     <div class="stat"><b>${ws.length}</b><span>buổi tập</span></div>
-    <div class="stat"><b>${fmtNum(Math.round(ws.reduce((a, w) => a + volume(w), 0)))}</b><span>kg tổng khối lượng</span></div>
-    <div class="stat"><b>${fmtDur(ws.reduce((a, w) => a + (w.endedAt - w.startedAt), 0)).replace(/:\d\d$/, '')}</b><span>giờ:phút</span></div>
+    <div class="stat"><b>${kg >= 10000 ? fmtNum(Math.round(kg / 100) / 10) + 't' : fmtNum(Math.round(kg))}</b><span>${kg >= 10000 ? 'tấn' : 'kg'} khối lượng</span></div>
+    <div class="stat"><b>${Math.floor(mins / 60)}h${String(mins % 60).padStart(2, '0')}</b><span>thời gian tập</span></div>
   </div>`;
+}
+
+function weekStrip() {
+  const now = new Date(), mon = new Date(now.getFullYear(), now.getMonth(), now.getDate() - (now.getDay() + 6) % 7);
+  return `<div class="week">${['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'].map((d, i) => {
+    const s = new Date(mon.getFullYear(), mon.getMonth(), mon.getDate() + i).getTime(), e = s + 864e5;
+    const done = S.workouts.some(w => w.startedAt >= s && w.startedAt < e), today = +now >= s && +now < e;
+    return `<div class="day${done ? ' done' : ''}${today ? ' today' : ''}">${d}<i>${done ? ic('check') : new Date(s).getDate()}</i></div>`;
+  }).join('')}</div>`;
+}
+
+// Pick what to train today: the routine whose muscles are most recovered, else a ready split.
+function homeSuggestion() {
+  const r = recovery();
+  const musclesOf = rt => [...new Set(rt.exercises.flatMap(e => getEx(e.name)?.p || []))];
+  const score = rt => { const ms = musclesOf(rt); return ms.length ? ms.reduce((a, m) => a + r[m].pct, 0) / ms.length : 0; };
+  if (S.routines.length) {
+    const best = [...S.routines].sort((a, b) => score(b) - score(a))[0], ms = musclesOf(best).slice(0, 3).map(m => MUSCLES[m]).join(', ');
+    return { k: S.workouts.length ? `Gợi ý theo phục hồi cơ · ${Math.round(score(best))}% sẵn sàng` : 'Bắt đầu nhanh', title: best.name,
+      sub: `${best.exercises.length} bài${ms ? ' · ' + ms : ''}`, act: `data-act="startRoutine" data-id="${best.id}"` };
+  }
+  const split = [['Push', 'Ngực, vai, tay sau', ['chest', 'shoulders', 'triceps']], ['Pull', 'Lưng, tay trước', ['lats', 'midBack', 'biceps']], ['Legs', 'Đùi, mông, bắp chân', ['quads', 'hamstrings', 'glutes']]]
+    .find(([, , g]) => g.every(m => r[m].pct >= 90));
+  return { k: S.workouts.length ? 'Gợi ý theo phục hồi cơ' : 'Buổi tập đầu tiên', title: split ? split[0] + ' day' : 'Tập nhẹ / cardio',
+    sub: !S.workouts.length ? 'Bắt đầu với: ' + split[1].toLowerCase() : split ? split[1] + ' đã hồi phục' : 'Phần lớn cơ còn đang hồi phục', act: 'data-act="startEmpty"' };
+}
+
+function activeBar() {
+  const a = S.active, done = a.exercises.flatMap(e => e.sets.filter(s => s.done));
+  const kg = done.reduce((t, s) => t + num(s.w) * num(s.r), 0);
+  return `<div class="abar"><div class="grow"><div class="abar-label">Đang tập · ${esc(a.name)}</div>
+      <div class="abar-time" id="elapsed">${fmtDur(Date.now() - a.startedAt)}</div></div>
+      <button class="done-btn" data-act="finishWorkout">Xong</button></div>
+    <div class="abar-stats"><span><b>${fmtNum(Math.round(kg))}</b> kg</span><span><b>${done.length}</b> set xong</span><span><b>${a.exercises.length}</b> bài</span></div>`;
 }
 
 function backupCard() {
@@ -345,7 +449,7 @@ function backupCard() {
   const days = Math.floor((Date.now() - since) / 864e5);
   if (days < 7 || (S.backupSnooze && Date.now() - S.backupSnooze < 3 * 864e5)) return '';
   return `<div class="card backup-card">
-    <div class="title">💾 ${S.lastBackup ? `Đã ${days} ngày chưa sao lưu` : 'Bạn chưa sao lưu lần nào'}</div>
+    <div class="title">${ic('download')} ${S.lastBackup ? `Đã ${days} ngày chưa sao lưu` : 'Bạn chưa sao lưu lần nào'}</div>
     <div class="muted small" style="margin:4px 0 10px">${S.workouts.length} buổi tập chỉ đang nằm trên iPhone này. Xóa app khỏi màn hình chính là mất hết. Bấm "Sao lưu ngay" → Lưu vào Tệp → iCloud Drive.</div>
     <div class="row gap"><button class="btn" data-act="snoozeBackup">Để sau</button><button class="btn primary grow" data-act="exportData">Sao lưu ngay</button></div>
   </div>`;
@@ -353,25 +457,40 @@ function backupCard() {
 
 function viewWorkout() {
   const a = S.active;
-  if (!a) return `${backupCard()}
-    <button class="btn primary big" data-act="startEmpty">＋ Bắt đầu buổi tập trống</button>
-    <div class="section-h"><h2>Routine của tôi</h2><button class="link" data-act="newRoutine">＋ Tạo mới</button></div>
+  if (!a) {
+    const g = homeSuggestion();
+    return `${backupCard()}${weekStrip()}
+    <div class="hero">
+      <div class="hero-k">${esc(g.k)}</div>
+      <h3>${esc(g.title)}</h3>
+      <p>${esc(g.sub)}</p>
+      <button class="go" ${g.act}>${ic('play')} Bắt đầu</button>
+    </div>
+    <div class="quick">
+      <button class="btn" data-act="startEmpty">${ic('plus')} Buổi trống</button>
+      <button class="btn" data-act="newRoutine">${ic('edit')} Tạo routine</button>
+    </div>
+    ${weekSummary()}
+    <div class="section-h"><h2>Routine của tôi</h2>${S.routines.length ? `<span class="muted small">${S.routines.length} routine</span>` : ''}</div>
     ${S.routines.length ? S.routines.map(r => `
-      <div class="card">
-        <div class="title">${esc(r.name)}</div>
-        <div class="muted small" style="margin:2px 0 10px">${r.exercises.map(e => esc(e.name) + ' ×' + e.sets).join(' · ') || 'Chưa có bài tập'}</div>
-        <div class="row gap"><button class="btn primary grow" data-act="startRoutine" data-id="${r.id}">Bắt đầu</button><button class="btn" data-act="editRoutine" data-id="${r.id}">Sửa</button></div>
-      </div>`).join('') : `<div class="empty">Chưa có routine nào.<br>Tạo routine (VD: Push / Pull / Legs) để bắt đầu nhanh hơn.</div>`}
-    ${weekSummary()}`;
+      <div class="rt">
+        <button class="rt-main" data-act="startRoutine" data-id="${r.id}">
+          <span class="rt-ic">${ic('barbell')}</span>
+          <span class="grow"><div class="rt-name">${esc(r.name)}</div>
+          <div class="rt-sub">${r.exercises.length} bài · ${r.exercises.reduce((t, e) => t + e.sets, 0)} set · ${r.exercises.map(e => esc(e.name)).join(', ')}</div></span>
+        </button>
+        <button class="icon" data-act="editRoutine" data-id="${r.id}" aria-label="Sửa routine">${ic('edit')}</button>
+      </div>`).join('') : `<button class="btn ghost big" data-act="newRoutine">${ic('plus')} Tạo routine đầu tiên (VD: Push / Pull / Legs)</button>`}`;
+  }
 
   return `
     <div class="card">
       <input class="name-input" data-bind="activeName" value="${esc(a.name)}" aria-label="Tên buổi tập">
-      <div class="muted small">Bắt đầu ${new Date(a.startedAt).toLocaleTimeString('vi-VN', {hour:'2-digit', minute:'2-digit'})} · <span id="elapsed">${fmtDur(Date.now() - a.startedAt)}</span></div>
+      <div class="muted small">Bắt đầu lúc ${new Date(a.startedAt).toLocaleTimeString('vi-VN', {hour:'2-digit', minute:'2-digit'})}</div>
     </div>
-    ${a.exercises.map(exCard).join('') || '<div class="empty">Thêm bài tập đầu tiên 👇</div>'}
-    <button class="btn big" data-act="addExercise">＋ Thêm bài tập</button>
-    <div class="row gap mt"><button class="btn danger" data-act="cancelWorkout">Hủy</button><button class="btn primary grow" data-act="finishWorkout">Kết thúc buổi tập</button></div>`;
+    ${a.exercises.map(exCard).join('') || '<div class="empty">Thêm bài tập đầu tiên để bắt đầu</div>'}
+    <button class="btn primary big" data-act="addExercise">${ic('plus')} Thêm bài tập</button>
+    <button class="text-btn" data-act="cancelWorkout">Hủy buổi tập</button>`;
 }
 
 function viewEdit() {
@@ -386,17 +505,17 @@ function viewEdit() {
       </div>
     </div>
     ${w.exercises.map(exCard).join('') || '<div class="empty">Chưa có bài tập</div>'}
-    <button class="btn big" data-act="addExercise">＋ Thêm bài tập</button>
+    <button class="btn big" data-act="addExercise">${ic('plus')} Thêm bài tập</button>
     <div class="row gap mt"><button class="btn" data-act="cancelEdit">Hủy</button><button class="btn primary grow" data-act="saveEdit">Lưu thay đổi</button></div>`;
 }
 
 function exCard(ex, i) {
   const last = lastSets(ex.name), b = bestOf(ex.name), editing = tab === 'edit';
   return `<div class="card">
-    <div class="row gap"><button class="title grow ex-name" data-act="showEx" data-name="${esc(ex.name)}">${exImg(ex.name, 0) ? `<img class="ex-mini" src="${exImg(ex.name, 0)}" alt="">` : ''}<span>${esc(ex.name)}${getEx(ex.name)?.steps?.length ? ' <span class="info">ⓘ</span>' : ''}</span></button>
-      ${i > 0 ? `<button class="icon" data-act="moveEx" data-i="${i}" aria-label="Chuyển lên">↑</button>` : ''}
-      <button class="icon" data-act="removeEx" data-i="${i}" aria-label="Xóa bài tập">✕</button></div>
-    ${b.best ? `<div class="muted small">🏆 Tạ cao nhất ${fmtNum(b.maxW)} kg · 1RM ~${fmtNum(Math.round(b.best * 10) / 10)} kg</div>` : ''}
+    <div class="row gap"><button class="title grow ex-name" data-act="showEx" data-name="${esc(ex.name)}">${exImg(ex.name, 0) ? `<img class="ex-mini" src="${exImg(ex.name, 0)}" alt="">` : ''}<span>${esc(ex.name)}${getEx(ex.name)?.steps?.length ? ` <span class="info">${ic('info')}</span>` : ''}</span></button>
+      ${i > 0 ? `<button class="icon" data-act="moveEx" data-i="${i}" aria-label="Chuyển lên">${ic('up')}</button>` : ''}
+      <button class="icon" data-act="removeEx" data-i="${i}" aria-label="Xóa bài tập">${ic('x')}</button></div>
+    ${b.best ? `<div class="pr-line">${ic('trophy')} Tạ cao nhất ${fmtNum(b.maxW)} kg · 1RM ~${fmtNum(Math.round(b.best * 10) / 10)} kg</div>` : ''}
     <div class="sets">
       <div class="set head"><span>Set</span><span>Trước</span><span>kg</span><span>Reps</span><span>${editing ? '' : '✓'}</span></div>
       ${ex.sets.map((s, j) => { const p = last && (last[j] || last[last.length - 1]), pj = last && last[j]; return `
@@ -405,11 +524,11 @@ function exCard(ex, i) {
         <button class="prev" data-act="copyLast" data-i="${i}" data-j="${j}" ${pj ? '' : 'disabled'} aria-label="Dùng lại mức tạ lần trước">${pj ? fmtSet(pj) : '—'}</button>
         <input type="text" inputmode="decimal" data-i="${i}" data-j="${j}" data-f="w" value="${esc(s.w)}" placeholder="${p ? esc(fmtNum(p.w)) : '0'}">
         <input type="text" inputmode="numeric" data-i="${i}" data-j="${j}" data-f="r" value="${esc(s.r)}" placeholder="${p ? esc(p.r) : '0'}">
-        ${editing ? `<button class="del" data-act="delSetAt" data-i="${i}" data-j="${j}" aria-label="Xóa set này">✕</button>`
-          : `<button class="check" data-act="toggleSet" data-i="${i}" data-j="${j}" aria-label="Hoàn thành set">✓</button>`}
+        ${editing ? `<button class="del" data-act="delSetAt" data-i="${i}" data-j="${j}" aria-label="Xóa set này">${ic('x')}</button>`
+          : `<button class="check" data-act="toggleSet" data-i="${i}" data-j="${j}" aria-label="Hoàn thành set">${ic('check')}</button>`}
       </div>`; }).join('')}
     </div>
-    <div class="set-actions"><button class="btn" data-act="delSet" data-i="${i}">− Bớt set</button><button class="btn" data-act="addSet" data-i="${i}">＋ Thêm set</button></div>
+    <div class="set-actions"><button class="btn" data-act="delSet" data-i="${i}">${ic('minus')} Bớt set</button><button class="btn" data-act="addSet" data-i="${i}">${ic('plus')} Thêm set</button></div>
   </div>`;
 }
 
@@ -425,12 +544,12 @@ function viewHistory() {
       <button class="hist-h" data-act="toggleHist" data-id="${w.id}">
         <div class="grow"><div class="title">${esc(w.name)}</div>
         <div class="muted small">${fmtDate(w.startedAt)} · ${fmtDur(w.endedAt - w.startedAt)} · ${fmtNum(Math.round(volume(w)))} kg</div></div>
-        <span class="chev">${open ? '▾' : '▸'}</span>
+        <span class="chev" style="transform:rotate(${open ? 90 : 0}deg)">${ic('chev')}</span>
       </button>
       ${open ? `<div class="hist-body">
         ${w.exercises.map(e => `<div class="hist-ex"><div>${esc(e.name)}${(w.prs || []).includes(e.name) ? '<span class="badge">PR</span>' : ''}</div><div class="muted small">${e.sets.map(s => `${fmtNum(s.w)}kg × ${s.r}`).join(' · ')}</div></div>`).join('')}
         <div class="row gap mt" style="flex-wrap:wrap">
-          <button class="btn" data-act="editWorkout" data-id="${w.id}">✏️ Sửa</button>
+          <button class="btn" data-act="editWorkout" data-id="${w.id}">${ic('edit')} Sửa</button>
           <button class="btn" data-act="repeatWorkout" data-id="${w.id}">Tập lại</button>
           <button class="btn" data-act="histToRoutine" data-id="${w.id}">Lưu làm routine</button>
           <button class="btn danger" data-act="deleteWorkout" data-id="${w.id}">Xóa</button>
@@ -451,8 +570,8 @@ function chart(vals, labels) {
     <line x1="${P}" x2="${W - P}" y1="${y(mn)}" y2="${y(mn)}" stroke="#2c313c" stroke-dasharray="3 4"/>
     <text x="${W - P}" y="${y(mx) - 6}" fill="#8b93a3" font-size="11" text-anchor="end">${fmtNum(Math.round(mx * 10) / 10)}</text>
     ${mx !== mn ? `<text x="${W - P}" y="${y(mn) + 14}" fill="#8b93a3" font-size="11" text-anchor="end">${fmtNum(Math.round(mn * 10) / 10)}</text>` : ''}
-    <polyline points="${pts}" fill="none" stroke="#4ade80" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
-    ${vals.map((v, i) => `<circle cx="${x(i)}" cy="${y(v)}" r="3.5" fill="#4ade80"/>`).join('')}
+    <polyline points="${pts}" fill="none" stroke="#c6f432" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+    ${vals.map((v, i) => `<circle cx="${x(i)}" cy="${y(v)}" r="3.5" fill="#c6f432"/>`).join('')}
     <text x="${P}" y="${H - 4}" fill="#8b93a3" font-size="11">${esc(labels[0])}</text>
     ${vals.length > 1 ? `<text x="${W - P}" y="${H - 4}" fill="#8b93a3" font-size="11" text-anchor="end">${esc(labels[labels.length - 1])}</text>` : ''}
   </svg>`;
@@ -536,7 +655,7 @@ function viewRecovery() {
       <div class="muted small" style="text-align:center;margin-top:6px">Chạm vào nhóm cơ để xem lịch sử và mức tạ</div>
     </div>
     <div class="card"><div class="title" style="margin-bottom:4px">Gợi ý hôm nay</div>
-      <div class="muted small">${!S.workouts.length ? 'Chưa có dữ liệu. Tất cả cơ đều sẵn sàng 💪' : split.length ? 'Sẵn sàng tập: <b style="color:var(--text)">' + split.join(' · ') + '</b>' : 'Hầu hết các nhóm cơ còn đang hồi phục. Hôm nay có thể tập nhẹ, cardio hoặc nghỉ.'}</div></div>
+      <div class="muted small">${!S.workouts.length ? 'Chưa có dữ liệu. Tất cả cơ đều sẵn sàng.' : split.length ? 'Sẵn sàng tập: <b style="color:var(--text)">' + split.join(' · ') + '</b>' : 'Hầu hết các nhóm cơ còn đang hồi phục. Hôm nay có thể tập nhẹ, cardio hoặc nghỉ.'}</div></div>
     <div class="section-h"><h2>Từng nhóm cơ</h2><span class="muted small">${ready.length}/${ms.length} sẵn sàng</span></div>
     <div class="card" style="padding:4px 14px">${ms.map(m => `<button class="rec-row" data-act="muscle" data-m="${m}">
       <span class="grow">${MUSCLES[m]}<br><span class="muted small">${r[m].hoursLeft ? `còn ~${r[m].hoursLeft}h · ` : ''}${agoText(r[m].lastH)}</span></span>
@@ -586,11 +705,11 @@ function openExercise(name) {
   const b = bestOf(name), n = S.workouts.filter(w => w.exercises.some(e => e.name === name)).length;
   openSheet(`<div class="sheet-h"><h3>${esc(name)}</h3><button class="link" data-act="closeSheet">Đóng</button></div>
     ${exImg(name, 0) ? `<div class="demo"><img src="${exImg(name, 0)}" alt="Tư thế bắt đầu"><img class="f2" src="${exImg(name, 1)}" alt="Tư thế kết thúc">
-      <span class="demo-tag">▶ Demo</span></div><div class="muted small" style="text-align:right;margin-top:4px">Ảnh: free-exercise-db</div>` : ''}
-    ${x ? `${bodySvg(m => x.p.includes(m) ? '#4ade80' : (x.s || []).includes(m) ? 'rgba(74,222,128,.38)' : null)}
-      <div class="legend"><span><i style="background:#4ade80"></i>Cơ chính: ${x.p.map(m => MUSCLES[m]).join(', ')}</span>
-      ${x.s?.length ? `<span><i style="background:rgba(74,222,128,.38)"></i>Cơ phụ: ${x.s.map(m => MUSCLES[m]).join(', ')}</span>` : ''}</div>` : ''}
-    <a class="btn big yt" href="${yt}" target="_blank" rel="noopener">▶ Xem video mẫu trên YouTube</a>
+      <span class="demo-tag">Demo</span></div><div class="muted small" style="text-align:right;margin-top:4px">Ảnh: free-exercise-db</div>` : ''}
+    ${x ? `${bodySvg(m => x.p.includes(m) ? '#c6f432' : (x.s || []).includes(m) ? 'rgba(198,244,50,.38)' : null)}
+      <div class="legend"><span><i style="background:#c6f432"></i>Cơ chính: ${x.p.map(m => MUSCLES[m]).join(', ')}</span>
+      ${x.s?.length ? `<span><i style="background:rgba(198,244,50,.38)"></i>Cơ phụ: ${x.s.map(m => MUSCLES[m]).join(', ')}</span>` : ''}</div>` : ''}
+    <a class="btn big yt" href="${yt}" target="_blank" rel="noopener">${ic('play')} Xem video mẫu trên YouTube</a>
     ${x?.steps?.length ? `<h4>Cách thực hiện</h4><ol class="steps">${x.steps.map(s => `<li>${esc(s)}</li>`).join('')}</ol>` : ''}
     ${x?.tips?.length ? `<h4>Lưu ý</h4><ul class="tips">${x.tips.map(s => `<li>${esc(s)}</li>`).join('')}</ul>` : ''}
     ${n ? `<h4>Thành tích của bạn</h4><div class="muted">Đã tập ${n} buổi · Tạ cao nhất ${fmtNum(b.maxW)} kg · 1RM ước tính ${fmtNum(Math.round(b.best * 10) / 10)} kg</div>` : ''}`);
@@ -678,7 +797,7 @@ function viewNutrition() {
       </div>
       <div class="muted small mt">BMR ${fmtNum(t.bmr)} · Tiêu hao/ngày (TDEE) ${fmtNum(t.tdee)} kcal</div>
     </div>
-    <div class="section-h"><h2>${menu.name}</h2><button class="link" data-act="nextMenu">Đổi thực đơn ↻</button></div>
+    <div class="section-h"><h2>${menu.name}</h2><button class="link" data-act="nextMenu">${ic('refresh')} Đổi thực đơn</button></div>
     ${plan.map(([meal, items]) => { const k = items.reduce((a, [, , m]) => a + m[0], 0); return `<div class="card">
       <div class="row"><div class="title grow">${meal}</div><span class="muted small">${fmtNum(Math.round(k))} kcal</span></div>
       ${items.map(([f, g, m]) => `<div class="food"><span class="grow">${esc(f)}</span><span>${portion(f, g)}</span></div>`).join('')}</div>`; }).join('')}
@@ -689,18 +808,20 @@ let nutEdit = false, pDraft = null;
 
 /* ---------- more ---------- */
 function viewMore() {
-  return `<div class="card" style="padding:4px 14px">${[['history', '📅', 'Lịch sử', `${S.workouts.length} buổi tập`], ['progress', '📈', 'Tiến độ', 'Biểu đồ từng bài'], ['settings', '⚙️', 'Cài đặt', 'Thời gian nghỉ, sao lưu']]
-    .map(([k, i, l, d]) => `<button class="lib-item" data-act="tab" data-tab="${k}"><span class="ti-big">${i}</span><div class="grow"><div>${l}</div><div class="muted small">${d}</div></div><span class="chev">›</span></button>`).join('')}</div>${weekSummary()}`;
+  return `<div class="card" style="padding:4px 14px">${[['history', 'calendar', 'Lịch sử', `${S.workouts.length} buổi tập`], ['progress', 'chart', 'Tiến độ', 'Biểu đồ từng bài'], ['settings', 'sliders', 'Cài đặt', 'Thời gian nghỉ, sao lưu']]
+    .map(([k, i, l, d]) => `<button class="lib-item" data-act="tab" data-tab="${k}"><span class="ti-big">${ic(i)}</span><div class="grow"><div>${l}</div><div class="muted small">${d}</div></div><span class="chev">${ic('chev')}</span></button>`).join('')}</div>${weekSummary()}`;
 }
 
-const TABS = [['workout', '🏋️', 'Tập'], ['recovery', '🔋', 'Phục hồi'], ['nutrition', '🥗', 'Thực đơn'], ['library', '📖', 'Thư viện'], ['more', '☰', 'Thêm']];
+const TABS = [['workout', 'barbell', 'Tập'], ['recovery', 'pulse', 'Phục hồi'], ['nutrition', 'apple', 'Thực đơn'], ['library', 'book', 'Thư viện'], ['more', 'grid', 'Thêm']];
 const TITLES = { workout: 'Tập luyện', recovery: 'Phục hồi cơ', nutrition: 'Thực đơn', library: 'Thư viện bài tập', more: 'Thêm', history: 'Lịch sử', progress: 'Tiến độ', settings: 'Cài đặt', edit: 'Sửa buổi tập' };
 const SUB = ['history', 'progress', 'settings'];
 function render() {
-  $('#title').innerHTML = (SUB.includes(tab) ? '<button class="back" data-act="tab" data-tab="more" aria-label="Quay lại">‹</button>' : '') + (tab === 'workout' && S.active ? 'Đang tập' : TITLES[tab]);
+  $('#hdr').innerHTML = tab === 'workout' && S.active ? activeBar()
+    : tab === 'workout' ? `<div class="today">${new Date().toLocaleDateString('vi-VN', { weekday: 'long', day: 'numeric', month: 'long' })}</div><h1>Hôm nay tập gì?</h1>`
+    : `<h1>${SUB.includes(tab) ? `<button class="back" data-act="tab" data-tab="more" aria-label="Quay lại">${ic('back')}</button>` : ''}${TITLES[tab]}</h1>`;
   main.innerHTML = ({ workout: viewWorkout, recovery: viewRecovery, nutrition: viewNutrition, library: viewLibrary, more: viewMore, history: viewHistory, progress: viewProgress, settings: viewSettings, edit: viewEdit })[tab]();
   const cur = SUB.includes(tab) || tab === 'edit' ? 'more' : tab;
-  $('#tabs').innerHTML = TABS.map(([k, i, l]) => `<button class="${cur === k ? 'on' : ''}" data-act="tab" data-tab="${k}"><span class="ti">${i}</span>${l}${k === 'workout' && S.active && tab !== 'workout' ? '<span class="dot"></span>' : ''}</button>`).join('');
+  $('#tabs').innerHTML = TABS.map(([k, i, l]) => `<button class="${cur === k ? 'on' : ''}" data-act="tab" data-tab="${k}">${ic(i)}${l}${k === 'workout' && S.active && tab !== 'workout' ? '<span class="dot"></span>' : ''}</button>`).join('');
 }
 
 /* ---------- sheet & picker ---------- */
@@ -722,7 +843,7 @@ function renderPick(q) {
   const items = allExercises().filter(n => n.toLowerCase().includes(ql) && (pickGroup === 'all' || getEx(n)?.g === pickGroup))
     .map(n => [n, lastDoneH(n)]).sort((a, b) => (a[1] ?? 1e9) - (b[1] ?? 1e9) || a[0].localeCompare(b[0]));
   const exact = items.some(([n]) => n.toLowerCase() === ql);
-  $('#pickList').innerHTML = (t && !exact ? `<button class="pick new" data-act="pick" data-name="${esc(t)}">＋ Tạo bài "${esc(t)}"</button>` : '') +
+  $('#pickList').innerHTML = (t && !exact ? `<button class="pick new" data-act="pick" data-name="${esc(t)}">${ic('plus')} Tạo bài "${esc(t)}"</button>` : '') +
     items.map(([n, h]) => exRow(n, h, 'pick')).join('');
 }
 function exRow(n, h, act) {
@@ -735,10 +856,10 @@ function renderRoutineSheet() {
   openSheet(`<div class="sheet-h"><h3>${draft.id ? 'Sửa' : 'Tạo'} routine</h3><button class="link" data-act="closeSheet">Đóng</button></div>
     <input class="search" data-bind="draftName" placeholder="Tên routine (VD: Push Day)" value="${esc(draft.name)}">
     ${draft.exercises.map((e, i) => `<div class="row r-ex"><span class="grow">${esc(e.name)}</span>
-      <button class="icon" data-act="draftSets" data-i="${i}" data-d="-1" aria-label="Bớt set">−</button><span class="pill">${e.sets} set</span>
-      <button class="icon" data-act="draftSets" data-i="${i}" data-d="1" aria-label="Thêm set">＋</button>
-      <button class="icon" data-act="draftRemove" data-i="${i}" aria-label="Xóa">✕</button></div>`).join('') || '<div class="empty">Chưa có bài tập</div>'}
-    <button class="btn big mt" data-act="draftAdd">＋ Thêm bài tập</button>
+      <button class="icon" data-act="draftSets" data-i="${i}" data-d="-1" aria-label="Bớt set">${ic('minus')}</button><span class="pill">${e.sets} set</span>
+      <button class="icon" data-act="draftSets" data-i="${i}" data-d="1" aria-label="Thêm set">${ic('plus')}</button>
+      <button class="icon" data-act="draftRemove" data-i="${i}" aria-label="Xóa">${ic('x')}</button></div>`).join('') || '<div class="empty">Chưa có bài tập</div>'}
+    <button class="btn big mt" data-act="draftAdd">${ic('plus')} Thêm bài tập</button>
     <div class="row gap mt">${draft.id ? '<button class="btn danger" data-act="deleteRoutine">Xóa</button>' : ''}<button class="btn primary grow" data-act="saveRoutine">Lưu routine</button></div>`,
     () => { draft = null; });
 }

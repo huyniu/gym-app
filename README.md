@@ -9,11 +9,13 @@ App ghi chép tập gym cho iPhone. Đây là web app cài được lên màn h�
 - Lịch sử theo tháng, đánh dấu 🏆 PR khi phá kỷ lục mức tạ.
 - Tiến độ từng bài: 1RM ước tính, tạ cao nhất, khối lượng.
 - Xuất/nhập file sao lưu JSON (qua app Tệp / iCloud Drive).
-- **Thư viện bài tập**: 40 bài chia theo nhóm cơ. Mỗi bài có hình cơ chính và cơ phụ, các bước thực hiện, lưu ý, và nút mở video mẫu trên YouTube. Trong lúc tập, bấm vào tên bài là xem được.
+- **Thư viện bài tập**: 125 bài chia theo nhóm cơ, có cả bài máy, cáp và Cardio (ghi số phút và km). Tìm được bằng tiếng Việt, có dấu hay không dấu đều được ("day nguc", "kéo xô", "mông"). Mỗi bài có hình cơ chính và cơ phụ, các bước thực hiện, lưu ý, và nút mở video mẫu trên YouTube. Trong lúc tập, bấm vào tên bài là xem được.
 - **Phục hồi cơ**: hình cơ thể mặt trước và mặt sau tô màu theo mức hồi phục (ước tính theo số set và thời gian nghỉ), kèm gợi ý hôm nay nên tập nhóm nào.
 - **Thực đơn**: tính BMR, TDEE, calo và macro theo mục tiêu (giảm mỡ / giữ cân / tăng cơ), rồi gợi ý 3 thực đơn món Việt với định lượng tự điều chỉnh theo mục tiêu.
 
-Dữ liệu bài tập và món ăn nằm trong `data.js`.
+- **Lịch 5 buổi/tuần**: nút "Nạp lịch 5 buổi" tạo sẵn 5 routine (T2 Đẩy, T3 Kéo, T4 Chân, T6 Thân trên, T7 Thân dưới) có số rep mục tiêu, thời gian nghỉ riêng từng bài và đi bộ dốc cuối buổi. Màn hình chính tự gợi ý đúng buổi theo thứ trong tuần.
+
+Dữ liệu bài tập, lịch tập và món ăn nằm trong `data.js`.
 
 ### Nguồn ảnh
 Ảnh demo bài tập trong `img/ex/` (đã nén còn 360px) lấy từ [free-exercise-db](https://github.com/yuhonas/free-exercise-db). Repo này dùng giấy phép Unlicense (miễn phí bản quyền) và không ghi giấy phép riêng cho phần ảnh. Nếu sau này muốn phát hành app công khai, nên kiểm tra lại nguồn gốc ảnh.

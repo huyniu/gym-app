@@ -102,6 +102,8 @@ input::placeholder{color:#55585e}
 .set.done .setno{color:var(--accent)}
 .set-actions{display:flex;gap:8px;margin-top:10px}
 .set-actions .btn{flex:1;padding:10px;font-size:14px}
+.target{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);margin-top:6px}.target svg{width:14px;height:14px}
+.ex-row-vi{font-size:13px;opacity:.75;margin-bottom:2px}
 .pr-line{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--warn);font-weight:600;margin-top:6px}
 .pill{background:var(--card2);border-radius:999px;padding:4px 10px;font-size:13px;white-space:nowrap;font-weight:700}
 .r-ex{padding:8px 0;border-bottom:1px solid var(--line);gap:4px}
@@ -286,7 +288,18 @@ const fmtDur = ms => { const t = Math.max(0, Math.floor(ms / 1000)), h = Math.fl
   return h ? `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}` : `${m}:${String(s).padStart(2,'0')}`; };
 const fmtDate = ts => new Date(ts).toLocaleDateString('vi-VN', {weekday:'short', day:'2-digit', month:'2-digit', year:'numeric'});
 const e1rm = (w, r) => (w > 0 && r > 0) ? (r === 1 ? w : w * (1 + r / 30)) : 0;
-const volume = w => w.exercises.reduce((a, e) => a + e.sets.reduce((b, s) => b + s.w * s.r, 0), 0);
+const isCardio = name => getEx(name)?.g === 'cardio';
+const volume = w => w.exercises.reduce((a, e) => a + (isCardio(e.name) ? 0 : e.sets.reduce((b, s) => b + s.w * s.r, 0)), 0);
+const fmtRest = s => s >= 60 ? (s % 60 ? `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}` : s / 60) + ' phút' : s + ' giây';
+// Search: case/diacritic-insensitive over English name, Vietnamese name, muscles and group; every word must match.
+const fold = s => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd');
+const MUSCLE_ALIAS = { biceps: 'bắp tay', triceps: 'bắp tay', forearms: 'cổ tay', lats: 'lưng', midBack: 'lưng', lowerBack: 'lưng', traps: 'vai', obliques: 'eo', abs: 'core', quads: 'chân', hamstrings: 'chân', glutes: 'chân', calves: 'chân', adductors: 'đùi trong' };
+function exMatch(n, q) {
+  if (!q) return true;
+  const x = getEx(n), hay = fold([n, EX_VI[n] || '', ...(x?.p || []).map(m => MUSCLES[m] + ' ' + (MUSCLE_ALIAS[m] || '')), GROUPS[x?.g] || ''].join(' '));
+  return q.split(/\s+/).every(w => hay.includes(w));
+}
+const sortedRoutines = () => [...S.routines].sort((a, b) => (a.day || 99) - (b.day || 99));
 
 /* ---------- state ---------- */
 function defaults() { return { routines: [], workouts: [], active: null, customEx: [], exMeta: {}, profile: null, menuIdx: 0, settings: { rest: 90 } }; }
@@ -316,6 +329,7 @@ function recomputePRs() {
   for (const w of [...S.workouts].sort((a, b) => a.startedAt - b.startedAt)) {
     w.prs = [];
     for (const e of w.exercises) {
+      if (isCardio(e.name)) continue;
       const m = Math.max(...e.sets.map(s => s.w));
       if (best[e.name] > 0 && m > best[e.name]) w.prs.push(e.name);
       best[e.name] = Math.max(best[e.name] || 0, m);
@@ -348,20 +362,20 @@ function bodySvg(fill, opts = {}) { // fill(muscle) -> color or null; opts.side 
   return `<div class="bodies"><figure>${draw(BODY_FRONT, 'Mặt trước')}<figcaption>Trước</figcaption></figure><figure>${draw(BODY_BACK, 'Mặt sau')}<figcaption>Sau</figcaption></figure></div>`;
 }
 /* ---------- exercise images & thumbnails ---------- */
-const exImg = (name, k) => EX_MAP[name] ? `img/ex/${exSlug(name)}-${k}.jpg` : null;
+const exImg = (name, k) => EX_MAP[name] && !NO_IMG.includes(name) ? `img/ex/${exSlug(name)}-${k}.jpg` : null;
 const BACK_ONLY = ['traps', 'lats', 'midBack', 'triceps', 'lowerBack', 'glutes', 'hamstrings'];
 function muscleThumb(name) {
-  const x = getEx(name); if (!x) return '';
+  const x = getEx(name); if (!x || !x.p.length) return '';
   const side = x.p.filter(m => BACK_ONLY.includes(m)).length > x.p.length / 2 ? 'back' : 'front';
   return bodySvg(m => x.p.includes(m) ? '#f87171' : (x.s || []).includes(m) ? 'rgba(248,113,113,.4)' : null, { side });
 }
 function exThumb(name) {
   const src = exImg(name, 0);
   return `<div class="thumb">${src ? `<img src="${src}" alt="" loading="lazy">` : `<span class="thumb-ph">${ic('barbell')}</span>`}
-    ${getEx(name) ? `<div class="mthumb">${muscleThumb(name)}</div>` : ''}</div>`;
+    ${getEx(name)?.p.length ? `<div class="mthumb">${muscleThumb(name)}</div>` : ''}</div>`;
 }
 function lastDoneH(name) { const w = S.workouts.find(w => w.exercises.some(e => e.name === name)); return w ? (Date.now() - w.endedAt) / 36e5 : null; }
-const fmtSet = s => s.w ? `${fmtNum(s.w)}×${s.r}` : `${s.r} reps`;
+const fmtSet = (s, name) => name && isCardio(name) ? `${s.r} phút${s.w ? ' · ' + fmtNum(s.w) + ' km' : ''}` : s.w ? `${fmtNum(s.w)}×${s.r}` : `${s.r} reps`;
 const agoText = h => h == null ? 'Chưa tập' : h < 1 ? 'Vừa tập' : h < 24 ? `${Math.round(h)} giờ trước` : `${Math.floor(h / 24)} ngày trước`;
 
 /* ---------- recovery model ----------
@@ -426,9 +440,13 @@ function homeSuggestion() {
   const r = recovery();
   const musclesOf = rt => [...new Set(rt.exercises.flatMap(e => getEx(e.name)?.p || []))];
   const score = rt => { const ms = musclesOf(rt); return ms.length ? ms.reduce((a, m) => a + r[m].pct, 0) / ms.length : 0; };
+  const dow = (new Date().getDay() + 6) % 7 + 1, todayR = S.routines.find(rt => rt.day === dow);
+  const trainedToday = S.workouts.some(w => w.startedAt >= new Date().setHours(0, 0, 0, 0)), scheduled = S.routines.some(rt => rt.day);
+  if (todayR && !trainedToday) return { k: 'Lịch hôm nay', title: todayR.name, sub: `${todayR.exercises.length} bài · ${todayR.exercises.reduce((t, e) => t + e.sets, 0)} set`,
+    act: `data-act="startRoutine" data-id="${todayR.id}"` };
   if (S.routines.length) {
     const best = [...S.routines].sort((a, b) => score(b) - score(a))[0], ms = musclesOf(best).slice(0, 3).map(m => MUSCLES[m]).join(', ');
-    return { k: S.workouts.length ? `Gợi ý theo phục hồi cơ · ${Math.round(score(best))}% sẵn sàng` : 'Bắt đầu nhanh', title: best.name,
+    return { k: scheduled ? (trainedToday ? 'Đã tập hôm nay · tập thêm nếu muốn' : 'Hôm nay nghỉ theo lịch · tập thêm nếu muốn') : S.workouts.length ? `Gợi ý theo phục hồi cơ · ${Math.round(score(best))}% sẵn sàng` : 'Bắt đầu nhanh', title: best.name,
       sub: `${best.exercises.length} bài${ms ? ' · ' + ms : ''}`, act: `data-act="startRoutine" data-id="${best.id}"` };
   }
   // No routine yet: offer a sample workout for the first fully recovered split (core if none).
@@ -475,7 +493,7 @@ function viewWorkout() {
     </div>
     ${weekSummary()}
     <div class="section-h"><h2>Routine của tôi</h2>${S.routines.length ? `<span class="muted small">${S.routines.length} routine</span>` : ''}</div>
-    ${S.routines.length ? S.routines.map(r => `
+    ${S.routines.length ? sortedRoutines().map(r => `
       <div class="rt">
         <button class="rt-main" data-act="startRoutine" data-id="${r.id}">
           <span class="rt-ic">${ic('barbell')}</span>
@@ -483,7 +501,8 @@ function viewWorkout() {
           <div class="rt-sub">${r.exercises.length} bài · ${r.exercises.reduce((t, e) => t + e.sets, 0)} set · ${r.exercises.map(e => esc(e.name)).join(', ')}</div></span>
         </button>
         <button class="icon" data-act="editRoutine" data-id="${r.id}" aria-label="Sửa routine">${ic('edit')}</button>
-      </div>`).join('') : `<button class="btn ghost big" data-act="newRoutine">${ic('plus')} Tạo routine đầu tiên (VD: Push / Pull / Legs)</button>`}`;
+      </div>`).join('') : `<button class="btn ghost big" data-act="newRoutine">${ic('plus')} Tạo routine đầu tiên (VD: Push / Pull / Legs)</button>`}
+    ${S.routines.some(r => r.tpl) ? '' : `<button class="btn ghost big mt" data-act="loadTemplate">${ic('calendar')} Nạp lịch 5 buổi: Đẩy · Kéo · Chân · Thân trên · Thân dưới</button>`}`;
   }
 
   return `
@@ -513,18 +532,19 @@ function viewEdit() {
 }
 
 function exCard(ex, i) {
-  const last = lastSets(ex.name), b = bestOf(ex.name), editing = tab === 'edit';
+  const last = lastSets(ex.name), b = bestOf(ex.name), editing = tab === 'edit', cardio = isCardio(ex.name);
   return `<div class="card">
     <div class="row gap"><button class="title grow ex-name" data-act="showEx" data-name="${esc(ex.name)}">${exImg(ex.name, 0) ? `<img class="ex-mini" src="${exImg(ex.name, 0)}" alt="">` : ''}<span>${esc(ex.name)}${getEx(ex.name)?.steps?.length ? ` <span class="info">${ic('info')}</span>` : ''}</span></button>
       ${i > 0 ? `<button class="icon" data-act="moveEx" data-i="${i}" aria-label="Chuyển lên">${ic('up')}</button>` : ''}
       <button class="icon" data-act="removeEx" data-i="${i}" aria-label="Xóa bài tập">${ic('x')}</button></div>
-    ${b.best ? `<div class="pr-line">${ic('trophy')} Tạ cao nhất ${fmtNum(b.maxW)} kg · 1RM ~${fmtNum(Math.round(b.best * 10) / 10)} kg</div>` : ''}
+    ${ex.reps ? `<div class="target">${ic('clock')} Mục tiêu ${cardio ? '' : ex.sets.length + ' × '}${esc(ex.reps)}${ex.rest ? ` · nghỉ ${fmtRest(ex.rest)}` : ''}</div>` : ''}
+    ${b.best && !cardio ? `<div class="pr-line">${ic('trophy')} Tạ cao nhất ${fmtNum(b.maxW)} kg · 1RM ~${fmtNum(Math.round(b.best * 10) / 10)} kg</div>` : ''}
     <div class="sets">
-      <div class="set head"><span>Set</span><span>Trước</span><span>kg</span><span>Reps</span><span>${editing ? '' : '✓'}</span></div>
+      <div class="set head"><span>Set</span><span>Trước</span><span>${cardio ? 'km' : 'kg'}</span><span>${cardio ? 'Phút' : 'Reps'}</span><span>${editing ? '' : '✓'}</span></div>
       ${ex.sets.map((s, j) => { const p = last && (last[j] || last[last.length - 1]), pj = last && last[j]; return `
       <div class="set ${s.done && !editing ? 'done' : ''}">
         <span class="setno">${j + 1}</span>
-        <button class="prev" data-act="copyLast" data-i="${i}" data-j="${j}" ${pj ? '' : 'disabled'} aria-label="Dùng lại mức tạ lần trước">${pj ? fmtSet(pj) : '—'}</button>
+        <button class="prev" data-act="copyLast" data-i="${i}" data-j="${j}" ${pj ? '' : 'disabled'} aria-label="Dùng lại mức tạ lần trước">${pj ? fmtSet(pj, ex.name) : '—'}</button>
         <input type="text" inputmode="decimal" data-i="${i}" data-j="${j}" data-f="w" value="${esc(s.w)}" placeholder="${p ? esc(fmtNum(p.w)) : '0'}">
         <input type="text" inputmode="numeric" data-i="${i}" data-j="${j}" data-f="r" value="${esc(s.r)}" placeholder="${p ? esc(p.r) : '0'}">
         ${editing ? `<button class="del" data-act="delSetAt" data-i="${i}" data-j="${j}" aria-label="Xóa set này">${ic('x')}</button>`
@@ -550,7 +570,7 @@ function viewHistory() {
         <span class="chev" style="transform:rotate(${open ? 90 : 0}deg)">${ic('chev')}</span>
       </button>
       ${open ? `<div class="hist-body">
-        ${w.exercises.map(e => `<div class="hist-ex"><div>${esc(e.name)}${(w.prs || []).includes(e.name) ? '<span class="badge">PR</span>' : ''}</div><div class="muted small">${e.sets.map(s => `${fmtNum(s.w)}kg × ${s.r}`).join(' · ')}</div></div>`).join('')}
+        ${w.exercises.map(e => `<div class="hist-ex"><div>${esc(e.name)}${(w.prs || []).includes(e.name) ? '<span class="badge">PR</span>' : ''}</div><div class="muted small">${e.sets.map(s => isCardio(e.name) ? fmtSet(s, e.name) : `${fmtNum(s.w)}kg × ${s.r}`).join(' · ')}</div></div>`).join('')}
         <div class="row gap mt" style="flex-wrap:wrap">
           <button class="btn" data-act="editWorkout" data-id="${w.id}">${ic('edit')} Sửa</button>
           <button class="btn" data-act="repeatWorkout" data-id="${w.id}">Tập lại</button>
@@ -582,7 +602,7 @@ function chart(vals, labels) {
 
 let progMetric = 'best';
 function viewProgress() {
-  const names = [...new Set(S.workouts.flatMap(w => w.exercises.map(e => e.name)))].sort((a, b) => a.localeCompare(b));
+  const names = [...new Set(S.workouts.flatMap(w => w.exercises.map(e => e.name)))].filter(n => !isCardio(n)).sort((a, b) => a.localeCompare(b));
   if (!names.length) return '<div class="empty">Chưa có dữ liệu.<br>Tiến độ từng bài tập sẽ hiện ở đây sau khi bạn tập.</div>';
   if (!names.includes(progEx)) progEx = names[0];
   const pts = S.workouts.filter(w => w.exercises.some(e => e.name === progEx)).map(w => {
@@ -696,9 +716,9 @@ function viewLibrary() {
     <div id="libList">${libList()}</div>`;
 }
 function libList() {
-  const q = libQ.trim().toLowerCase();
+  const q = fold(libQ.trim());
   const names = [...DEFAULT_EX, ...S.customEx.filter(n => !EX_MAP[n])]
-    .filter(n => { const x = getEx(n); return (libGroup === 'all' || x?.g === libGroup) && n.toLowerCase().includes(q); });
+    .filter(n => { const x = getEx(n); return (libGroup === 'all' || x?.g === libGroup) && exMatch(n, q); });
   if (!names.length) return '<div class="empty">Không tìm thấy bài tập</div>';
   return `<div class="pick-list">${names.map(n => exRow(n, null, 'showEx')).join('')}</div>`;
 }
@@ -707,9 +727,11 @@ function openExercise(name) {
   const yt = 'https://www.youtube.com/results?search_query=' + encodeURIComponent(name + ' hướng dẫn kỹ thuật');
   const b = bestOf(name), n = S.workouts.filter(w => w.exercises.some(e => e.name === name)).length;
   openSheet(`<div class="sheet-h"><h3>${esc(name)}</h3><button class="link" data-act="closeSheet">Đóng</button></div>
+    ${EX_VI[name] ? `<div class="muted" style="margin:-4px 0 10px">${esc(EX_VI[name])}</div>` : ''}
     ${exImg(name, 0) ? `<div class="demo"><img src="${exImg(name, 0)}" alt="Tư thế bắt đầu"><img class="f2" src="${exImg(name, 1)}" alt="Tư thế kết thúc">
       <span class="demo-tag">Demo</span></div><div class="muted small" style="text-align:right;margin-top:4px">Ảnh: free-exercise-db</div>` : ''}
-    ${x ? `${bodySvg(m => x.p.includes(m) ? '#c6f432' : (x.s || []).includes(m) ? 'rgba(198,244,50,.38)' : null)}
+    ${x && !x.p.length ? '<div class="muted small" style="margin:10px 0">Bài cardio: tốt cho tim mạch và đốt calo, không tính vào phục hồi cơ. Ghi số phút (và km nếu có).</div>' : ''}
+    ${x?.p.length ? `${bodySvg(m => x.p.includes(m) ? '#c6f432' : (x.s || []).includes(m) ? 'rgba(198,244,50,.38)' : null)}
       <div class="legend"><span><i style="background:#c6f432"></i>Cơ chính: ${x.p.map(m => MUSCLES[m]).join(', ')}</span>
       ${x.s?.length ? `<span><i style="background:rgba(198,244,50,.38)"></i>Cơ phụ: ${x.s.map(m => MUSCLES[m]).join(', ')}</span>` : ''}</div>` : ''}
     <a class="btn big yt" href="${yt}" target="_blank" rel="noopener">${ic('play')} Xem video mẫu trên YouTube</a>
@@ -843,7 +865,7 @@ function renderPick(q) {
   const t = q.trim(), ql = t.toLowerCase();
   $('#pickChips').innerHTML = [['all', 'Tất cả'], ...Object.entries(GROUPS)].map(([k, l]) => `<button class="chip ${pickGroup === k ? 'on' : ''}" data-act="pickGroup" data-g="${k}">${l}</button>`).join('');
   // Recently used first, then alphabetical.
-  const items = allExercises().filter(n => n.toLowerCase().includes(ql) && (pickGroup === 'all' || getEx(n)?.g === pickGroup))
+  const items = allExercises().filter(n => exMatch(n, fold(t)) && (pickGroup === 'all' || getEx(n)?.g === pickGroup))
     .map(n => [n, lastDoneH(n)]).sort((a, b) => (a[1] ?? 1e9) - (b[1] ?? 1e9) || a[0].localeCompare(b[0]));
   const exact = items.some(([n]) => n.toLowerCase() === ql);
   $('#pickList').innerHTML = (t && !exact ? `<button class="pick new" data-act="pick" data-name="${esc(t)}">${ic('plus')} Tạo bài "${esc(t)}"</button>` : '') +
@@ -852,13 +874,13 @@ function renderPick(q) {
 function exRow(n, h, act) {
   const x = getEx(n);
   return `<button class="ex-row" data-act="${act}" data-name="${esc(n)}">${exThumb(n)}
-    <div class="grow"><div class="ex-row-name">${esc(n)}</div>
-    <div class="muted small">${h != null ? agoText(h) : x ? x.p.map(m => MUSCLES[m]).join(', ') : 'Bài tự tạo'}</div></div></button>`;
+    <div class="grow"><div class="ex-row-name">${esc(n)}</div>${EX_VI[n] ? `<div class="ex-row-vi">${esc(EX_VI[n])}</div>` : ''}
+    <div class="muted small">${h != null ? agoText(h) : x ? (x.p.length ? x.p.map(m => MUSCLES[m]).join(', ') : 'Cardio') : 'Bài tự tạo'}</div></div></button>`;
 }
 function renderRoutineSheet() {
   openSheet(`<div class="sheet-h"><h3>${draft.id ? 'Sửa' : 'Tạo'} routine</h3><button class="link" data-act="closeSheet">Đóng</button></div>
     <input class="search" data-bind="draftName" placeholder="Tên routine (VD: Push Day)" value="${esc(draft.name)}">
-    ${draft.exercises.map((e, i) => `<div class="row r-ex"><span class="grow">${esc(e.name)}</span>
+    ${draft.exercises.map((e, i) => `<div class="row r-ex"><span class="grow">${esc(e.name)}${e.reps ? `<span class="muted small"> · ${esc(e.reps)}</span>` : ''}</span>
       <button class="icon" data-act="draftSets" data-i="${i}" data-d="-1" aria-label="Bớt set">${ic('minus')}</button><span class="pill">${e.sets} set</span>
       <button class="icon" data-act="draftSets" data-i="${i}" data-d="1" aria-label="Thêm set">${ic('plus')}</button>
       <button class="icon" data-act="draftRemove" data-i="${i}" aria-label="Xóa">${ic('x')}</button></div>`).join('') || '<div class="empty">Chưa có bài tập</div>'}
@@ -912,7 +934,7 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
 /* ---------- actions ---------- */
 function newSets(n, name) { return Array.from({ length: Math.max(1, n) }, () => ({ w: '', r: '', done: false })); }
 function startFrom(name, exercises, extra = {}) {
-  S.active = { name, startedAt: Date.now(), exercises: exercises.map(e => ({ name: e.name, sets: newSets(e.sets) })), ...extra };
+  S.active = { name, startedAt: Date.now(), exercises: exercises.map(e => ({ name: e.name, sets: newSets(e.sets), ...(e.reps ? { reps: e.reps } : {}), ...(e.rest ? { rest: e.rest } : {}) })), ...extra };
   restEnd = 0; save(); tab = 'workout'; requestWake(); render(); window.scrollTo(0, 0);
 }
 const A = {
@@ -952,8 +974,8 @@ const A = {
       const last = lastSets(ex.name), p = last && (last[+d.j] || last[last.length - 1]);
       if (s.w === '' && p) s.w = String(p.w);
       if (s.r === '' && p) s.r = String(p.r);
-      if (s.r === '' || num(s.r) <= 0) { toast('Nhập số reps trước nhé'); return; }
-      s.done = true; startRest(S.settings.rest);
+      if (s.r === '' || num(s.r) <= 0) { toast(isCardio(ex.name) ? 'Nhập số phút trước nhé' : 'Nhập số reps trước nhé'); return; }
+      s.done = true; if (!isCardio(ex.name)) startRest(ex.rest || S.settings.rest);
     } else s.done = false;
     save(); render();
   },
@@ -965,7 +987,7 @@ const A = {
     const exs = a.exercises.map(e => ({ name: e.name, sets: e.sets.filter(s => s.done).map(s => ({ w: num(s.w), r: num(s.r) })) })).filter(e => e.sets.length);
     if (!exs.length) { if (confirm('Chưa có set nào được tick ✓. Hủy buổi tập?')) { S.active = null; restEnd = 0; save(); releaseWake(); render(); } return; }
     if (!confirm('Kết thúc và lưu buổi tập?')) return;
-    const prs = exs.filter(e => { const b = bestOf(e.name); return b.maxW > 0 && Math.max(...e.sets.map(s => s.w)) > b.maxW; }).map(e => e.name);
+    const prs = exs.filter(e => { const b = bestOf(e.name); return !isCardio(e.name) && b.maxW > 0 && Math.max(...e.sets.map(s => s.w)) > b.maxW; }).map(e => e.name);
     const w = { id: uid(), name: a.name.trim() || 'Buổi tập', startedAt: a.startedAt, endedAt: Date.now(), exercises: exs, prs };
     S.workouts.unshift(w); S.active = null; restEnd = 0; save(); releaseWake();
     tab = 'history'; openId = w.id; render(); window.scrollTo(0, 0);
@@ -988,6 +1010,12 @@ const A = {
     const w = S.workouts.find(x => x.id === d.id); startFrom(w.name, w.exercises.map(e => ({ name: e.name, sets: e.sets.length })));
   },
   histToRoutine: d => { const w = S.workouts.find(x => x.id === d.id); draft = { id: null, name: w.name, exercises: w.exercises.map(e => ({ name: e.name, sets: e.sets.length })) }; renderRoutineSheet(); },
+  loadTemplate: () => {
+    if (!confirm('Thêm 5 routine theo lịch tập: T2 Đẩy, T3 Kéo, T4 Chân, T6 Thân trên, T7 Thân dưới?')) return;
+    ROUTINE_TPL.forEach(t => S.routines.push({ id: uid(), name: t.name, day: t.day, tpl: true,
+      exercises: t.ex.map(([name, sets, reps, rest]) => ({ name, sets, reps, ...(rest ? { rest } : {}) })) }));
+    save(); render(); toast('Đã thêm 5 routine theo lịch');
+  },
   newRoutine: () => { draft = { id: null, name: '', exercises: [] }; renderRoutineSheet(); },
   editRoutine: d => { draft = JSON.parse(JSON.stringify(S.routines.find(r => r.id === d.id))); renderRoutineSheet(); },
   draftAdd: () => openPicker(name => { draft.exercises.push({ name, sets: 3 }); renderRoutineSheet(); }, renderRoutineSheet),

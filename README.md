@@ -15,6 +15,10 @@ App ghi chép tập gym cho iPhone. Đây là web app cài được lên màn h�
 
 - **Lịch 5 buổi/tuần**: nút "Nạp lịch 5 buổi" tạo sẵn 5 routine (T2 Đẩy, T3 Kéo, T4 Chân, T6 Thân trên, T7 Thân dưới) có số rep mục tiêu, thời gian nghỉ riêng từng bài và đi bộ dốc cuối buổi. Màn hình chính tự gợi ý đúng buổi theo thứ trong tuần.
 
+- **Chấm điểm buổi tập**: bấm "Xong" là có điểm 0–100 và nhận xét: đạt rep mục tiêu thì gợi ý lên tạ buổi sau, bài nào bỏ hoặc thiếu set, mạnh/yếu hơn lần trước, số set mỗi nhóm cơ trong 7 ngày. Mức tạ gợi ý hiện luôn trên thẻ bài khi tập.
+- **Nhật ký ăn uống**: chụp ảnh bữa ăn để AI liệt kê món, số gram và calo (sửa lại được trước khi lưu), hoặc nhập tay. Thanh "đã ăn / còn lại" và số kcal thâm hụt so với mức tiêu hao trong ngày.
+- **AI (Claude)**: cần API key của bạn từ console.anthropic.com, nhập trong Thêm → Cài đặt. Key chỉ lưu trên máy và không nằm trong file sao lưu. Ảnh bữa ăn và dữ liệu buổi tập được gửi tới Anthropic khi bạn bấm dùng AI. Khoảng 500đ/ảnh, 750đ/lần nhận xét.
+
 Dữ liệu bài tập, lịch tập và món ăn nằm trong `data.js`.
 
 ### Nguồn ảnh

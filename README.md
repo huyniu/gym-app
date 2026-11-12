@@ -17,7 +17,8 @@ App ghi chép tập gym cho iPhone. Đây là web app cài được lên màn h�
 
 - **Chấm điểm buổi tập**: bấm "Xong" là có điểm 0–100 và nhận xét: đạt rep mục tiêu thì gợi ý lên tạ buổi sau, bài nào bỏ hoặc thiếu set, mạnh/yếu hơn lần trước, số set mỗi nhóm cơ trong 7 ngày. Mức tạ gợi ý hiện luôn trên thẻ bài khi tập.
 - **Nhật ký ăn uống**: chụp ảnh bữa ăn để AI liệt kê món, số gram và calo (sửa lại được trước khi lưu), hoặc nhập tay. Thanh "đã ăn / còn lại" và số kcal thâm hụt so với mức tiêu hao trong ngày.
-- **AI (Claude)**: cần API key của bạn từ console.anthropic.com, nhập trong Thêm → Cài đặt. Key chỉ lưu trên máy và không nằm trong file sao lưu. Ảnh bữa ăn và dữ liệu buổi tập được gửi tới Anthropic khi bạn bấm dùng AI. Khoảng 500đ/ảnh, 750đ/lần nhận xét.
+- **AI (Gemini hoặc Claude)**: chọn trong Thêm → Cài đặt. **Gemini** dùng key miễn phí từ aistudio.google.com (có giới hạn lượt mỗi phút/ngày; ở gói miễn phí Google có thể dùng dữ liệu gửi lên để cải thiện sản phẩm). **Claude** dùng key từ console.anthropic.com, trả theo lượt (khoảng 500đ/ảnh, 750đ/lần nhận xét). Key chỉ lưu trên máy và không nằm trong file sao lưu. Ảnh bữa ăn và dữ liệu buổi tập chỉ được gửi đi khi bạn bấm dùng AI.
+- **Giao diện** theo thiết kế làm bằng Google Stitch (nền tối, nhấn màu xanh chanh, font Space Grotesk + Inter tải sẵn trong `fonts/` để dùng khi không có mạng).
 
 Dữ liệu bài tập, lịch tập và món ăn nằm trong `data.js`.
 

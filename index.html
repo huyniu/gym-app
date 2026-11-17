@@ -1250,23 +1250,47 @@ async function aiFetch(url, opt, who) {
   }
 }
 const askAI = o => aiProv() === 'gemini' ? askGemini(o) : askClaude(o);
+const GEMINI_MAIN = 'gemini-3.8-flash';
+let geminiAlts = null; // other Flash models this key can use, looked up only when the main one is overloaded
+async function geminiAltModels() {
+  if (geminiAlts) return geminiAlts;
+  try {
+    const r = await fetch('https://generativelanguage.googleapis.com/v1beta/models?pageSize=200', { headers: { 'x-goog-api-key': getKey() } });
+    const d = await r.json();
+    geminiAlts = (d.models || []).filter(m => (m.supportedGenerationMethods || []).includes('generateContent'))
+      .map(m => m.name.replace(/^models\//, ''))
+      .filter(n => /flash/i.test(n) && !/image|tts|audio|live|embed|preview|exp/i.test(n) && n !== GEMINI_MAIN)
+      .sort((a, b) => b.localeCompare(a, 'en', { numeric: true })).slice(0, 3);
+  } catch (e) { geminiAlts = []; }
+  return geminiAlts;
+}
 async function askGemini({ system, content, schema, think = 'LOW' }) {
   if (!hasKey()) throw new Error('Chưa có API key Gemini. Vào Thêm → Cài đặt để nhập.');
   if (!navigator.onLine) throw new Error('Không có mạng.');
   // generateContent: stable and callable straight from the browser (CORS allowed).
-  const res = await aiFetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json', 'x-goog-api-key': getKey() },
-    body: JSON.stringify({
-      systemInstruction: { parts: [{ text: system }] },
-      contents: [{ role: 'user', parts: content.map(c => c.image ? { inlineData: { mimeType: 'image/jpeg', data: c.image } } : { text: c.text }) }],
-      generationConfig: { responseMimeType: 'application/json', responseJsonSchema: schema, thinkingConfig: { thinkingLevel: think } },
-    }),
-  }, 'Gemini');
-  const raw = await res.json().catch(() => ({})), d = Array.isArray(raw) ? raw[0] || {} : raw;
+  const call = async (model, main) => {
+    const res = await aiFetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-goog-api-key': getKey() },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: system }] },
+        contents: [{ role: 'user', parts: content.map(c => c.image ? { inlineData: { mimeType: 'image/jpeg', data: c.image } } : { text: c.text }) }],
+        // thinkingLevel is for the main model; fallbacks use their own default thinking.
+        generationConfig: { responseMimeType: 'application/json', responseJsonSchema: schema, ...(main ? { thinkingConfig: { thinkingLevel: think } } : {}) },
+      }),
+    }, 'Gemini');
+    const raw = await res.json().catch(() => ({})), d = Array.isArray(raw) ? raw[0] || {} : raw;
+    return { res, d, busy: res.status === 503 || res.status === 500 || d.error?.status === 'UNAVAILABLE' || (!main && res.status === 404) };
+  };
+  // Overloaded (503): wait and retry the main model, then try other Flash models.
+  let out = await call(GEMINI_MAIN, true);
+  if (out.busy || out.res.status === 404) { await new Promise(r => setTimeout(r, 2500)); out = await call(GEMINI_MAIN, true); }
+  if (out.busy || out.res.status === 404) for (const m of await geminiAltModels()) { out = await call(m, false); if (!out.busy) break; }
+  const { res, d } = out;
   if (!res.ok) {
     const msg = d.error?.message || res.statusText, st = d.error?.status || '';
-    throw new Error(res.status === 429 || st === 'RESOURCE_EXHAUSTED' ? 'Hết lượt miễn phí của Gemini, thử lại sau ít phút.'
+    throw new Error(out.busy || res.status === 404 ? 'Gemini đang quá tải (Google báo quá nhiều người dùng). Đợi vài phút rồi bấm lại.'
+      : res.status === 429 || st === 'RESOURCE_EXHAUSTED' ? 'Hết lượt miễn phí của Gemini, thử lại sau ít phút.'
       : /api key/i.test(msg) || res.status === 401 || res.status === 403 ? 'API key Gemini không đúng.' : 'Lỗi Gemini: ' + msg);
   }
   if (d.promptFeedback?.blockReason) throw new Error('Gemini từ chối yêu cầu này.');

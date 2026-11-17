@@ -541,6 +541,21 @@ const ROUTINE_TPL = [
   { day: 6, name: 'Thứ 7 · Thân dưới', ex: [['Bulgarian Split Squat', 3, '8–10 mỗi chân', 120], ['Hip Thrust', 3, '8–12', 120], ['Goblet Squat', 3, '10–12', 120],
     ['Leg Curl', 3, '10–12', 75], ['Seated Calf Raise', 3, '12–15', 60], WALK] },
 ];
+// How to log weight for each exercise, so every session is entered the same way.
+const LOAD_NOTE = {
+  bb: 'kg = tổng cả thanh đòn + bánh tạ', db: 'kg = 1 quả tạ', mix: 'kg: tạ đòn = tổng cả thanh · tạ đơn = 1 quả',
+  cable: 'kg = số trên cọc tạ', machine: 'kg = số trên cọc tạ (máy gắn bánh: tổng bánh 2 bên)',
+  smith: 'kg = tổng bánh 2 bên (không tính thanh)', body: 'kg = tạ đeo thêm, để 0 nếu không đeo',
+};
+const EX_LOAD = Object.fromEntries(Object.entries({
+  bb: 'Bench Press|Incline Bench Press|Squat|Front Squat|Deadlift|Hip Thrust|Overhead Press|Barbell Row|Skull Crusher|Decline Bench Press|Reverse Grip Barbell Row|Good Morning|Rack Pull|Trap Bar Deadlift|Sumo Deadlift|Glute Bridge|Push Press|Upright Row|Barbell Curl|EZ Bar Curl|Reverse Curl|Wrist Curl|Close-Grip Bench Press',
+  db: 'Incline Dumbbell Press|Dumbbell Fly|Dumbbell Shoulder Press|Lateral Raise|Rear Delt Fly|Dumbbell Row|Bicep Curl|Hammer Curl|Overhead Tricep Extension|Dumbbell Bench Press|Incline Dumbbell Fly|Dumbbell Pullover|Chest-Supported Dumbbell Row|Goblet Squat|Single-Leg RDL|Farmer\'s Walk|Kettlebell Swing|Arnold Press|Front Raise|Incline Dumbbell Curl|Concentration Curl|Dumbbell Kickback',
+  mix: 'Romanian Deadlift|Bulgarian Split Squat|Lunge|Calf Raise|Shrug|Walking Lunge|Reverse Lunge|Step-up|Stiff-Leg Deadlift|Preacher Curl',
+  cable: 'Face Pull|Lat Pulldown|Seated Cable Row|Tricep Pushdown|Cable Crunch|Cable Crossover|Low Cable Fly|Close-Grip Lat Pulldown|Underhand Lat Pulldown|Single-Arm Lat Pulldown|Straight-Arm Pulldown|Cable Kickback|Cable Lateral Raise|Cable Rear Delt Fly|Cable Curl|Cable Hammer Curl|Rope Pushdown|Cable Overhead Tricep Extension|Cable Woodchopper|Pallof Press',
+  machine: 'Leg Press|Leg Extension|Leg Curl|Incline Machine Chest Press|Machine Chest Press|Pec Deck|Machine Row|T-Bar Row|Hack Squat|Hip Abduction|Hip Adduction|Seated Leg Curl|Seated Calf Raise|Machine Shoulder Press|Reverse Pec Deck|Machine Bicep Curl|Ab Crunch Machine',
+  smith: 'Smith Machine Bench Press|Smith Machine Squat',
+  body: 'Chest Dip|Push-up|Pull-up|Chin-up|Plank|Hanging Leg Raise|Ab Wheel|Incline Push-up|Inverted Row|Back Extension|Bodyweight Squat|Box Jump|Bench Dip|Diamond Push-up|Crunch|Sit-up|Lying Leg Raise|Bicycle Crunch|Russian Twist|Side Plank|Mountain Climber|Dead Bug|Flutter Kicks',
+}).flatMap(([k, v]) => v.split('|').map(n => [n, k])));
 // Image files: img/ex/<slug>-0.jpg (start position) and -1.jpg (end position), from free-exercise-db (Unlicense).
 const exSlug = name => name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
 const EX_MAP =Object.fromEntries(EX_DB.map(([n, g, p, s, st, tp]) => [n, { name: n, g, p, s, steps: st.split('|'), tips: tp ? tp.split('|') : [] }]));

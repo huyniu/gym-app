@@ -422,6 +422,10 @@ h2{font-weight:600;font-size:18px}
 .legend{gap:6px 16px}
 .mgrid span .ic{font-size:14px}
 .ex-focus{scroll-margin-top:150px}
+.remind{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:12px 14px}
+.remind b{display:block;font-size:15px;font-weight:600}.remind small{display:block;font-size:12px;color:var(--muted);margin-top:2px;line-height:1.4}
+.load-note{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--muted);margin-top:4px}.load-note .ic{font-size:13px;color:var(--sky)}
+.backup-row{background:#121316;border-radius:14px;padding:10px 10px 10px 14px;align-items:center}
 </style>
 </head>
 <body>
@@ -484,6 +488,7 @@ const ICONS = {
   moon: '<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>',
   camera: '<path d="M4 8.5A2.5 2.5 0 0 1 6.5 6H8l1.5-2h5L16 6h1.5A2.5 2.5 0 0 1 20 8.5v8a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 16.5z"/><circle cx="12" cy="12.5" r="3.5"/>',
   bulb: '<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/>',
+  scale: '<rect x="4" y="4" width="16" height="16" rx="4"/><path d="M8.5 10a5 5 0 0 1 7 0M12 10l1.5-2"/>',
   drop: '<path d="M12 3.5s6 6.4 6 10.5a6 6 0 0 1-12 0c0-4.1 6-10.5 6-10.5z"/>',
 };
 const ic = (n, cls = '') => `<svg class="ic ${cls}" viewBox="0 0 24 24" aria-hidden="true">${ICONS[n]}</svg>`;
@@ -509,7 +514,7 @@ function exMatch(n, q) {
 const sortedRoutines = () => [...S.routines].sort((a, b) => (a.day || 99) - (b.day || 99));
 
 /* ---------- state ---------- */
-function defaults() { return { routines: [], workouts: [], active: null, customEx: [], exMeta: {}, food: {}, profile: null, menuIdx: 0, settings: { rest: 90, ai: 'gemini' } }; }
+function defaults() { return { routines: [], workouts: [], active: null, customEx: [], exMeta: {}, food: {}, body: [], profile: null, menuIdx: 0, settings: { rest: 90, ai: 'gemini' } }; }
 function load() {
   try { const d = JSON.parse(localStorage.getItem(KEY)); if (d) { const s = Object.assign(defaults(), d); s.settings = Object.assign(defaults().settings, d.settings); return s; } } catch (e) {}
   return defaults();
@@ -671,11 +676,18 @@ function estMinutes(exs) {
   return Math.max(5, Math.round(sec / 300) * 5);
 }
 function dayTag(exs) {
-  const n = {}; exs.forEach(e => { const g = getEx(e.name)?.g; if (g && g !== 'cardio') n[g] = (n[g] || 0) + e.sets; });
-  const tot = Object.values(n).reduce((a, b) => a + b, 0); if (!tot) return '';
-  const top = Object.keys(n).sort((a, b) => n[b] - n[a])[0];
-  if (n[top] / tot < .5) return n.legs ? 'Full Body' : 'Upper Body';
-  return { chest: 'Push Day', shoulders: 'Push Day', back: 'Pull Day', arms: 'Arm Day', legs: 'Leg Day', core: 'Core Day' }[top];
+  const n = {}; let tot = 0;
+  exs.forEach(e => { const x = getEx(e.name); if (!x || x.g === 'cardio') return; x.p.forEach(m => { n[m] = (n[m] || 0) + e.sets; tot += e.sets; }); });
+  if (!tot) return '';
+  const share = ms => ms.reduce((a, m) => a + (n[m] || 0), 0) / tot;
+  const legs = share(['quads', 'hamstrings', 'glutes', 'calves', 'adductors']), core = share(['abs', 'obliques']);
+  const push = share(['chest', 'shoulders', 'triceps']), pull = share(['lats', 'midBack', 'biceps', 'traps', 'forearms', 'lowerBack']);
+  if (legs >= .5) return 'Leg Day';
+  if (core >= .5) return 'Core Day';
+  if (legs > .25) return 'Full Body';
+  if (push >= .7 * (push + pull)) return 'Push Day';
+  if (pull >= .7 * (push + pull)) return 'Pull Day';
+  return 'Upper Body';
 }
 // Consecutive training days, skipping rest days of the weekly schedule.
 function streakDays() {
@@ -712,7 +724,7 @@ function viewWorkout() {
   const a = S.active;
   if (!a) {
     const g = homeSuggestion(), dow = (new Date().getDay() + 6) % 7 + 1;
-    return `${backupCard()}${weekStrip()}
+    return `${backupCard()}${bodyReminder()}${weekStrip()}
     <div class="hero">${ic('barbell', 'hero-wm')}
       <div class="hero-top"><span class="hero-tag"><i></i>${esc(g.k)}</span>${g.tag ? `<span class="hero-tag2">${esc(g.tag)}</span>` : ''}</div>
       <h3>${esc(g.title)}</h3>
@@ -795,6 +807,7 @@ function exCard(ex, i) {
       <button class="icon" data-act="removeEx" data-i="${i}" aria-label="Xóa bài tập">${ic('x')}</button></div>
     ${img && !editing ? `<button class="demo ex-photo" data-act="showEx" data-name="${esc(ex.name)}"><img src="${img}" alt=""><img class="f2" src="${exImg(ex.name, 1)}" alt=""></button>` : ''}
     ${ex.reps ? `<div class="target"><span>Mục tiêu: ${cardio ? '' : ex.sets.length + ' × '}${esc(ex.reps)}</span>${ex.rest ? `<span class="muted">Nghỉ ${fmtRest(ex.rest)}</span>` : ''}${hint ? `<span class="up-pill${hint.up ? '' : ' hold'}">${ic(hint.up ? 'up' : 'minus')} ${hint.up ? 'Lên' : 'Giữ'} ${fmtNum(hint.w)} kg</span>` : ''}</div>` : ''}
+    ${EX_LOAD[ex.name] ? `<div class="load-note">${ic('info')} ${LOAD_NOTE[EX_LOAD[ex.name]]}</div>` : ''}
     ${b.best && !cardio ? `<div class="pr-line">${ic('trophy')} Kỷ lục: ${fmtNum(b.maxW)} kg · 1RM ước tính ~${fmtNum(Math.round(b.best))} kg</div>` : ''}
     <div class="sets">
       <div class="set head"><span>Set</span><span style="text-align:left">Trước</span><span>${cardio ? 'km' : 'kg'}</span><span>${cardio ? 'Phút' : 'Reps'}</span><span>${editing ? '' : '✓'}</span></div>
@@ -1047,7 +1060,7 @@ const ACT = [[1.2, 'Ít vận động (văn phòng)'], [1.375, 'Tập 1–3 bu�
 const GOALS = { cut: ['Giảm mỡ', -450], keep: ['Giữ cân', 0], bulk: ['Tăng cơ', 300] };
 function targets(p) {
   const bmr = 10 * p.weight + 6.25 * p.height - 5 * p.age + (p.sex === 'm' ? 5 : -161);
-  const tdee = bmr * p.act, kcal = Math.round((tdee + GOALS[p.goal][1]) / 10) * 10;
+  const tdee = bmr * p.act, kcal = Math.round((tdee + GOALS[p.goal][1] + (p.adj || 0)) / 10) * 10;
   const protein = Math.round(p.weight * (p.goal === 'cut' ? 2.2 : 2));
   const fat = Math.round(kcal * .25 / 9);
   const carbs = Math.max(0, Math.round((kcal - protein * 4 - fat * 9) / 4));
@@ -1101,7 +1114,7 @@ function viewNutrition() {
   }
   const t = targets(p), menu = MENUS[S.menuIdx % MENUS.length], plan = planMenu(menu, t, p.goal);
   const tot = plan.flatMap(([, it]) => it).reduce((a, [, , m]) => a.map((v, i) => v + m[i]), [0, 0, 0, 0]);
-  return `${foodLogCard(t)}
+  return `${foodLogCard(t)}${adviceCard(false)}
     <div class="card">
       <div class="row gap"><div class="grow"><div class="title" style="font-family:'Space Grotesk',sans-serif">Mục tiêu & thực đơn mẫu</div><div class="muted small">${GOALS[p.goal][0]} · ${fmtNum(p.weight)} kg</div></div><span class="chip-lime">${fmtNum(t.kcal)} kcal/ngày</span></div>
       <div class="mgrid">
@@ -1110,6 +1123,7 @@ function viewNutrition() {
         <div><span>Chất béo ${ic('drop')}</span><b style="color:#ff9b9b">${t.fat}g</b><small>${Math.round(t.fat * 900 / t.kcal)}% năng lượng</small></div>
         <div><span>Nước ${ic('drop')}</span><b>${fmtNum(t.water)}L</b><small>Khuyến nghị mỗi ngày</small></div>
       </div>
+      ${p.adj ? `<div class="row small mt"><span class="grow">Đã chỉnh theo xu hướng cân: <b>${fmtSigned(p.adj)} kcal/ngày</b></span><button class="link" data-act="resetAdj">Đặt lại</button></div>` : ''}
       <div class="row mt"><span class="grow muted small">BMR ${fmtNum(t.bmr)} · Tiêu hao/ngày (TDEE) ${fmtNum(t.tdee)} kcal</span><button class="link" data-act="editProfile">Sửa</button></div>
     </div>
     <div class="section-h"><h2>${menu.name}</h2><button class="link" data-act="nextMenu">${ic('refresh')} Đổi thực đơn</button></div>
@@ -1196,6 +1210,8 @@ function openReview(id, offerRoutine) {
     <div class="rev">${r.items.map(([k, t]) => `<div class="rev-i"><span style="color:${REV_IC[k][1]}">${ic(REV_IC[k][0])}</span><span>${esc(t)}</span></div>`).join('') || '<div class="muted small">Chưa đủ dữ liệu để so sánh. Tập thêm vài buổi nhé.</div>'}</div>
     <div id="aiBox">${a ? aiReviewHtml(a) : `<button class="btn big mt" data-act="aiReview" data-id="${w.id}">${ic('bolt')} AI nhận xét chi tiết</button>
       <div class="muted small" style="margin-top:6px;text-align:center">${!hasKey() ? 'Cần nhập API key trong Cài đặt' : aiProv() === 'gemini' ? 'Cần mạng · dùng Gemini' : 'Cần mạng · khoảng 750đ/lần'}</div>`}</div>
+    <div class="row gap mt backup-row"><div class="grow muted small">${S.lastBackup ? 'Sao lưu lần cuối: ' + (daysAgo(S.lastBackup) ? daysAgo(S.lastBackup) + ' ngày trước' : 'hôm nay') : 'Chưa sao lưu lần nào'}</div>
+      <button class="btn" data-act="exportData">${ic('download')} Sao lưu</button></div>
     ${offerRoutine ? `<button class="btn big mt" data-act="saveOffer">${ic('edit')} Lưu buổi này thành routine</button>` : ''}`,
     () => { routineOffer = null; });
 }
@@ -1389,20 +1405,107 @@ function recHeader() {
   return `<div class="row gap"><div class="grow"><div class="kicker">Chỉ số thể trạng hôm nay</div><h1>Phục hồi cơ bắp</h1></div>
     <div class="rec-chip"><b><i style="background:${o.color}"></i><span style="color:${o.color}">${o.pct}%</span></b><small style="color:${o.color}">${o.label}</small></div></div>`;
 }
+/* ---------- body tracking & calorie feedback ---------- */
+const TET = '2027-02-06'; // Tết Đinh Mùi — the user's goal date
+const bodyLog = () => [...(S.body || [])].sort((a, b) => a.t - b.t);
+const daysAgo = t => t ? Math.floor((Date.now() - t) / 864e5) : null;
+const fmtSigned = v => (v > 0 ? '+' : v < 0 ? '−' : '±') + fmtNum(Math.abs(Math.round(v * 100) / 100));
+function avgWeight(from, to) {
+  const xs = bodyLog().filter(b => b.w && b.t >= from && b.t < to);
+  return xs.length >= 3 ? xs.reduce((a, b) => a + b.w, 0) / xs.length : null;
+}
+// Weekly change from 7-day averages (needs ≥3 weigh-ins in each of the last two weeks), so daily water swings don't mislead.
+function weightTrend() {
+  const now = Date.now(), a = avgWeight(now - 7 * 864e5, now + 1), b = avgWeight(now - 14 * 864e5, now - 7 * 864e5);
+  return a && b ? { now: a, prev: b, rate: a - b } : null;
+}
+// Compare the real trend with the goal; suggest at most one ±150 kcal change per week.
+function kcalAdvice() {
+  const p = S.profile, tr = weightTrend(); if (!p || !tr) return null;
+  const pct = tr.rate / tr.now * 100, rate = `${fmtSigned(tr.rate)} kg/tuần`;
+  let d = 0, why = '';
+  if (p.goal === 'cut') { if (pct > -0.2) { d = -150; why = `Cân gần như không giảm (${rate}).`; } else if (pct < -1) { d = 150; why = `Giảm hơi nhanh (${rate}), dễ mất cơ.`; } }
+  else if (p.goal === 'bulk') { if (tr.rate < 0.05) { d = 150; why = `Cân chưa tăng (${rate}).`; } else if (tr.rate > 0.5) { d = -150; why = `Tăng hơi nhanh (${rate}), dễ tích mỡ.`; } }
+  else if (Math.abs(tr.rate) > 0.3) { d = tr.rate > 0 ? -150 : 150; why = `Cân đang thay đổi (${rate}) dù mục tiêu là giữ cân.`; }
+  if (!d) return { text: `Đúng hướng: ${rate}. Giữ nguyên mức calo hiện tại.` };
+  if (S.adjAt && Date.now() - S.adjAt < 7 * 864e5) return { text: `${why} Đã chỉnh gần đây, đợi thêm vài ngày để xem kết quả.` };
+  const t = targets(p), floor = Math.max(p.sex === 'm' ? 1500 : 1200, t.bmr);
+  if (d < 0 && t.kcal + d < floor) return { text: `${why} Calo đã ở mức thấp an toàn, nên đi bộ thêm thay vì ăn ít hơn.` };
+  return { d, text: `${why} Gợi ý ${d > 0 ? 'tăng' : 'giảm'} ${Math.abs(d)} kcal/ngày (${fmtNum(t.kcal)} → ${fmtNum(t.kcal + d)}).` };
+}
+function adviceCard(always) {
+  const a = kcalAdvice();
+  if (!a) return always ? `<div class="coach">${ic('bulb')}<div class="grow"><div class="coach-k">Điều chỉnh calo</div>Cân ít nhất 3 lần mỗi tuần trong 2 tuần liền, app sẽ so xu hướng cân với mục tiêu và gợi ý chỉnh calo.</div></div>` : '';
+  if (!a.d && !always) return '';
+  return `<div class="coach">${ic('bulb')}<div class="grow"><div class="coach-k">Điều chỉnh calo<span>Theo xu hướng cân</span></div>${esc(a.text)}
+    ${a.d ? `<div class="row gap mt"><button class="btn primary grow" data-act="applyAdj" data-d="${a.d}">Áp dụng</button><button class="btn" data-act="skipAdj">Để tuần sau</button></div>` : ''}</div></div>`;
+}
+function bodyDue() {
+  const log = bodyLog(), w = [...log].reverse().find(b => b.waist), today = log.some(b => b.w && dayKey(b.t) === dayKey());
+  const out = [];
+  if (!today && new Date().getHours() < 12) out.push('Cân sáng nay (trước khi ăn)');
+  if (!w || daysAgo(w.t) >= 14) out.push(w ? `Đo vòng bụng (lần cuối ${daysAgo(w.t)} ngày trước)` : 'Đo vòng bụng lần đầu');
+  if (!S.photoAt || daysAgo(S.photoAt) >= 30) out.push(S.photoAt ? `Chụp ảnh tiến độ (lần cuối ${daysAgo(S.photoAt)} ngày trước)` : 'Chụp ảnh tiến độ lần đầu');
+  return out;
+}
+function bodyReminder() {
+  if (!S.profile) return '';
+  const due = bodyDue(); if (!due.length) return '';
+  return `<button class="card remind" data-act="tab" data-tab="body"><span class="qt-ic">${ic('scale')}</span>
+    <span class="grow"><b>Theo dõi cơ thể</b><small>${due.map(esc).join(' · ')}</small></span><span class="chev">${ic('chev')}</span></button>`;
+}
+function viewBody() {
+  const log = bodyLog(), ws = log.filter(b => b.w), wa = log.filter(b => b.waist), lastW = ws[ws.length - 1], lastWa = wa[wa.length - 1];
+  const tet = new Date(TET + 'T00:00'), left = Math.ceil((tet - new Date().setHours(0, 0, 0, 0)) / 864e5);
+  const change = (xs, k, unit) => xs.length >= 2 ? `<em class="${xs[xs.length - 1][k] <= xs[0][k] ? 'lime' : ''}">${fmtSigned(xs[xs.length - 1][k] - xs[0][k])} ${unit} từ ${new Date(xs[0].t).toLocaleDateString('vi-VN', { day: 'numeric', month: 'numeric' })}</em>` : '';
+  const tr = weightTrend(), photoD = daysAgo(S.photoAt);
+  return `
+    <div class="hero" style="padding:16px 18px">${ic('flame', 'hero-wm')}
+      <div class="hero-top"><span class="hero-tag"><i></i>Mục tiêu đến Tết</span><span class="hero-tag2">${tet.toLocaleDateString('vi-VN')}</span></div>
+      <h3 style="margin:10px 0 4px">${left > 0 ? `Còn ${left} ngày` : 'Đã đến Tết!'}</h3>
+      <p style="margin:0">${S.profile ? GOALS[S.profile.goal][0] : 'Tái cấu trúc cơ thể'} · ${Math.max(0, Math.ceil(left / 7))} tuần nữa</p></div>
+    <div class="card stats-card"><div class="stats" style="grid-template-columns:1fr 1fr">
+      <div class="stat"><b>${lastW ? fmtNum(lastW.w) : '—'}<small>kg</small></b><span>Cân nặng</span>${change(ws, 'w', 'kg')}</div>
+      <div class="stat"><b>${lastWa ? fmtNum(lastWa.waist) : '—'}<small>cm</small></b><span>Vòng bụng</span>${change(wa, 'waist', 'cm')}</div>
+    </div>${tr ? `<div class="muted small" style="text-align:center;margin-top:8px">Trung bình 7 ngày: ${fmtNum(Math.round(tr.now * 10) / 10)} kg (${fmtSigned(tr.rate)} kg so với tuần trước)</div>` : ''}</div>
+    <div class="card">
+      <div class="title" style="margin-bottom:10px">Ghi hôm nay</div>
+      <div class="form3" style="grid-template-columns:1fr 1fr">
+        <label>Cân nặng (kg)<input id="bW" inputmode="decimal" placeholder="${lastW ? esc(fmtNum(lastW.w)) : '72'}"></label>
+        <label>Vòng bụng (cm)<input id="bWaist" inputmode="decimal" placeholder="${lastWa ? esc(fmtNum(lastWa.waist)) : 'không bắt buộc'}"></label>
+      </div>
+      <button class="btn primary big mt" data-act="saveBody">Lưu</button>
+      <div class="muted small mt">Cân buổi sáng sau khi đi vệ sinh, trước khi ăn. Đo vòng bụng ngang rốn, thở ra bình thường, mỗi 2 tuần.</div>
+    </div>
+    ${adviceCard(true)}
+    <div class="card">
+      <div class="row gap"><span class="qt-ic">${ic('camera')}</span><div class="grow"><div class="title" style="font-size:15px">Ảnh tiến độ mỗi tháng</div>
+        <div class="muted small">${S.photoAt ? `Lần cuối ${photoD === 0 ? 'hôm nay' : photoD + ' ngày trước'}` : 'Chưa chụp lần nào'}${photoD != null && photoD >= 30 ? ' · <b style="color:var(--warn)">đến lúc chụp</b>' : ''}</div></div>
+        <button class="btn" data-act="photoDone">Đã chụp</button></div>
+      <div class="muted small mt">Chụp bằng app Camera, cùng chỗ, cùng ánh sáng, cùng tư thế (trước, nghiêng, sau). Ảnh nằm trong app Ảnh; app chỉ ghi ngày để nhắc.</div>
+    </div>
+    ${ws.length >= 2 ? `<div class="section-h"><h2>Cân nặng</h2><span class="muted small">${ws.length} lần cân</span></div><div class="card">${chart(ws.slice(-60).map(b => b.w), ws.slice(-60).map(b => new Date(b.t).toLocaleDateString('vi-VN', { day: 'numeric', month: 'numeric' })))}</div>` : ''}
+    ${wa.length >= 2 ? `<div class="section-h"><h2>Vòng bụng</h2></div><div class="card">${chart(wa.map(b => b.waist), wa.map(b => new Date(b.t).toLocaleDateString('vi-VN', { day: 'numeric', month: 'numeric' })))}</div>` : ''}
+    ${log.length ? `<div class="section-h"><h2>Lịch sử</h2></div><div class="card" style="padding:4px 14px">${[...log].reverse().slice(0, 30).map(b => `<div class="food" style="align-items:center">
+      <span class="grow">${new Date(b.t).toLocaleDateString('vi-VN', { weekday: 'short', day: 'numeric', month: 'numeric' })}</span>
+      <span>${b.w ? fmtNum(b.w) + ' kg' : ''}${b.w && b.waist ? ' · ' : ''}${b.waist ? fmtNum(b.waist) + ' cm' : ''}</span>
+      <button class="del" data-act="delBody" data-id="${b.id}" aria-label="Xóa">${ic('x')}</button></div>`).join('')}</div>` : ''}`;
+}
+
 /* ---------- more ---------- */
 function viewMore() {
-  return `<div class="card" style="padding:4px 14px">${[['history', 'calendar', 'Lịch sử', `${S.workouts.length} buổi tập`], ['progress', 'chart', 'Tiến độ', 'Biểu đồ từng bài'], ['settings', 'sliders', 'Cài đặt', 'Thời gian nghỉ, sao lưu']]
+  return `<div class="card" style="padding:4px 14px">${[['history', 'calendar', 'Lịch sử', `${S.workouts.length} buổi tập`], ['body', 'scale', 'Cơ thể', 'Cân nặng, vòng bụng, ảnh tiến độ'], ['progress', 'chart', 'Tiến độ', 'Biểu đồ từng bài'], ['settings', 'sliders', 'Cài đặt', 'Thời gian nghỉ, sao lưu']]
     .map(([k, i, l, d]) => `<button class="lib-item" data-act="tab" data-tab="${k}"><span class="ti-big">${ic(i)}</span><div class="grow"><div>${l}</div><div class="muted small">${d}</div></div><span class="chev">${ic('chev')}</span></button>`).join('')}</div>${weekSummary()}`;
 }
 
 const TABS = [['workout', 'barbell', 'Tập'], ['recovery', 'pulse', 'Phục hồi'], ['nutrition', 'apple', 'Thực đơn'], ['library', 'book', 'Thư viện'], ['more', 'grid', 'Thêm']];
-const TITLES = { workout: 'Tập luyện', recovery: 'Phục hồi cơ', nutrition: 'Thực đơn', library: 'Thư viện bài tập', more: 'Thêm', history: 'Lịch sử', progress: 'Tiến độ', settings: 'Cài đặt', edit: 'Sửa buổi tập' };
-const SUB = ['history', 'progress', 'settings'];
+const TITLES = { workout: 'Tập luyện', recovery: 'Phục hồi cơ', nutrition: 'Thực đơn', library: 'Thư viện bài tập', more: 'Thêm', body: 'Cơ thể', history: 'Lịch sử', progress: 'Tiến độ', settings: 'Cài đặt', edit: 'Sửa buổi tập' };
+const SUB = ['history', 'progress', 'settings', 'body'];
 function render() {
   $('#hdr').innerHTML = tab === 'workout' && S.active ? activeBar()
     : tab === 'workout' ? homeHeader() : tab === 'recovery' ? recHeader()
     : `<h1>${SUB.includes(tab) ? `<button class="back" data-act="tab" data-tab="more" aria-label="Quay lại">${ic('back')}</button>` : ''}${TITLES[tab]}</h1>`;
-  main.innerHTML = ({ workout: viewWorkout, recovery: viewRecovery, nutrition: viewNutrition, library: viewLibrary, more: viewMore, history: viewHistory, progress: viewProgress, settings: viewSettings, edit: viewEdit })[tab]();
+  main.innerHTML = ({ workout: viewWorkout, recovery: viewRecovery, nutrition: viewNutrition, library: viewLibrary, more: viewMore, body: viewBody, history: viewHistory, progress: viewProgress, settings: viewSettings, edit: viewEdit })[tab]();
   const cur = SUB.includes(tab) || tab === 'edit' ? 'more' : tab;
   $('#tabs').innerHTML = TABS.map(([k, i, l]) => `<button class="${cur === k ? 'on' : ''}" data-act="tab" data-tab="${k}">${ic(i)}${l}${k === 'workout' && S.active && tab !== 'workout' ? '<span class="dot"></span>' : ''}</button>`).join('');
 }
@@ -1621,6 +1724,21 @@ const A = {
     try { const r = await askAI({ system: 'Trả lời ngắn.', content: [{ text: 'Trả về ok=true.' }], schema: obj({ ok: { type: 'boolean' } }), maxTokens: 1000 });
       toast(r.ok ? `Kết nối ${AI[aiProv()].name} thành công ✅` : 'AI phản hồi lạ', 3000); } catch (e) { toast(e.message, 4500); }
   },
+  saveBody: () => {
+    const w = num($('#bW').value), waist = num($('#bWaist').value);
+    if (!(w >= 30 && w <= 250) && !(waist >= 40 && waist <= 200)) { toast('Nhập cân nặng (kg) hoặc vòng bụng (cm)'); return; }
+    S.body = S.body || [];
+    let b = S.body.find(x => dayKey(x.t) === dayKey());
+    if (!b) { b = { id: uid(), t: Date.now() }; S.body.push(b); }
+    if (w >= 30 && w <= 250) { b.w = w; if (S.profile) S.profile.weight = w; }
+    if (waist >= 40 && waist <= 200) b.waist = waist;
+    save(); render(); toast('Đã lưu');
+  },
+  delBody: d => { if (confirm('Xóa lần ghi này?')) { S.body = S.body.filter(b => b.id !== d.id); save(); render(); } },
+  photoDone: () => { S.photoAt = Date.now(); save(); render(); toast('Đã ghi nhận, nhắc lại sau 30 ngày'); },
+  applyAdj: d => { S.profile.adj = (S.profile.adj || 0) + +d.d; S.adjAt = Date.now(); save(); render(); toast(`Mục tiêu mới: ${fmtNum(targets(S.profile).kcal)} kcal/ngày`); },
+  skipAdj: () => { S.adjAt = Date.now(); save(); render(); },
+  resetAdj: () => { if (confirm('Bỏ phần điều chỉnh calo, quay về mức tính theo công thức?')) { delete S.profile.adj; S.adjAt = Date.now(); save(); render(); } },
   setAi: d => { S.settings.ai = d.v; save(); render(); },
   focusEx: d => { focusEx = +d.i; render(); requestAnimationFrame(() => $('#ex' + d.i)?.scrollIntoView({ block: 'start', behavior: 'smooth' })); },
   bump: d => {
@@ -1689,6 +1807,8 @@ const A = {
     S.customEx = [...new Set([...S.customEx, ...(d.customEx || [])])];
     S.exMeta = { ...(d.exMeta || {}), ...S.exMeta };
     if (!S.profile && d.profile) S.profile = d.profile;
+    const bids = new Set((S.body || []).map(b => b.id)); S.body = [...(S.body || []), ...(d.body || []).filter(b => !bids.has(b.id))];
+    if (d.photoAt && !(S.photoAt > d.photoAt)) S.photoAt = d.photoAt;
     for (const [k, v] of Object.entries(d.food || {})) { const have = new Set((S.food[k] || []).map(f => f.id)); S.food[k] = [...(S.food[k] || []), ...v.filter(f => !have.has(f.id))]; }
     recomputePRs(); save(); sheetOnClose = null; closeSheet(); render(); toast(`Đã thêm ${add.length} buổi tập mới`);
   },

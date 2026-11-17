@@ -427,6 +427,12 @@ h2{font-weight:600;font-size:18px}
 .load-note{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--muted);margin-top:4px}.load-note .ic{font-size:13px;color:var(--sky)}
 .backup-row{background:#121316;border-radius:14px;padding:10px 10px 10px 14px;align-items:center}
 .verdict{display:flex;flex-direction:column;gap:2px;border-radius:12px;padding:10px 12px;margin:10px 0 4px}.verdict b{font-family:'Space Grotesk',sans-serif;font-size:20px}.verdict span{color:var(--text);font-size:13px}
+.day em{font-style:normal;font-size:9px;font-weight:700;line-height:1;color:var(--text);opacity:.85;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.day.done em{color:var(--muted);opacity:1}.day.today em{color:var(--accent-ink);opacity:1;margin-top:2px}
+.hero-note{position:relative;display:flex;gap:7px;align-items:flex-start;font-size:13px;font-weight:600;line-height:1.35;background:rgba(0,0,0,.09);border-radius:10px;padding:8px 10px;margin:-6px 0 12px}
+.hero-note .ic{flex:none;margin-top:1px}
+.hero-alt{position:relative;display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:12px;font-size:13px;font-weight:600}
+.hero-alt button{color:inherit;text-decoration:underline;text-underline-offset:2px;text-align:left;padding:4px 0}
 </style>
 </head>
 <body>
@@ -454,6 +460,7 @@ h2{font-weight:600;font-size:18px}
 <script>
 'use strict';
 const KEY = 'gymlog.v1';
+const APP_VERSION = '2026.11.18';
 const DEFAULT_EX = EX_DB.map(e => e[0]);
 
 const $ = s => document.querySelector(s);
@@ -643,12 +650,14 @@ function weekSummary() {
 }
 
 function weekStrip() {
-  const now = new Date(), mon = new Date(now.getFullYear(), now.getMonth(), now.getDate() - (now.getDay() + 6) % 7);
+  const now = new Date(), mon = new Date(now.getFullYear(), now.getMonth(), now.getDate() - (now.getDay() + 6) % 7), st = schedState();
   return `<div class="week">${['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'].map((d, i) => {
     const day = new Date(mon.getFullYear(), mon.getMonth(), mon.getDate() + i), s = day.getTime(), e = s + 864e5;
-    const done = S.workouts.some(w => w.startedAt >= s && w.startedAt < e), today = +now >= s && +now < e;
-    return today ? `<div class="day today"><small>Hôm nay</small><b>${d}</b>${done ? ic('check') : '<i></i>'}</div>`
-      : `<div class="day${done ? ' done' : ''}"><span>${d}</span>${done ? `<i>${ic('check')}</i>` : `<b>${day.getDate()}</b>`}</div>`;
+    const ws = S.workouts.filter(w => w.startedAt >= s && w.startedAt < e), done = ws.length > 0, today = +now >= s && +now < e;
+    const r = done ? routineOfW(ws[ws.length - 1]) : st && s >= new Date().setHours(0, 0, 0, 0) ? st.plan[i + 1] : null;
+    const lbl = r ? `<em>${esc(shortName(r))}</em>` : done ? '<em>Tự do</em>' : '';
+    return today ? `<div class="day today"><small>Hôm nay</small><b>${d}</b>${done ? ic('check') : '<i></i>'}${lbl}</div>`
+      : `<div class="day${done ? ' done' : ''}"><span>${d}</span>${done ? `<i>${ic('check')}</i>` : `<b>${day.getDate()}</b>`}${lbl}</div>`;
   }).join('')}</div>`;
 }
 
@@ -657,14 +666,28 @@ function homeSuggestion() {
   const r = recovery();
   const musclesOf = rt => [...new Set(rt.exercises.flatMap(e => getEx(e.name)?.p || []))];
   const score = rt => { const ms = musclesOf(rt); return ms.length ? ms.reduce((a, m) => a + r[m].pct, 0) / ms.length : 0; };
-  const dow = (new Date().getDay() + 6) % 7 + 1, todayR = S.routines.find(rt => rt.day === dow);
-  const trainedToday = S.workouts.some(w => w.startedAt >= new Date().setHours(0, 0, 0, 0)), scheduled = S.routines.some(rt => rt.day);
-  const pack = (k, rt, act) => ({ k, title: rt.name, sub: `${rt.exercises.length} bài · ${rt.exercises.reduce((t, e) => t + e.sets, 0)} set`, act, min: estMinutes(rt.exercises), tag: dayTag(rt.exercises) });
-  if (todayR && !trainedToday) return pack('Lịch hôm nay', todayR, `data-act="startRoutine" data-id="${todayR.id}"`);
+  const pack = (k, rt, extra = {}) => ({ k, title: rt.name, sub: `${rt.exercises.length} bài · ${rt.exercises.reduce((t, e) => t + e.sets, 0)} set`,
+    act: `data-act="startRoutine" data-id="${rt.id}"`, min: estMinutes(rt.exercises), tag: dayTag(rt.exercises), ...extra });
+  const st = schedState();
+  if (st && st.due) {
+    const d = st.due, extra = {};
+    if (!st.trainedToday) {
+      extra.skip = d.id;
+      const tired = musclesOf(d).filter(m => r[m].lastH != null && r[m].pct < 60).sort((a, b) => r[a].pct - r[b].pct);
+      if (tired.length) extra.warn = `${tired.slice(0, 2).map(m => `${MUSCLES[m]} mới hồi ${r[m].pct}%`).join(', ')}: cân nhắc tập nhẹ hoặc nghỉ thêm.`;
+      if (st.lag && st.todayR && st.todayR !== d) extra.alt = st.todayR;
+    }
+    if (st.dropped.length && (st.lag || st.trainedToday))
+      extra.note = `${st.dropped.map(x => (x.name.split('·')[1] || x.name).trim()).join(', ')} tuần này không kịp${st.restLeft.length ? ` · có thể tập bù vào ${st.restLeft.map(x => DOW_VI[x]).join(' hoặc ')}` : ', tuần sau lịch bắt đầu lại'}.`;
+    const k = st.trainedToday ? 'Đã tập hôm nay · buổi tiếp theo'
+      : st.lag ? `Bù buổi bị lỡ · lịch lùi ${st.lag} buổi`
+      : st.todayR === d ? 'Lịch hôm nay'
+      : !st.todayR ? 'Ngày nghỉ theo lịch · buổi tiếp theo' : 'Đi trước lịch · buổi tiếp theo';
+    return pack(k, d, extra);
+  }
   if (S.routines.length) {
     const best = [...S.routines].sort((a, b) => score(b) - score(a))[0];
-    return pack(scheduled ? (trainedToday ? 'Đã tập hôm nay · tập thêm?' : 'Ngày nghỉ theo lịch') : S.workouts.length ? `Gợi ý theo phục hồi · ${Math.round(score(best))}% sẵn sàng` : 'Bắt đầu nhanh',
-      best, `data-act="startRoutine" data-id="${best.id}"`);
+    return pack(st ? 'Xong lịch tuần · tập thêm?' : S.workouts.length ? `Gợi ý theo phục hồi · ${Math.round(score(best))}% sẵn sàng` : 'Bắt đầu nhanh', best);
   }
   // No routine yet: a sample workout for the first fully recovered split (core if none).
   const key = ['push', 'pull', 'legs'].find(k => SPLITS[k].muscles.every(m => r[m].pct >= 90)) || 'core', sp = SPLITS[key], exs = sp.ex.map(name => ({ name, sets: 3 }));
@@ -724,13 +747,16 @@ function backupCard() {
 function viewWorkout() {
   const a = S.active;
   if (!a) {
-    const g = homeSuggestion(), dow = (new Date().getDay() + 6) % 7 + 1;
+    const g = homeSuggestion(), st = schedState(), todayPlan = st && !st.trainedToday ? st.plan[st.dow] : null;
     return `${backupCard()}${bodyReminder()}${weekStrip()}
     <div class="hero">${ic('barbell', 'hero-wm')}
       <div class="hero-top"><span class="hero-tag"><i></i>${esc(g.k)}</span>${g.tag ? `<span class="hero-tag2">${esc(g.tag)}</span>` : ''}</div>
       <h3>${esc(g.title)}</h3>
       <p><span>${esc(g.sub)}</span>${g.min ? `<span class="sep">•</span><span class="soft">${ic('clock')} ~${g.min} phút</span>` : ''}</p>
+      ${g.warn ? `<div class="hero-note">${ic('info')}<span>${esc(g.warn)}</span></div>` : ''}
+      ${g.note ? `<div class="hero-note">${ic('calendar')}<span>${esc(g.note)}</span></div>` : ''}
       <button class="go" ${g.act}>${ic('play')} Bắt đầu</button>
+      ${g.alt || g.skip ? `<div class="hero-alt">${g.alt ? `<button data-act="startRoutine" data-id="${g.alt.id}">Hoặc theo lịch: <b>${esc(g.alt.name)}</b></button>` : '<span></span>'}${g.skip ? `<button data-act="skipDue" data-id="${g.skip}">Bỏ qua buổi này</button>` : ''}</div>` : ''}
     </div>
     <div class="quick">
       <button class="qtile" data-act="startEmpty"><span class="qt-top"><span class="qt-ic">${ic('plus')}</span>${ic('chev')}</span><b>Tự chọn bài</b><small>Thêm bài trong lúc tập</small></button>
@@ -739,10 +765,10 @@ function viewWorkout() {
     ${weekSummary()}
     <div class="section-h"><h2 class="hs">Routine của tôi ${S.routines.length ? `<span class="count">${S.routines.length}</span>` : ''}</h2></div>
     ${S.routines.length ? sortedRoutines().map(r => `
-      <div class="rt${r.day === dow ? ' on' : ''}">
+      <div class="rt${r === todayPlan ? ' on' : ''}">
         <button class="rt-main" data-act="startRoutine" data-id="${r.id}">
           <span class="rt-ic">${ic('barbell')}</span>
-          <span class="grow"><div class="rt-name">${esc(r.name)}${r.day === dow ? '<span class="tag-lime">Hôm nay</span>' : ''}</div>
+          <span class="grow"><div class="rt-name">${esc(r.name)}${r === todayPlan ? '<span class="tag-lime">Hôm nay</span>' : ''}</div>
           <div class="rt-sub">${r.exercises.length} bài · ${r.exercises.reduce((t, e) => t + e.sets, 0)} set</div></span>
         </button>
         <button class="icon" data-act="editRoutine" data-id="${r.id}" aria-label="Sửa routine">${ic('edit')}</button>
@@ -935,7 +961,7 @@ function viewSettings() {
       <div class="muted small">Mở trang này bằng <b>Safari</b> → nút <b>Chia sẻ</b> (ô vuông có mũi tên) → <b>Thêm vào MH chính</b>. App sẽ chạy toàn màn hình và dùng được khi không có mạng.</div>
     </div>
     <div class="card">
-      <div class="muted small" style="margin-bottom:10px">${S.workouts.length} buổi tập · ${S.routines.length} routine</div>
+      <div class="muted small" style="margin-bottom:10px">${S.workouts.length} buổi tập · ${S.routines.length} routine · Phiên bản ${APP_VERSION}</div>
       <button class="btn danger big" data-act="clearAll">Xóa toàn bộ dữ liệu</button>
     </div>`;
 }
@@ -1280,7 +1306,7 @@ async function askGemini({ system, content, schema, think = 'LOW' }) {
       }),
     }, 'Gemini');
     const raw = await res.json().catch(() => ({})), d = Array.isArray(raw) ? raw[0] || {} : raw;
-    return { res, d, busy: res.status === 503 || res.status === 500 || d.error?.status === 'UNAVAILABLE' || (!main && res.status === 404) };
+    return { res, d, busy: res.status >= 500 || d.error?.status === 'UNAVAILABLE' || /high demand|overload/i.test(d.error?.message || '') || (!main && res.status === 404) };
   };
   // Overloaded (503): wait and retry the main model, then try other Flash models.
   let out = await call(GEMINI_MAIN, true);
@@ -1338,17 +1364,19 @@ async function aiReviewWorkout(id) {
     setsLast7DaysByMuscle: Object.fromEntries(Object.entries(weeklySets(w.startedAt)).map(([m, n]) => [MUSCLES[m], n])),
     athlete: p ? { sex: p.sex, age: p.age, heightCm: p.height, weightKg: p.weight, goal: GOALS[p.goal][0] } : null,
     weekday: new Date(w.startedAt).toLocaleDateString('vi-VN', { weekday: 'long' }),
-    scheduledThatDay: S.routines.some(r => r.day) ? (S.routines.find(r => r.day === (new Date(w.startedAt).getDay() + 6) % 7 + 1)?.name || 'ngày nghỉ') : null,
+    scheduleOrder: schedSeq().map(r => r.name),
+    thisSession: routineOfW(w)?.name || 'buổi tự chọn ngoài lịch',
+    previousScheduledSession: S.workouts.find(x => x.startedAt < w.startedAt && routineOfW(x))?.name || null,
     plannedMinutes: w.plan?.length ? estMinutes(w.plan) : null,
     weeklySchedule: S.routines.filter(r => r.day).map(r => r.name), history4Weeks: history,
   };
   return askAI({
     system: 'Bạn là huấn luyện viên thể hình cực kỳ khó tính, nói tiếng Việt, phũ và thẳng như một HLV quân đội. Nhiệm vụ: soi lỗi buổi tập để người tập tiến bộ, KHÔNG phải để họ vui. ' +
-      'Dữ liệu JSON gồm: buổi hôm nay, kế hoạch (số set, rep mục tiêu), số phút dự kiến (plannedMinutes), lịch theo thứ (scheduledThatDay), lịch sử 4 tuần, số set mỗi nhóm cơ trong 7 ngày, nhận xét tự động (ruleReview) và hồ sơ người tập. ' +
+      'Dữ liệu JSON gồm: buổi hôm nay, kế hoạch (số set, rep mục tiêu), số phút dự kiến (plannedMinutes), thứ tự lịch tuần (scheduleOrder), buổi theo lịch trước đó (previousScheduledSession), lịch sử 4 tuần, số set mỗi nhóm cơ trong 7 ngày, nhận xét tự động (ruleReview) và hồ sơ người tập. ' +
       'Luật bắt buộc: ' +
       '1) Cấm khen xã giao và cấm câu đệm an ủi ("không sao", "bạn đã cố gắng", "cứ từ từ", "tốt lắm", "tuyệt vời"). Không mở đầu bằng lời khen. ' +
       '2) Chỉ khen khi có số liệu chứng minh tiến bộ thật (ví dụ tăng tạ mà vẫn đủ rep). Không có thì good = []. ' +
-      '3) Soi và gọi thẳng tên mọi lỗi có trong dữ liệu: bỏ bài, thiếu set, rep dưới mục tiêu, tạ đứng yên 3 buổi trở lên, tạ hoặc 1RM giảm, buổi tập ngắn/dài lệch nhiều so với plannedMinutes, tập sai lịch hoặc tập vào ngày nghỉ, nhóm cơ dưới 10 set/tuần. Mỗi lỗi kèm con số và cách sửa cụ thể. ' +
+      '3) Soi và gọi thẳng tên mọi lỗi có trong dữ liệu: bỏ bài, thiếu set, rep dưới mục tiêu, tạ đứng yên 3 buổi trở lên, tạ hoặc 1RM giảm, buổi tập ngắn/dài lệch nhiều so với plannedMinutes, nhảy cóc thứ tự lịch tuần (bỏ qua cả buổi). Lưu ý: người tập được phép lùi lịch khi bận, tập bù đúng thứ tự vào ngày khác hoặc ngày nghỉ là HỢP LỆ, không bắt lỗi điểm này; nhóm cơ dưới 10 set/tuần. Mỗi lỗi kèm con số và cách sửa cụ thể. ' +
       '4) verdict: "Đạt" chỉ khi làm đủ kế hoạch và đạt rep mục tiêu; "Không đạt" khi bỏ bài, thiếu nhiều set, hoặc tụt sức rõ; còn lại "Tạm". Chấm khắt khe, nghi ngờ thì hạ bậc. verdictReason: 1 câu, có số liệu. ' +
       '5) summary: 2 câu, giọng phũ, nói điều quan trọng nhất cần sửa. improve: tối đa 5 ý, mỗi ý 1 câu, ra lệnh rõ ràng. nextSession: mức tạ × rep cụ thể cho từng bài chính buổi sau. ' +
       '6) Chỉ nói điều có căn cứ trong dữ liệu, không bịa. Phũ về hiệu suất, không xúc phạm con người. ' +
@@ -1548,6 +1576,28 @@ function viewBody() {
       <span class="grow">${new Date(b.t).toLocaleDateString('vi-VN', { weekday: 'short', day: 'numeric', month: 'numeric' })}</span>
       <span>${b.w ? fmtNum(b.w) + ' kg' : ''}${b.w && b.waist ? ' · ' : ''}${b.waist ? fmtNum(b.waist) + ' cm' : ''}</span>
       <button class="del" data-act="delBody" data-id="${b.id}" aria-label="Xóa">${ic('x')}</button></div>`).join('')}</div>` : ''}`;
+}
+
+/* ---------- weekly schedule rotation: a missed day pushes the rest of the week back ---------- */
+const dowOf = t => (new Date(t).getDay() + 6) % 7 + 1; // 1 = Monday … 7 = Sunday
+const weekStart = (t = Date.now()) => { const d = new Date(t); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - (d.getDay() + 6) % 7); return d.getTime(); };
+const schedSeq = () => S.routines.filter(r => r.day).sort((a, b) => a.day - b.day);
+const routineOfW = w => { const seq = schedSeq(); return seq.find(r => r.id === w.routineId) || seq.find(r => r.name === w.name) || null; };
+const shortName = r => { const p = (r.name.split('·')[1] || r.name).trim().split(/\s+/), w = p[p.length - 1]; return p.length > 1 ? w.charAt(0).toUpperCase() + w.slice(1) : w; };
+const DOW_VI = ['', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+// Sessions run in order within the week; progress never goes backwards; each week restarts from the first session.
+function schedState(now = Date.now()) {
+  const seq = schedSeq(); if (!seq.length) return null;
+  const ws = weekStart(now), dow = dowOf(now), sod = new Date(now).setHours(0, 0, 0, 0);
+  const marks = [...S.workouts.filter(w => w.startedAt >= ws).map(w => seq.indexOf(routineOfW(w))),
+    ...(S.skips || []).filter(s => s.t >= ws).map(s => seq.findIndex(r => r.id === s.id))].filter(i => i >= 0);
+  const pos = marks.length ? Math.max(...marks) + 1 : 0;
+  const trainedToday = S.workouts.some(w => w.startedAt >= sod);
+  const lag = Math.max(0, seq.filter(r => r.day < dow).length - pos);
+  const plan = {}, from = trainedToday ? dow + 1 : dow; let k = pos;
+  for (let d = from; d <= 7 && k < seq.length; d++) if (seq.some(r => r.day === d)) plan[d] = seq[k++];
+  const restLeft = []; for (let d = from; d <= 7; d++) if (!seq.some(r => r.day === d)) restLeft.push(d);
+  return { seq, due: seq[pos] || null, lag, dow, todayR: seq.find(r => r.day === dow) || null, trainedToday, plan, dropped: seq.slice(k), restLeft };
 }
 
 /* ---------- more ---------- */
@@ -1823,6 +1873,10 @@ const A = {
     const base = ex.sets[cur].w !== '' ? num(ex.sets[cur].w) : hint ? hint.w : p ? p.w : 0, v = Math.max(0, Math.round((base + +d.v) * 100) / 100);
     for (let j = cur; j < ex.sets.length; j++) if (!ex.sets[j].done) ex.sets[j].w = String(v);
     save(); render();
+  },
+  skipDue: d => {
+    const r = S.routines.find(x => x.id === d.id); if (!r || !confirm(`Bỏ qua "${r.name}" tuần này và chuyển sang buổi kế tiếp?`)) return;
+    S.skips = [...(S.skips || []).filter(s => s.t >= weekStart()), { id: r.id, t: Date.now() }]; save(); render(); toast('Đã bỏ qua, chuyển sang buổi kế tiếp');
   },
   newRoutine: () => { draft = { id: null, name: '', exercises: [] }; renderRoutineSheet(); },
   editRoutine: d => { draft = JSON.parse(JSON.stringify(S.routines.find(r => r.id === d.id))); renderRoutineSheet(); },

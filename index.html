@@ -442,6 +442,7 @@ h2{font-weight:600;font-size:18px}
 .todo{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.todo .btn{flex:1;white-space:nowrap;background:var(--accent);color:var(--accent-ink)}
 .slot{display:flex;gap:8px;margin:0 0 10px}.slot select{flex:1;min-width:0;padding:9px 30px 9px 10px;font-size:14px}.slot .seg{flex:1.6}.slot .seg button{padding:7px 0;font-size:13px}
 .slot-hint{font-size:12px;color:var(--muted);margin:-4px 0 10px}
+.pick.dish{display:flex;align-items:center;gap:10px}.pick.dish b{white-space:nowrap;color:var(--accent)}
 </style>
 </head>
 <body>
@@ -469,7 +470,7 @@ h2{font-weight:600;font-size:18px}
 <script>
 'use strict';
 const KEY = 'gymlog.v1';
-const APP_VERSION = '2026.11.18c';
+const APP_VERSION = '2026.11.18d';
 const DEFAULT_EX = EX_DB.map(e => e[0]);
 
 const $ = s => document.querySelector(s);
@@ -1471,8 +1472,8 @@ async function aiMeal(dataUrl, hint) {
       'Món chiên, xào, kho, rim luôn có dầu mỡ: ghi thành một dòng riêng tên "Dầu mỡ (…)" với lượng hợp lý, không bỏ qua. Cơm suất/cơm quán thường nhiều cơm hơn cơm nhà. Tên món tiếng Việt, ngắn gọn. ' +
       'Theo ghi chú của người dùng nếu có (ví dụ ăn một nửa, bỏ da). Nếu ảnh không phải đồ ăn: isFood=false, items rỗng. ' +
       'note: 1–2 câu, giọng thẳng, không an ủi: so bữa này với mục tiêu ngày được cung cấp (nhiều calo, ít đạm, nhiều tinh bột hay dầu mỡ thì nói rõ) và nêu 1 việc cụ thể nên đổi lần sau. Nếu có phần khó nhìn thì nói đã ước theo mức cao.',
-    content: [{ image: dataUrl.split(',')[1] },
-      { text: mealContext() + (hint ? '\nGhi chú của tôi: ' + hint : '\nƯớc tính bữa ăn này.') }],
+    content: dataUrl ? [{ image: dataUrl.split(',')[1] }, { text: mealContext() + (hint ? '\nGhi chú của tôi: ' + hint : '\nƯớc tính bữa ăn này.') }]
+      : [{ text: mealContext() + '\nKhông có ảnh. Món tôi ăn: ' + hint + '. Nếu tôi không nói khẩu phần, dùng khẩu phần phổ biến ở Việt Nam (theo mức cao).' }],
     schema: MEAL_SCHEMA, maxTokens: 3000,
   });
 }
@@ -1489,7 +1490,7 @@ function renderMealSheet() {
     ${m.stage === 'note' ? `<input id="mealHint" placeholder="Ghi chú (tùy chọn): VD ăn nửa bát cơm" value="${esc(m.hint)}">
       <button class="btn primary big mt" data-act="mealAnalyze">${ic('bolt')} AI tính calo</button>
       <div class="muted small" style="margin-top:6px;text-align:center">Ảnh được gửi tới ${aiProv() === 'gemini' ? 'Google (Gemini)' : 'Anthropic (Claude) · khoảng 500đ/ảnh'} để phân tích</div>`
-    : m.stage === 'busy' ? `<div class="empty">${ic('refresh')} AI đang xem ảnh…</div>`
+    : m.stage === 'busy' ? `<div class="empty">${ic('refresh')} ${m.img ? 'AI đang xem ảnh…' : 'AI đang ước tính…'}</div>`
     : `${m.note ? `<div class="muted small" style="margin:10px 0">${esc(m.note)}</div>` : ''}
       <div class="muted small" style="margin:8px 0 4px">Sửa số gram nếu AI đoán sai, calo tự tính lại.</div>
       ${m.items.map((it, i) => `<div class="mi"><input class="mi-name" data-mi="${i}" data-k="name" value="${esc(it.name)}">
@@ -1511,8 +1512,12 @@ function openManualFood() {
 }
 function renderManualList(q) {
   const f = fold(q.trim());
-  $('#mfList').innerHTML = Object.keys(FOODS).filter(n => !f || fold(n).includes(f)).slice(0, 8)
-    .map(n => `<button class="pick" data-act="mfPick" data-name="${esc(n)}"><span class="grow">${esc(n)}</span><span class="muted small">${FOODS[n][0]} kcal/100g</span></button>`).join('');
+  const dishes = DISHES.map((d, i) => [d, i]).filter(([d]) => !f || fold(d[0] + ' ' + d[7]).includes(f)).slice(0, f ? 8 : 10);
+  const foods = f ? Object.keys(FOODS).filter(n => fold(n).includes(f)).slice(0, 6) : [];
+  $('#mfList').innerHTML = (!f ? '<div class="muted small" style="margin:2px 0 4px">Món hay ăn (1 phần phổ biến):</div>' : '') +
+    dishes.map(([d, i]) => `<button class="pick dish" data-act="dishPick" data-i="${i}"><span class="grow">${esc(d[0])}<br><span class="muted small">${esc(d[1])} · ${d[4]} g đạm</span></span><b class="small">${d[3]} kcal</b></button>`).join('') +
+    foods.map(n => `<button class="pick" data-act="mfPick" data-name="${esc(n)}"><span class="grow">${esc(n)}</span><span class="muted small">${FOODS[n][0]} kcal/100g</span></button>`).join('') +
+    (f.length >= 2 ? `<button class="pick new" data-act="askDishAI">${ic('bolt')} Hỏi AI: "${esc(q.trim())}" bao nhiêu calo?</button>` : '');
 }
 function addFood(items) {
   const s = slot || newSlot(foodDay), t = slot ? slotTime() : (foodDay === dayKey() ? Date.now() : dayStart(foodDay) + 12 * 36e5);
@@ -1955,6 +1960,22 @@ const A = {
     const lbl = `${slot.meal.toLowerCase()} ${dayLabel(slot.k).toLowerCase()}`; mealDraft = null; slot = null; sheetOnClose = null; closeSheet(); render(); toast(`Đã thêm vào bữa ${lbl}`);
   },
   addFoodManual: () => openManualFood(),
+  dishPick: d => {
+    const x = DISHES[+d.i], n = num(prompt(`${x[0]} (${x[1]} ≈ ${x[3]} kcal). Ăn bao nhiêu phần? 1 = cả phần, 0,5 = nửa phần`, '1')); if (n <= 0) return;
+    addFood([{ name: n === 1 ? x[0] : `${x[0]} (${fmtNum(n)} phần)`, g: Math.round(x[2] * n), kcal: x[3] * n, p: x[4] * n, c: x[5] * n, f: x[6] * n, src: 'manual' }]);
+    slot = null; closeSheet(); render(); toast(`Đã thêm ${Math.round(x[3] * n)} kcal`);
+  },
+  askDishAI: async () => {
+    const q = $('#mfQ').value.trim(); if (!q) return;
+    if (!hasKey()) { toast('Nhập API key trong Thêm → Cài đặt trước', 3500); return; }
+    const m = mealDraft = { img: null, stage: 'busy', hint: q, items: [] }; renderMealSheet();
+    try {
+      const r = await aiMeal(null, q);
+      m.items = (r.isFood ? r.items : []).filter(i => i.grams > 0).map(i => ({ ...i, per: { kcal: i.kcal / i.grams, protein: i.protein / i.grams, carbs: i.carbs / i.grams, fat: i.fat / i.grams } }));
+      m.note = r.isFood ? r.note : 'Không nhận ra món ăn này.'; m.stage = 'edit';
+    } catch (e) { m.stage = 'edit'; m.note = e.message; }
+    if (mealDraft === m) renderMealSheet();
+  },
   setSlotMeal: d => { slot.meal = d.v; slot.guessed = false; document.querySelectorAll('[data-act="setSlotMeal"]').forEach(b => b.classList.toggle('on', b.dataset.v === d.v)); $('.slot-hint')?.remove(); },
   mfPick: d => {
     const g = num(prompt(`${d.name}: bao nhiêu gram (đã nấu chín)?`, '100')); if (g <= 0) return;

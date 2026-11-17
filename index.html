@@ -426,6 +426,7 @@ h2{font-weight:600;font-size:18px}
 .remind b{display:block;font-size:15px;font-weight:600}.remind small{display:block;font-size:12px;color:var(--muted);margin-top:2px;line-height:1.4}
 .load-note{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--muted);margin-top:4px}.load-note .ic{font-size:13px;color:var(--sky)}
 .backup-row{background:#121316;border-radius:14px;padding:10px 10px 10px 14px;align-items:center}
+.verdict{display:flex;flex-direction:column;gap:2px;border-radius:12px;padding:10px 12px;margin:10px 0 4px}.verdict b{font-family:'Space Grotesk',sans-serif;font-size:20px}.verdict span{color:var(--text);font-size:13px}
 </style>
 </head>
 <body>
@@ -1208,7 +1209,7 @@ function openReview(id, offerRoutine) {
     <div class="score"><div class="ring" style="--p:${r.score}"><b>${r.score}</b></div>
       <div><div class="title">${r.grade}</div><div class="muted small">${esc(w.name)} · ${fmtDur(w.endedAt - w.startedAt)}${w.plan?.length ? ` · xong ${Math.round(r.completion * 100)}% kế hoạch` : ''}</div></div></div>
     <div class="rev">${r.items.map(([k, t]) => `<div class="rev-i"><span style="color:${REV_IC[k][1]}">${ic(REV_IC[k][0])}</span><span>${esc(t)}</span></div>`).join('') || '<div class="muted small">Chưa đủ dữ liệu để so sánh. Tập thêm vài buổi nhé.</div>'}</div>
-    <div id="aiBox">${a ? aiReviewHtml(a) : `<button class="btn big mt" data-act="aiReview" data-id="${w.id}">${ic('bolt')} AI nhận xét chi tiết</button>
+    <div id="aiBox">${a ? aiReviewHtml(a) + `<button class="text-btn" data-act="aiReview" data-id="${w.id}">${ic('refresh')} Nhận xét lại</button>` : `<button class="btn big mt" data-act="aiReview" data-id="${w.id}">${ic('bolt')} AI nhận xét chi tiết</button>
       <div class="muted small" style="margin-top:6px;text-align:center">${!hasKey() ? 'Cần nhập API key trong Cài đặt' : aiProv() === 'gemini' ? 'Cần mạng · dùng Gemini' : 'Cần mạng · khoảng 750đ/lần'}</div>`}</div>
     <div class="row gap mt backup-row"><div class="grow muted small">${S.lastBackup ? 'Sao lưu lần cuối: ' + (daysAgo(S.lastBackup) ? daysAgo(S.lastBackup) + ' ngày trước' : 'hôm nay') : 'Chưa sao lưu lần nào'}</div>
       <button class="btn" data-act="exportData">${ic('download')} Sao lưu</button></div>
@@ -1217,7 +1218,9 @@ function openReview(id, offerRoutine) {
 }
 function aiReviewHtml(a) {
   const list = (h, xs) => xs?.length ? `<h4>${h}</h4><ul class="tips">${xs.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : '';
-  return `<div class="ai-card"><div class="ai-h">${ic('bolt')} Nhận xét của AI</div><p>${esc(a.summary)}</p>
+  const vc = { 'Đạt': 'var(--ok)', 'Tạm': 'var(--warn)', 'Không đạt': 'var(--danger)' }[a.verdict];
+  return `<div class="ai-card"><div class="ai-h">${ic('bolt')} Nhận xét của AI</div>
+    ${a.verdict ? `<div class="verdict" style="color:${vc};background:color-mix(in srgb, ${vc} 15%, transparent)"><b>${esc(a.verdict)}</b><span>${esc(a.verdictReason || '')}</span></div>` : ''}<p>${esc(a.summary)}</p>
     ${list('Làm tốt', a.good)}${list('Cần cải thiện', a.improve)}
     ${a.nextSession?.length ? `<h4>Buổi sau</h4><ul class="tips">${a.nextSession.map(n => `<li><b>${esc(n.exercise)}:</b> ${esc(n.advice)}</li>`).join('')}</ul>` : ''}</div>`;
 }
@@ -1233,12 +1236,25 @@ const keyOf = p => { try { return localStorage.getItem(AI[p].store) || ''; } cat
 const getKey = () => keyOf(aiProv());
 const hasKey = () => !!getKey();
 // content: [{ text } | { image: <base64 jpeg> }]; the reply must be JSON matching schema.
+async function aiFetch(url, opt, who) {
+  const once = async () => {
+    const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), 60000);
+    try { return await fetch(url, { ...opt, signal: ctl.signal }); } finally { clearTimeout(timer); }
+  };
+  try { return await once(); }
+  catch (e) {
+    if (e.name === 'AbortError') throw new Error(`${who} trả lời quá lâu (hơn 60 giây). Thử lại.`);
+    await new Promise(r => setTimeout(r, 1200));
+    try { return await once(); }
+    catch (e2) { throw new Error(`Không kết nối được tới ${who} (${e2.message}). Thử bật Wi-Fi hoặc tắt VPN/chặn quảng cáo rồi thử lại. Nếu vẫn lỗi: Thêm → Cài đặt → Thử kết nối.`); }
+  }
+}
 const askAI = o => aiProv() === 'gemini' ? askGemini(o) : askClaude(o);
 async function askGemini({ system, content, schema, think = 'LOW' }) {
   if (!hasKey()) throw new Error('Chưa có API key Gemini. Vào Thêm → Cài đặt để nhập.');
   if (!navigator.onLine) throw new Error('Không có mạng.');
   // generateContent: stable and callable straight from the browser (CORS allowed).
-  const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent', {
+  const res = await aiFetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent', {
     method: 'POST',
     headers: { 'content-type': 'application/json', 'x-goog-api-key': getKey() },
     body: JSON.stringify({
@@ -1246,7 +1262,7 @@ async function askGemini({ system, content, schema, think = 'LOW' }) {
       contents: [{ role: 'user', parts: content.map(c => c.image ? { inlineData: { mimeType: 'image/jpeg', data: c.image } } : { text: c.text }) }],
       generationConfig: { responseMimeType: 'application/json', responseJsonSchema: schema, thinkingConfig: { thinkingLevel: think } },
     }),
-  });
+  }, 'Gemini');
   const raw = await res.json().catch(() => ({})), d = Array.isArray(raw) ? raw[0] || {} : raw;
   if (!res.ok) {
     const msg = d.error?.message || res.statusText, st = d.error?.status || '';
@@ -1263,7 +1279,7 @@ async function askGemini({ system, content, schema, think = 'LOW' }) {
 async function askClaude({ system, content, schema, maxTokens = 4000 }) {
   if (!hasKey()) throw new Error('Chưa có API key Claude. Vào Thêm → Cài đặt để nhập.');
   if (!navigator.onLine) throw new Error('Không có mạng.');
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
+  const res = await aiFetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
       'content-type': 'application/json', 'x-api-key': getKey(), 'anthropic-version': '2026-10-21',
@@ -1274,7 +1290,7 @@ async function askClaude({ system, content, schema, maxTokens = 4000 }) {
       output_config: { effort: 'medium', format: { type: 'json_schema', schema } },
       messages: [{ role: 'user', content: content.map(c => c.image ? { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: c.image } } : { type: 'text', text: c.text }) }],
     }),
-  });
+  }, 'Claude');
   const d = await res.json().catch(() => ({}));
   if (!res.ok) {
     const msg = d.error?.message || res.statusText;
@@ -1286,7 +1302,7 @@ async function askClaude({ system, content, schema, maxTokens = 4000 }) {
   return JSON.parse(text);
 }
 const obj = (props, req = Object.keys(props)) => ({ type: 'object', properties: props, required: req, additionalProperties: false });
-const REVIEW_SCHEMA = obj({ summary: { type: 'string' }, good: { type: 'array', items: { type: 'string' } }, improve: { type: 'array', items: { type: 'string' } },
+const REVIEW_SCHEMA = obj({ verdict: { type: 'string', enum: ['Đạt', 'Tạm', 'Không đạt'] }, verdictReason: { type: 'string' }, summary: { type: 'string' }, good: { type: 'array', items: { type: 'string' } }, improve: { type: 'array', items: { type: 'string' } },
   nextSession: { type: 'array', items: obj({ exercise: { type: 'string' }, advice: { type: 'string' } }) } });
 async function aiReviewWorkout(id) {
   const w = S.workouts.find(x => x.id === id);
@@ -1297,12 +1313,22 @@ async function aiReviewWorkout(id) {
     today: sess(w), plan: w.plan || null, ruleReview: reviewWorkout(w).items.map(i => i[1]),
     setsLast7DaysByMuscle: Object.fromEntries(Object.entries(weeklySets(w.startedAt)).map(([m, n]) => [MUSCLES[m], n])),
     athlete: p ? { sex: p.sex, age: p.age, heightCm: p.height, weightKg: p.weight, goal: GOALS[p.goal][0] } : null,
+    weekday: new Date(w.startedAt).toLocaleDateString('vi-VN', { weekday: 'long' }),
+    scheduledThatDay: S.routines.some(r => r.day) ? (S.routines.find(r => r.day === (new Date(w.startedAt).getDay() + 6) % 7 + 1)?.name || 'ngày nghỉ') : null,
+    plannedMinutes: w.plan?.length ? estMinutes(w.plan) : null,
     weeklySchedule: S.routines.filter(r => r.day).map(r => r.name), history4Weeks: history,
   };
   return askAI({
-    system: 'Bạn là huấn luyện viên thể hình giàu kinh nghiệm, nói tiếng Việt, ngắn gọn và cụ thể. Bạn đánh giá một buổi tập dựa trên dữ liệu JSON: buổi hôm nay, kế hoạch (số set, rep mục tiêu), lịch sử 4 tuần, số set mỗi nhóm cơ trong 7 ngày và hồ sơ người tập. ' +
-      'Nguyên tắc: tăng tiến dần (double progression: đạt đỉnh khoảng rep ở mọi set thì tăng tạ), 10–20 set/nhóm cơ/tuần, ưu tiên kỹ thuật và phục hồi. Chỉ nói điều có căn cứ trong dữ liệu, nêu con số cụ thể (kg, rep). Không chẩn đoán y tế. ' +
-      'summary: 2–3 câu. good và improve: mỗi mục tối đa 4 ý, mỗi ý 1 câu. nextSession: lời khuyên mức tạ/rep cho từng bài chính của buổi sau.',
+    system: 'Bạn là huấn luyện viên thể hình cực kỳ khó tính, nói tiếng Việt, phũ và thẳng như một HLV quân đội. Nhiệm vụ: soi lỗi buổi tập để người tập tiến bộ, KHÔNG phải để họ vui. ' +
+      'Dữ liệu JSON gồm: buổi hôm nay, kế hoạch (số set, rep mục tiêu), số phút dự kiến (plannedMinutes), lịch theo thứ (scheduledThatDay), lịch sử 4 tuần, số set mỗi nhóm cơ trong 7 ngày, nhận xét tự động (ruleReview) và hồ sơ người tập. ' +
+      'Luật bắt buộc: ' +
+      '1) Cấm khen xã giao và cấm câu đệm an ủi ("không sao", "bạn đã cố gắng", "cứ từ từ", "tốt lắm", "tuyệt vời"). Không mở đầu bằng lời khen. ' +
+      '2) Chỉ khen khi có số liệu chứng minh tiến bộ thật (ví dụ tăng tạ mà vẫn đủ rep). Không có thì good = []. ' +
+      '3) Soi và gọi thẳng tên mọi lỗi có trong dữ liệu: bỏ bài, thiếu set, rep dưới mục tiêu, tạ đứng yên 3 buổi trở lên, tạ hoặc 1RM giảm, buổi tập ngắn/dài lệch nhiều so với plannedMinutes, tập sai lịch hoặc tập vào ngày nghỉ, nhóm cơ dưới 10 set/tuần. Mỗi lỗi kèm con số và cách sửa cụ thể. ' +
+      '4) verdict: "Đạt" chỉ khi làm đủ kế hoạch và đạt rep mục tiêu; "Không đạt" khi bỏ bài, thiếu nhiều set, hoặc tụt sức rõ; còn lại "Tạm". Chấm khắt khe, nghi ngờ thì hạ bậc. verdictReason: 1 câu, có số liệu. ' +
+      '5) summary: 2 câu, giọng phũ, nói điều quan trọng nhất cần sửa. improve: tối đa 5 ý, mỗi ý 1 câu, ra lệnh rõ ràng. nextSession: mức tạ × rep cụ thể cho từng bài chính buổi sau. ' +
+      '6) Chỉ nói điều có căn cứ trong dữ liệu, không bịa. Phũ về hiệu suất, không xúc phạm con người. ' +
+      '7) An toàn trên hết: không bảo tập quá sức, không ép bỏ ngày nghỉ, không khuyên ăn ít đi. Nếu dữ liệu cho thấy tụt sức nhiều buổi liền, ra lệnh nghỉ/giảm tải và kiểm tra ngủ, ăn. Không chẩn đoán y tế; đau hoặc chấn thương thì bảo dừng và đi khám.',
     content: [{ text: JSON.stringify(data) }], schema: REVIEW_SCHEMA, think: 'MEDIUM',
   });
 }
@@ -1352,13 +1378,21 @@ const MEAL_SCHEMA = obj({ isFood: { type: 'boolean' }, note: { type: 'string' },
   items: { type: 'array', items: obj({ name: { type: 'string' }, grams: { type: 'number' }, kcal: { type: 'number' }, protein: { type: 'number' }, carbs: { type: 'number' }, fat: { type: 'number' } }) } });
 async function aiMeal(dataUrl, hint) {
   return askAI({
-    system: 'Bạn là chuyên gia dinh dưỡng Việt Nam. Nhìn ảnh bữa ăn, liệt kê từng món/thành phần riêng (cơm, thịt, rau, nước chấm, dầu mỡ…) với khối lượng đã nấu chín ước tính theo gram, và calo, đạm, tinh bột, chất béo (gram) của đúng khối lượng đó. ' +
-      'Ước lượng khẩu phần dựa vào kích thước bát đĩa, đũa thìa, bàn tay trong ảnh. Món chiên, xào, kho thường có thêm dầu mỡ: tính cả vào món hoặc ghi riêng "Dầu mỡ". Tên món bằng tiếng Việt, ngắn gọn. ' +
-      'Nếu người dùng có ghi chú (ví dụ ăn một nửa, không ăn da), hãy theo ghi chú. Nếu ảnh không phải đồ ăn, isFood=false và items rỗng. note: 1 câu về độ chắc chắn hoặc điều cần người dùng kiểm tra.',
+    system: 'Bạn là chuyên gia dinh dưỡng Việt Nam khó tính, nói thẳng. Người dùng đang theo dõi calo để giảm mỡ, nên ước THẤP là lỗi nghiêm trọng hơn ước cao. ' +
+      'Nhìn ảnh bữa ăn, liệt kê từng món/thành phần riêng (cơm, thịt, rau, canh, nước chấm, dầu mỡ…) với khối lượng đã nấu chín ước tính theo gram, và calo, đạm, tinh bột, chất béo (gram) của đúng khối lượng đó. ' +
+      'Ước khẩu phần theo kích thước khay, bát đĩa, đũa thìa trong ảnh. Khi không chắc về khẩu phần, dầu mỡ, nước sốt hay độ béo của thịt thì chọn mức CAO hơn, không chọn mức thấp. ' +
+      'Món chiên, xào, kho, rim luôn có dầu mỡ: ghi thành một dòng riêng tên "Dầu mỡ (…)" với lượng hợp lý, không bỏ qua. Cơm suất/cơm quán thường nhiều cơm hơn cơm nhà. Tên món tiếng Việt, ngắn gọn. ' +
+      'Theo ghi chú của người dùng nếu có (ví dụ ăn một nửa, bỏ da). Nếu ảnh không phải đồ ăn: isFood=false, items rỗng. ' +
+      'note: 1–2 câu, giọng thẳng, không an ủi: so bữa này với mục tiêu ngày được cung cấp (nhiều calo, ít đạm, nhiều tinh bột hay dầu mỡ thì nói rõ) và nêu 1 việc cụ thể nên đổi lần sau. Nếu có phần khó nhìn thì nói đã ước theo mức cao.',
     content: [{ image: dataUrl.split(',')[1] },
-      { text: hint ? 'Ghi chú của tôi: ' + hint : 'Ước tính bữa ăn này.' }],
+      { text: mealContext() + (hint ? '\nGhi chú của tôi: ' + hint : '\nƯớc tính bữa ăn này.') }],
     schema: MEAL_SCHEMA, maxTokens: 3000,
   });
+}
+function mealContext() {
+  const p = S.profile; if (!p) return 'Chưa có mục tiêu calo.';
+  const t = targets(p), tot = dayTotals(foodDay);
+  return `Mục tiêu: ${GOALS[p.goal][0]}, ${t.kcal} kcal và ${t.protein} g đạm mỗi ngày. Đã ăn trước bữa này: ${Math.round(tot.kcal)} kcal, ${Math.round(tot.p)} g đạm.`;
 }
 function renderMealSheet() {
   const m = mealDraft, tot = m.items.reduce((a, i) => a + i.kcal, 0);
@@ -1719,10 +1753,28 @@ const A = {
     try { localStorage.setItem(p.store, v); } catch (e) {} render(); toast('Đã lưu key ' + p.name);
   },
   clearKey: () => { if (confirm('Xóa API key khỏi máy này?')) { try { localStorage.removeItem(AI[aiProv()].store); } catch (e) {} render(); } },
-  testKey: async b => {
-    toast('Đang thử kết nối…', 8000);
-    try { const r = await askAI({ system: 'Trả lời ngắn.', content: [{ text: 'Trả về ok=true.' }], schema: obj({ ok: { type: 'boolean' } }), maxTokens: 1000 });
-      toast(r.ok ? `Kết nối ${AI[aiProv()].name} thành công ✅` : 'AI phản hồi lạ', 3000); } catch (e) { toast(e.message, 4500); }
+  testKey: async () => {
+    const p = aiProv(), name = AI[p].name, lines = [];
+    const show = done => openSheet(`<div class="sheet-h"><h3>Kiểm tra kết nối ${name}</h3><button class="link" data-act="closeSheet">Đóng</button></div>
+      <div class="rev">${lines.map(([ok, t]) => `<div class="rev-i"><span style="color:${ok == null ? 'var(--muted)' : ok ? 'var(--ok)' : 'var(--danger)'}">${ic(ok == null ? 'clock' : ok ? 'check' : 'x')}</span><span>${esc(t)}</span></div>`).join('')}</div>
+      ${done ? `<div class="muted small mt">Mạng: ${navigator.onLine ? 'có' : 'không'} · Key ${esc(getKey().slice(0, 3))}… (${getKey().length} ký tự) · App ${esc(navigator.userAgent.match(/(iPhone OS [\d_]+|Android [\d.]+|Windows NT [\d.]+|Mac OS X [\d_]+)/)?.[0] || '')}<br>Nếu có dòng đỏ, chụp màn hình này gửi người hỗ trợ (ảnh không chứa key).</div>` : '<div class="empty">Đang kiểm tra…</div>'}`);
+    const step = async (label, fn) => { lines.push([null, label]); show(false); try { const t = await fn(); lines[lines.length - 1] = [true, t || label]; return true; } catch (e) { lines[lines.length - 1] = [false, label + ': ' + e.message]; return false; } };
+    if (p === 'gemini') {
+      await step('Kết nối tới Google và kiểm tra key', async () => {
+        let r; try { r = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash', { headers: { 'x-goog-api-key': getKey() } }); }
+        catch (e) { throw new Error(`không gửi được yêu cầu (${e.name}: ${e.message})`); }
+        const d = await r.json().catch(() => ({})), x = Array.isArray(d) ? d[0] || {} : d;
+        if (!r.ok) throw new Error(`Google trả lỗi ${r.status} ${x.error?.status || ''}: ${x.error?.message || r.statusText}`);
+        return 'Kết nối Google được, key hợp lệ, có model gemini-3.8-flash';
+      });
+    }
+    const textOk = await step('Gọi AI bằng chữ', async () => { const r = await askAI({ system: 'Trả lời ngắn.', content: [{ text: 'Trả về ok=true.' }], schema: obj({ ok: { type: 'boolean' } }), maxTokens: 1000 }); if (!r.ok) throw new Error('AI trả lời lạ'); return 'Gọi AI bằng chữ: thành công'; });
+    if (textOk) await step('Gọi AI bằng ảnh', async () => {
+      const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d'); g.fillStyle = '#e33'; g.fillRect(0, 0, 64, 64);
+      const r = await askAI({ system: 'Trả lời ngắn.', content: [{ image: c.toDataURL('image/jpeg', .8).split(',')[1] }, { text: 'Ảnh này màu gì? Trả về color.' }], schema: obj({ color: { type: 'string' } }), maxTokens: 1000 });
+      return `Gọi AI bằng ảnh: thành công (AI thấy màu "${r.color}")`;
+    });
+    show(true);
   },
   saveBody: () => {
     const w = num($('#bW').value), waist = num($('#bWaist').value);

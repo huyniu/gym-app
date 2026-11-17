@@ -594,6 +594,44 @@ const DISHES = [
   ['Bia', '1 lon 330 ml', 330, 140, 1, 11, 0, ''],
   ['Nước ngọt có ga', '1 lon 330 ml', 330, 140, 0, 35, 0, 'coca pepsi'],
 ];
+// Dish photos from Wikimedia Commons: name -> [file, author, licence, licence URL, file page]. Files: img/food/<foodSlug>.jpg
+const foodSlug = n => n.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+const DISH_SRC = {
+  "Bánh cuốn": ["Bánh cuốn Thanh Trì.jpg","Casablanca1911 at vi.wikipedia","Public domain","","https://commons.wikimedia.org/wiki/File:B%C3%A1nh_cu%E1%BB%91n_Thanh_Tr%C3%AC.jpg"],
+  "Phở bò": ["Bowl of Meatball pho.jpg","SerraKnightz","CC BY 4.0","https://creativecommons.org/licenses/by/4.0","https://commons.wikimedia.org/wiki/File:Bowl_of_Meatball_pho.jpg"],
+  "Phở gà": ["Bowl of Meatball pho.jpg","SerraKnightz","CC BY 4.0","https://creativecommons.org/licenses/by/4.0","https://commons.wikimedia.org/wiki/File:Bowl_of_Meatball_pho.jpg"],
+  "Bún chả": ["Bún chả Vietnamese food.jpg","stuart_spivack","CC BY 2.0","https://creativecommons.org/licenses/by/2.0","https://commons.wikimedia.org/wiki/File:B%C3%BAn_ch%E1%BA%A3_Vietnamese_food.jpg"],
+  "Bún bò Huế": ["Bún bò Huế - Chợ Đông Ba (2024) - img 02.jpg","Chainwit.","CC BY 4.0","https://creativecommons.org/licenses/by/4.0","https://commons.wikimedia.org/wiki/File:B%C3%BAn_b%C3%B2_Hu%E1%BA%BF_-_Ch%E1%BB%A3_%C4%90%C3%B4ng_Ba_(2024)_-_img_02.jpg"],
+  "Bánh xèo": ["Banh Xeo with fish sauce and vegetables.jpg","HungryHuy","CC BY 2.0","https://creativecommons.org/licenses/by/2.0","https://commons.wikimedia.org/wiki/File:Banh_Xeo_with_fish_sauce_and_vegetables.jpg"],
+  "Trứng ốp la": ["Fried Egg 2.jpg","Matthew Murdoch","CC BY 2.0","https://creativecommons.org/licenses/by/2.0","https://commons.wikimedia.org/wiki/File:Fried_Egg_2.jpg"],
+  "Trứng luộc": ["Soft-boiled-egg.jpg","Amin","CC BY-SA 4.0","https://creativecommons.org/licenses/by-sa/4.0","https://commons.wikimedia.org/wiki/File:Soft-boiled-egg.jpg"],
+  "Sữa chua có đường": ["Joghurt.jpg","Rainer Zenz","CC BY-SA 3.0","http://creativecommons.org/licenses/by-sa/3.0/","https://commons.wikimedia.org/wiki/File:Joghurt.jpg"],
+  "Whey protein": ["Whey powder.jpg","Adrem68 at Dutch Wikipedia","Public domain","","https://commons.wikimedia.org/wiki/File:Whey_powder.jpg"],
+  "Xôi xéo": ["Xôi đỗ xanh.jpg","Hoangkid","CC BY-SA 4.0","https://creativecommons.org/licenses/by-sa/4.0","https://commons.wikimedia.org/wiki/File:X%C3%B4i_%C4%91%E1%BB%97_xanh.jpg"],
+  "Xôi gà": ["Xôi đỗ xanh.jpg","Hoangkid","CC BY-SA 4.0","https://creativecommons.org/licenses/by-sa/4.0","https://commons.wikimedia.org/wiki/File:X%C3%B4i_%C4%91%E1%BB%97_xanh.jpg"],
+  "Xôi thịt kho trứng": ["Xôi đỗ xanh.jpg","Hoangkid","CC BY-SA 4.0","https://creativecommons.org/licenses/by-sa/4.0","https://commons.wikimedia.org/wiki/File:X%C3%B4i_%C4%91%E1%BB%97_xanh.jpg"],
+  "Bánh mì pate thịt": ["Bánh mì thịt nướng.png","nsaum75","CC BY-SA 3.0","https://creativecommons.org/licenses/by-sa/3.0","https://commons.wikimedia.org/wiki/File:B%C3%A1nh_m%C3%AC_th%E1%BB%8Bt_n%C6%B0%E1%BB%9Bng.png"],
+  "Bánh mì trứng": ["Bánh mì thịt nướng.png","nsaum75","CC BY-SA 3.0","https://creativecommons.org/licenses/by-sa/3.0","https://commons.wikimedia.org/wiki/File:B%C3%A1nh_m%C3%AC_th%E1%BB%8Bt_n%C6%B0%E1%BB%9Bng.png"],
+  "Bánh mì thịt nướng": ["Bánh mì thịt nướng.png","nsaum75","CC BY-SA 3.0","https://creativecommons.org/licenses/by-sa/3.0","https://commons.wikimedia.org/wiki/File:B%C3%A1nh_m%C3%AC_th%E1%BB%8Bt_n%C6%B0%E1%BB%9Bng.png"],
+  "Bánh bao nhân thịt": ["Baozi Chengdu.JPG","Popo le Chien","CC0","http://creativecommons.org/publicdomain/zero/1.0/deed.en","https://commons.wikimedia.org/wiki/File:Baozi_Chengdu.JPG"],
+  "Bún riêu": ["Bún riêu đặc biệt.jpg","TarnishedPath","CC BY-SA 4.0","https://creativecommons.org/licenses/by-sa/4.0","https://commons.wikimedia.org/wiki/File:B%C3%BAn_ri%C3%AAu_%C4%91%E1%BA%B7c_bi%E1%BB%87t.jpg"],
+  "Bún thịt nướng": ["Bun thit nuong.jpg","Lưu Ly","Public domain","","https://commons.wikimedia.org/wiki/File:Bun_thit_nuong.jpg"],
+  "Hủ tiếu Nam Vang": ["Hu Tieu Nam Vang.jpg","Dianne Flor Reyno","CC BY 2.0","https://creativecommons.org/licenses/by/2.0","https://commons.wikimedia.org/wiki/File:Hu_Tieu_Nam_Vang.jpg"],
+  "Mì Quảng": ["Mì Quảng, Da Nang, Vietnam.jpg","Christopher Crouzet","CC BY-SA 4.0","https://creativecommons.org/licenses/by-sa/4.0","https://commons.wikimedia.org/wiki/File:M%C3%AC_Qu%E1%BA%A3ng,_Da_Nang,_Vietnam.jpg"],
+  "Mì tôm nấu trứng": ["Mama instant noodle block.jpg","Takeaway","CC BY-SA 3.0","https://creativecommons.org/licenses/by-sa/3.0","https://commons.wikimedia.org/wiki/File:Mama_instant_noodle_block.jpg"],
+  "Cháo lòng": ["Cháo lòng.jpg","hongnhung106","CC BY 2.0","https://creativecommons.org/licenses/by/2.0","https://commons.wikimedia.org/wiki/File:Ch%C3%A1o_l%C3%B2ng.jpg"],
+  "Cơm tấm sườn bì chả": ["Cơm Tấm, Da Nang, Vietnam.jpg","Christopher Crouzet","CC BY-SA 4.0","https://creativecommons.org/licenses/by-sa/4.0","https://commons.wikimedia.org/wiki/File:C%C6%A1m_T%E1%BA%A5m,_Da_Nang,_Vietnam.jpg"],
+  "Cơm gà": ["Lunch plate with salads.jpg","ThereMazo","CC BY-SA 4.0","https://creativecommons.org/licenses/by-sa/4.0","https://commons.wikimedia.org/wiki/File:Lunch_plate_with_salads.jpg"],
+  "Cơm rang dưa bò": ["Fried rice with chicken (17234644521).jpg","Vee Satayamas from Bangkok, Thailand","CC BY 2.0","https://creativecommons.org/licenses/by/2.0","https://commons.wikimedia.org/wiki/File:Fried_rice_with_chicken_(17234644521).jpg"],
+  "Cơm suất văn phòng": ["Com-Tam-2008.jpg","Kham Tran","CC BY-SA 3.0","https://creativecommons.org/licenses/by-sa/3.0","https://commons.wikimedia.org/wiki/File:Com-Tam-2008.jpg"],
+  "Bánh chưng": ["Banh chung vuong.jpg","vi:user:Viethavvh","Public domain","","https://commons.wikimedia.org/wiki/File:Banh_chung_vuong.jpg"],
+  "Gỏi cuốn": ["Homemade spring rolls (7010969349).jpg","pelican from Tokyo, Japan","CC BY-SA 2.0","https://creativecommons.org/licenses/by-sa/2.0","https://commons.wikimedia.org/wiki/File:Homemade_spring_rolls_(7010969349).jpg"],
+  "Nem rán / chả giò": ["Cha gio.jpg","amrufm","CC BY 2.0","https://creativecommons.org/licenses/by/2.0","https://commons.wikimedia.org/wiki/File:Cha_gio.jpg"],
+  "Cà phê sữa đá": ["Viet-coffee.jpg","Mike Verdone","Public domain","","https://commons.wikimedia.org/wiki/File:Viet-coffee.jpg"],
+  "Trà sữa trân châu": ["Bubble Tea.png","Howief","CC BY-SA 3.0","https://creativecommons.org/licenses/by-sa/3.0","https://commons.wikimedia.org/wiki/File:Bubble_Tea.png"],
+  "Bia": ["Bia hoi.jpg","Binh Giang","CC BY-SA 2.0","https://creativecommons.org/licenses/by-sa/2.0","https://commons.wikimedia.org/wiki/File:Bia_hoi.jpg"],
+  "Nước ngọt có ga": ["Tumbler of cola with ice.jpg","Simon Cousins from High Wycombe, England","CC BY 2.0","https://creativecommons.org/licenses/by/2.0","https://commons.wikimedia.org/wiki/File:Tumbler_of_cola_with_ice.jpg"],
+};
 // Image files: img/ex/<slug>-0.jpg (start position) and -1.jpg (end position), from free-exercise-db (Unlicense).
 const exSlug = name => name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
 const EX_MAP =Object.fromEntries(EX_DB.map(([n, g, p, s, st, tp]) => [n, { name: n, g, p, s, steps: st.split('|'), tips: tp ? tp.split('|') : [] }]));

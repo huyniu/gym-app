@@ -1,8 +1,9 @@
 // Network-first with cache fallback: always gets updates when online, works offline at the gym.
 importScripts('data.js'); // for EX_DB / exSlug: pre-cache every exercise image so demos work offline
-const CACHE = 'gymlog-v17';
+const CACHE = 'gymlog-v18';
 const ASSETS = ['./', './index.html', './data.js', './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png', './fonts/inter-latin.woff2', './fonts/inter-vi.woff2', './fonts/grotesk-latin.woff2', './fonts/grotesk-vi.woff2',
-  ...EX_DB.filter(([n]) => !NO_IMG.includes(n)).flatMap(([n]) => [0, 1].map(k => `./img/ex/${exSlug(n)}-${k}.jpg`))];
+  ...EX_DB.filter(([n]) => !NO_IMG.includes(n)).flatMap(([n]) => [0, 1].map(k => `./img/ex/${exSlug(n)}-${k}.jpg`)),
+  ...Object.keys(DISH_SRC).map(n => `./img/food/${foodSlug(n)}.jpg`)];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS.map(u => new Request(u, { cache: 'reload' })))));

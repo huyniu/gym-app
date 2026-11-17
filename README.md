@@ -20,7 +20,8 @@ App ghi chép tập gym cho iPhone. Đây là web app cài được lên màn h�
 - **AI (Gemini hoặc Claude)**: chọn trong Thêm → Cài đặt. **Gemini** dùng key miễn phí từ aistudio.google.com (có giới hạn lượt mỗi phút/ngày; ở gói miễn phí Google có thể dùng dữ liệu gửi lên để cải thiện sản phẩm). **Claude** dùng key từ console.anthropic.com, trả theo lượt (khoảng 500đ/ảnh, 750đ/lần nhận xét). Key chỉ lưu trên máy và không nằm trong file sao lưu. Ảnh bữa ăn và dữ liệu buổi tập chỉ được gửi đi khi bạn bấm dùng AI. AI được dặn nhận xét phũ, không khen xã giao, chấm Đạt / Tạm / Không đạt; khi tính calo thì ước theo mức cao nếu không chắc. Thêm → Cài đặt → Thử kết nối kiểm tra từng bước nếu AI báo lỗi.
 - **Lịch tự lùi khi bận**: các buổi trong tuần chạy theo thứ tự. Lỡ một ngày thì hôm sau app gợi ý bù buổi bị lỡ, các buổi sau lùi theo; dải tuần hiện buổi dự kiến mỗi ngày. Có nút "Hoặc theo lịch" và "Bỏ qua buổi này". Mỗi tuần mới bắt đầu lại từ buổi đầu; buổi không kịp được gợi ý bù vào ngày nghỉ.
 - **Điểm mỗi ngày (0–100)**: tập luyện 40 + ăn uống 40 + theo dõi 20; không ghi bữa = 0 điểm ăn uống. Trang chủ có "Tổng kết hôm qua" và "Hôm nay đến giờ", bấm vào để xem thiếu gì, ghi bù và nhờ AI chấm ngày (phũ). Biểu đồ điểm 30 ngày trong trang Cơ thể.
-- **Món Việt có sẵn**: phần Nhập tay có 35 món phổ biến (xôi, bánh mì, phở, bún, cơm tấm, trà sữa, bia…) với calo cho 1 phần, chọn số phần; món không có thì bấm "Hỏi AI" để ước tính theo tên món.
+- **Món Việt có sẵn**: phần Nhập tay có 35 món phổ biến (kèm ảnh) (xôi, bánh mì, phở, bún, cơm tấm, trà sữa, bia…) với calo cho 1 phần, chọn số phần; món không có thì bấm "Hỏi AI" để ước tính theo tên món.
+- **Ảnh và giờ**: mỗi món trong nhật ký có ảnh (ảnh món, hoặc ảnh thu nhỏ của bữa đã chụp, giữ 60 ngày) và giờ ăn; buổi tập hiện giờ bắt đầu–kết thúc.
 - **Ghi bù**: buổi tập bị lỡ ghi bù từ bảng tổng kết ngày; bữa ăn chụp/chọn ảnh hoặc nhập tay đều chọn được ngày (7 ngày gần nhất) và bữa; ảnh cũ từ thư viện được tự đoán ngày và bữa theo giờ chụp.
 - **Nhắc 23:55**: dùng app Phím tắt của iPhone (hướng dẫn trong Cài đặt). Mở app sau 21:00 mà hôm nay còn thiếu thì app tự hiện bảng kiểm tra.
 - **Cơ thể** (Thêm → Cơ thể): ghi cân nặng và vòng bụng, biểu đồ, đếm ngược đến Tết (6/2/2027), nhắc đo vòng bụng mỗi 2 tuần và chụp ảnh tiến độ mỗi tháng. Cân ít nhất 3 lần/tuần trong 2 tuần thì app so xu hướng cân với mục tiêu và gợi ý chỉnh ±150 kcal (tối đa 1 lần/tuần, không xuống dưới mức an toàn).
@@ -30,6 +31,8 @@ App ghi chép tập gym cho iPhone. Đây là web app cài được lên màn h�
 Dữ liệu bài tập, lịch tập và món ăn nằm trong `data.js`.
 
 ### Nguồn ảnh
+Ảnh món ăn trong `img/food/` (thu nhỏ, cắt vuông) lấy từ Wikimedia Commons; tác giả và giấy phép từng ảnh (CC BY, CC BY-SA, CC0, public domain) nằm trong `DISH_SRC` của `data.js` và mục **Nguồn ảnh** trong Cài đặt.
+
 Ảnh demo bài tập trong `img/ex/` (đã nén còn 360px) lấy từ [free-exercise-db](https://github.com/yuhonas/free-exercise-db). Repo này dùng giấy phép Unlicense (miễn phí bản quyền) và không ghi giấy phép riêng cho phần ảnh. Nếu sau này muốn phát hành app công khai, nên kiểm tra lại nguồn gốc ảnh.
 
 ## Cài lên iPhone bằng GitHub Pages (khuyên dùng)

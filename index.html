@@ -916,7 +916,7 @@ function viewSettings() {
       <div class="title" style="margin-bottom:10px">${ic('bolt')} AI</div>
       <div class="seg" style="margin-bottom:10px">${[['gemini', 'Gemini (miễn phí)'], ['claude', 'Claude']].map(([k, l]) => `<button class="${aiProv() === k ? 'on' : ''}" data-act="setAi" data-v="${k}">${l}</button>`).join('')}</div>
       <div class="muted small" style="margin-bottom:10px">Dùng để chụp bữa ăn tính calo và AI nhận xét buổi tập. ${aiProv() === 'gemini'
-        ? 'Lấy key miễn phí tại <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" style="color:var(--accent)">aistudio.google.com</a> → Get API key → Create API key (key bắt đầu bằng AIza). Gói miễn phí có giới hạn số lượt mỗi phút và mỗi ngày.'
+        ? 'Lấy key miễn phí tại <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" style="color:var(--accent)">aistudio.google.com</a> → Get API key → Create API key (key bắt đầu bằng AQ. hoặc AIza). Gói miễn phí có giới hạn số lượt mỗi phút và mỗi ngày.'
         : 'Tạo key tại <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener" style="color:var(--accent)">console.anthropic.com</a> → API Keys (cần nạp trước, tối thiểu $5).'} Key chỉ lưu trên máy này và <b>không</b> nằm trong file sao lưu.</div>
       ${hasKey() ? `<div class="small" style="margin-bottom:8px">Đã lưu key ${AI[aiProv()].name} <b>…${esc(getKey().slice(-4))}</b></div>` : ''}
       <input id="apiKey" type="password" placeholder="${hasKey() ? 'Dán key mới để thay' : AI[aiProv()].hint}" autocomplete="off" autocorrect="off" spellcheck="false">
@@ -1225,8 +1225,8 @@ function aiReviewHtml(a) {
 /* ---------- AI providers (called directly from the phone with the user's own key) ---------- */
 // Keys live in their own localStorage entries, outside S, so backups never contain them.
 const AI = {
-  gemini: { name: 'Gemini', store: 'gymlog.geminikey', prefix: 'AIza', hint: 'AIza…' },
-  claude: { name: 'Claude', store: 'gymlog.apikey', prefix: 'sk-ant-', hint: 'sk-ant-…' },
+  gemini: { name: 'Gemini', store: 'gymlog.geminikey', prefix: ['AQ.', 'AIza'], hint: 'AQ.… hoặc AIza…' },
+  claude: { name: 'Claude', store: 'gymlog.apikey', prefix: ['sk-ant-'], hint: 'sk-ant-…' },
 };
 const aiProv = () => AI[S.settings.ai] ? S.settings.ai : 'gemini';
 const keyOf = p => { try { return localStorage.getItem(AI[p].store) || ''; } catch (e) { return ''; } };
@@ -1715,7 +1715,7 @@ const A = {
     const v = $('#apiKey').value.trim();
     if (!v) { toast('Dán API key vào ô trước'); return; }
     const p = AI[aiProv()];
-    if (!v.startsWith(p.prefix)) { toast(`Key ${p.name} phải bắt đầu bằng ${p.prefix}`, 3000); return; }
+    if (!p.prefix.some(x => v.startsWith(x))) { toast(`Key ${p.name} phải bắt đầu bằng ${p.prefix.join(" hoặc ")}`, 3000); return; }
     try { localStorage.setItem(p.store, v); } catch (e) {} render(); toast('Đã lưu key ' + p.name);
   },
   clearKey: () => { if (confirm('Xóa API key khỏi máy này?')) { try { localStorage.removeItem(AI[aiProv()].store); } catch (e) {} render(); } },

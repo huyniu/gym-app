@@ -433,6 +433,15 @@ h2{font-weight:600;font-size:18px}
 .hero-note .ic{flex:none;margin-top:1px}
 .hero-alt{position:relative;display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:12px;font-size:13px;font-weight:600}
 .hero-alt button{color:inherit;text-decoration:underline;text-underline-offset:2px;text-align:left;padding:4px 0}
+.dtiles{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.dtile{display:flex;flex-direction:column;align-items:flex-start;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 14px}
+.dtile small{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.dtile b{font-family:"Space Grotesk",sans-serif;font-size:28px;font-weight:700;line-height:1.1;margin-top:2px}.dtile b span{font-size:13px;color:var(--muted);margin-left:2px}
+.dtile em{font-style:normal;font-size:12px;color:var(--muted);margin-top:1px}
+.dpart{display:grid;grid-template-columns:72px 1fr 40px;align-items:center;gap:8px;font-size:12px;margin-top:5px}.dpart .bar{margin:0}.dpart b{text-align:right;font-size:12px}
+.todo{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.todo .btn{flex:1;white-space:nowrap;background:var(--accent);color:var(--accent-ink)}
+.slot{display:flex;gap:8px;margin:0 0 10px}.slot select{flex:1;min-width:0;padding:9px 30px 9px 10px;font-size:14px}.slot .seg{flex:1.6}.slot .seg button{padding:7px 0;font-size:13px}
+.slot-hint{font-size:12px;color:var(--muted);margin:-4px 0 10px}
 </style>
 </head>
 <body>
@@ -460,7 +469,7 @@ h2{font-weight:600;font-size:18px}
 <script>
 'use strict';
 const KEY = 'gymlog.v1';
-const APP_VERSION = '2026.11.18';
+const APP_VERSION = '2026.11.18b';
 const DEFAULT_EX = EX_DB.map(e => e[0]);
 
 const $ = s => document.querySelector(s);
@@ -748,7 +757,7 @@ function viewWorkout() {
   const a = S.active;
   if (!a) {
     const g = homeSuggestion(), st = schedState(), todayPlan = st && !st.trainedToday ? st.plan[st.dow] : null;
-    return `${backupCard()}${bodyReminder()}${weekStrip()}
+    return `${backupCard()}${bodyReminder()}${dayCard()}${weekStrip()}
     <div class="hero">${ic('barbell', 'hero-wm')}
       <div class="hero-top"><span class="hero-tag"><i></i>${esc(g.k)}</span>${g.tag ? `<span class="hero-tag2">${esc(g.tag)}</span>` : ''}</div>
       <h3>${esc(g.title)}</h3>
@@ -949,6 +958,17 @@ function viewSettings() {
       <input id="apiKey" type="password" placeholder="${hasKey() ? 'Dán key mới để thay' : AI[aiProv()].hint}" autocomplete="off" autocorrect="off" spellcheck="false">
       <div class="row gap mt"><button class="btn grow" data-act="saveKey">Lưu key</button><button class="btn grow" data-act="testKey" ${hasKey() ? '' : 'disabled'}>Thử kết nối</button></div>
       ${hasKey() ? '<button class="text-btn" data-act="clearKey">Xóa key</button>' : ''}
+    </div>
+    <div class="card">
+      <div class="title" style="margin-bottom:4px">${ic('clock')} Nhắc ghi chép lúc 23:55</div>
+      <div class="muted small" style="margin-bottom:8px">Web app không tự hẹn giờ thông báo được, nên dùng app <b>Phím tắt</b> có sẵn trên iPhone:</div>
+      <ol class="steps small" style="font-size:14px">
+        <li>Mở app <b>Phím tắt</b> → tab <b>Tự động hóa</b> → nút <b>+</b>.</li>
+        <li>Chọn <b>Thời gian trong ngày</b> → đặt <b>23:55</b>, <b>Hằng ngày</b> → chọn <b>Chạy ngay lập tức</b> → Tiếp.</li>
+        <li>Thêm tác vụ <b>Hiển thị thông báo</b>, nội dung: <i>Đã ghi ăn và tập hôm nay chưa? Mở Gym Log.</i> → Xong.</li>
+        <li>(Tùy chọn) Thêm tác vụ <b>Mở ứng dụng</b> và chọn <b>Gym Log</b> nếu có trong danh sách.</li>
+      </ol>
+      <div class="muted small mt">Mở app sau 21:00 mà hôm nay còn thiếu (chưa tập, chưa ghi bữa, chưa cân), app tự hiện bảng kiểm tra để ghi bù.</div>
     </div>
     <div class="card">
       <div class="title" style="margin-bottom:4px">Sao lưu dữ liệu</div>
@@ -1387,7 +1407,17 @@ async function aiReviewWorkout(id) {
 
 /* ---------- food log ---------- */
 const dayKey = (t = Date.now()) => { const d = new Date(t); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
-let foodDay = dayKey(), mealDraft = null;
+let foodDay = dayKey(), mealDraft = null, slot = null;
+const MEAL_H = { 'Sáng': 8, 'Trưa': 12, 'Chiều': 15, 'Tối': 19 };
+const newSlot = k => ({ k, meal: k === dayKey() ? mealOf(Date.now()) : 'Trưa' });
+const slotTime = () => slot.k === dayKey() && slot.meal === mealOf(Date.now()) ? Date.now() : dayStart(slot.k) + MEAL_H[slot.meal] * 36e5;
+function slotPicker() {
+  const days = Array.from({ length: 7 }, (_, i) => addDays(dayKey(), -i));
+  if (!days.includes(slot.k)) days.push(slot.k);
+  return `<div class="slot"><select id="slotDay" aria-label="Ngày">${days.map(k => `<option value="${k}" ${k === slot.k ? 'selected' : ''}>${esc(dayLabel(k).charAt(0).toUpperCase() + dayLabel(k).slice(1))}</option>`).join('')}</select>
+    <div class="seg">${Object.keys(MEAL_H).map(m => `<button class="${slot.meal === m ? 'on' : ''}" data-act="setSlotMeal" data-v="${m}">${m}</button>`).join('')}</div></div>
+    ${slot.guessed ? '<div class="slot-hint">Đã đoán ngày và bữa theo giờ của ảnh, sửa nếu sai.</div>' : ''}`;
+}
 const mealOf = t => { const h = new Date(t).getHours(); return h < 10 ? 'Sáng' : h < 14 ? 'Trưa' : h < 17 ? 'Chiều' : 'Tối'; };
 function dayTotals(k) { return (S.food[k] || []).reduce((a, f) => ({ kcal: a.kcal + f.kcal, p: a.p + f.p, c: a.c + f.c, f: a.f + f.f }), { kcal: 0, p: 0, c: 0, f: 0 }); }
 function foodLogCard(t) {
@@ -1443,13 +1473,14 @@ async function aiMeal(dataUrl, hint) {
 }
 function mealContext() {
   const p = S.profile; if (!p) return 'Chưa có mục tiêu calo.';
-  const t = targets(p), tot = dayTotals(foodDay);
+  const t = targets(p), tot = dayTotals(slot ? slot.k : foodDay);
   return `Mục tiêu: ${GOALS[p.goal][0]}, ${t.kcal} kcal và ${t.protein} g đạm mỗi ngày. Đã ăn trước bữa này: ${Math.round(tot.kcal)} kcal, ${Math.round(tot.p)} g đạm.`;
 }
 function renderMealSheet() {
   const m = mealDraft, tot = m.items.reduce((a, i) => a + i.kcal, 0);
   openSheet(`<div class="sheet-h"><h3>Bữa ăn</h3><button class="link" data-act="closeSheet">Hủy</button></div>
     ${m.img ? `<img class="meal-img" src="${m.img}" alt="Ảnh bữa ăn">` : ''}
+    ${m.stage !== 'busy' ? slotPicker() : ''}
     ${m.stage === 'note' ? `<input id="mealHint" placeholder="Ghi chú (tùy chọn): VD ăn nửa bát cơm" value="${esc(m.hint)}">
       <button class="btn primary big mt" data-act="mealAnalyze">${ic('bolt')} AI tính calo</button>
       <div class="muted small" style="margin-top:6px;text-align:center">Ảnh được gửi tới ${aiProv() === 'gemini' ? 'Google (Gemini)' : 'Anthropic (Claude) · khoảng 500đ/ảnh'} để phân tích</div>`
@@ -1460,10 +1491,12 @@ function renderMealSheet() {
         <input class="mi-g" inputmode="decimal" data-mi="${i}" data-k="grams" value="${fmtNum(Math.round(it.grams))}"><span class="muted small">g</span>
         <span class="mi-k" id="mik${i}">${fmtNum(Math.round(it.kcal))}</span><button class="del" data-act="mealDel" data-i="${i}" aria-label="Bỏ">${ic('x')}</button></div>`).join('') || '<div class="empty">Không nhận ra món nào</div>'}
       <div class="row mt"><span class="grow muted">Tổng</span><b id="mealTot">${fmtNum(Math.round(tot))} kcal</b></div>
-      <button class="btn primary big mt" data-act="mealSave" ${m.items.length ? '' : 'disabled'}>Thêm vào nhật ký</button>`}`, () => { mealDraft = null; });
+      <button class="btn primary big mt" data-act="mealSave" ${m.items.length ? '' : 'disabled'}>Thêm vào nhật ký</button>`}`, () => { mealDraft = null; slot = null; });
 }
 function openManualFood() {
+  slot = newSlot(foodDay);
   openSheet(`<div class="sheet-h"><h3>Nhập tay</h3><button class="link" data-act="closeSheet">Đóng</button></div>
+    ${slotPicker()}
     <input id="mfQ" class="search" placeholder="Tìm món (VD: ức gà, cơm)…" autocomplete="off">
     <div id="mfList" class="pick-list"></div>
     <div class="muted small" style="margin:12px 0 6px">Hoặc nhập món tự do:</div>
@@ -1477,9 +1510,9 @@ function renderManualList(q) {
     .map(n => `<button class="pick" data-act="mfPick" data-name="${esc(n)}"><span class="grow">${esc(n)}</span><span class="muted small">${FOODS[n][0]} kcal/100g</span></button>`).join('');
 }
 function addFood(items) {
-  const t = mealDraft?.t || (foodDay === dayKey() ? Date.now() : new Date(foodDay + 'T12:00').getTime());
-  (S.food[foodDay] = S.food[foodDay] || []).push(...items.map(i => ({ id: uid(), t, ...i })));
-  save();
+  const s = slot || newSlot(foodDay), t = slot ? slotTime() : (foodDay === dayKey() ? Date.now() : dayStart(foodDay) + 12 * 36e5);
+  (S.food[s.k] = S.food[s.k] || []).push(...items.map(i => ({ id: uid(), t, ...i })));
+  foodDay = s.k; save();
 }
 
 function homeHeader() {
@@ -1572,6 +1605,7 @@ function viewBody() {
     </div>
     ${ws.length >= 2 ? `<div class="section-h"><h2>Cân nặng</h2><span class="muted small">${ws.length} lần cân</span></div><div class="card">${chart(ws.slice(-60).map(b => b.w), ws.slice(-60).map(b => new Date(b.t).toLocaleDateString('vi-VN', { day: 'numeric', month: 'numeric' })))}</div>` : ''}
     ${wa.length >= 2 ? `<div class="section-h"><h2>Vòng bụng</h2></div><div class="card">${chart(wa.map(b => b.waist), wa.map(b => new Date(b.t).toLocaleDateString('vi-VN', { day: 'numeric', month: 'numeric' })))}</div>` : ''}
+    ${scoreChart()}
     ${log.length ? `<div class="section-h"><h2>Lịch sử</h2></div><div class="card" style="padding:4px 14px">${[...log].reverse().slice(0, 30).map(b => `<div class="food" style="align-items:center">
       <span class="grow">${new Date(b.t).toLocaleDateString('vi-VN', { weekday: 'short', day: 'numeric', month: 'numeric' })}</span>
       <span>${b.w ? fmtNum(b.w) + ' kg' : ''}${b.w && b.waist ? ' · ' : ''}${b.waist ? fmtNum(b.waist) + ' cm' : ''}</span>
@@ -1589,15 +1623,121 @@ const DOW_VI = ['', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
 function schedState(now = Date.now()) {
   const seq = schedSeq(); if (!seq.length) return null;
   const ws = weekStart(now), dow = dowOf(now), sod = new Date(now).setHours(0, 0, 0, 0);
-  const marks = [...S.workouts.filter(w => w.startedAt >= ws).map(w => seq.indexOf(routineOfW(w))),
-    ...(S.skips || []).filter(s => s.t >= ws).map(s => seq.findIndex(r => r.id === s.id))].filter(i => i >= 0);
+  const marks = [...S.workouts.filter(w => w.startedAt >= ws && w.startedAt < now).map(w => seq.indexOf(routineOfW(w))),
+    ...(S.skips || []).filter(s => s.t >= ws && s.t < now).map(s => seq.findIndex(r => r.id === s.id))].filter(i => i >= 0);
   const pos = marks.length ? Math.max(...marks) + 1 : 0;
-  const trainedToday = S.workouts.some(w => w.startedAt >= sod);
+  const trainedToday = S.workouts.some(w => w.startedAt >= sod && w.startedAt < now);
   const lag = Math.max(0, seq.filter(r => r.day < dow).length - pos);
   const plan = {}, from = trainedToday ? dow + 1 : dow; let k = pos;
   for (let d = from; d <= 7 && k < seq.length; d++) if (seq.some(r => r.day === d)) plan[d] = seq[k++];
   const restLeft = []; for (let d = from; d <= 7; d++) if (!seq.some(r => r.day === d)) restLeft.push(d);
   return { seq, due: seq[pos] || null, lag, dow, todayR: seq.find(r => r.day === dow) || null, trainedToday, plan, dropped: seq.slice(k), restLeft };
+}
+
+/* ---------- daily score: training 40 + food 40 + tracking 20 ---------- */
+const dayStart = k => new Date(k + 'T00:00').getTime();
+const addDays = (k, n) => { const d = new Date(k + 'T12:00'); d.setDate(d.getDate() + n); return dayKey(d); };
+const dayLabel = k => k === dayKey() ? 'Hôm nay' : k === addDays(dayKey(), -1) ? 'Hôm qua' : new Date(k + 'T12:00').toLocaleDateString('vi-VN', { weekday: 'long', day: 'numeric', month: 'numeric' });
+function dayScore(k) {
+  const t0 = dayStart(k), t1 = t0 + 864e5, isToday = k === dayKey(), items = [], todo = [];
+  const ws = S.workouts.filter(w => w.startedAt >= t0 && w.startedAt < t1);
+  const st = schedState(t0 + 1), planned = st ? st.plan[dowOf(t0)] : null;
+  // training (40)
+  let train;
+  if (ws.length) {
+    const best = Math.max(...ws.map(w => reviewWorkout(w).score));
+    train = Math.round(40 * best / 100);
+    items.push([best >= 70 ? 'ok' : 'warn', `Tập ${ws.map(w => w.name).join(', ')}: ${best}/100 điểm buổi tập`]);
+  } else if (planned) {
+    train = 0; items.push(['warn', `${isToday ? 'Chưa tập' : 'Bỏ buổi'} ${planned.name}`]);
+    todo.push(isToday ? { act: 'startRoutine', id: planned.id, label: `Tập ${planned.name}` } : { act: 'backfillDay', k, id: planned.id, label: 'Ghi bù buổi tập' });
+  } else if (st) {
+    train = st.lag ? 25 : 40;
+    items.push([st.lag ? 'info' : 'ok', st.lag ? `Ngày nghỉ nhưng lịch đang lùi ${st.lag} buổi, có thể tập bù` : 'Ngày nghỉ theo lịch']);
+  } else { train = 20; items.push(['info', 'Chưa có lịch tập, không tập']); }
+  // food (40) — nothing logged means nothing known: 0
+  const list = S.food[k] || [], tot = dayTotals(k), p = S.profile;
+  let food = 0;
+  if (!list.length) { items.push(['warn', isToday ? 'Chưa ghi bữa nào' : 'Không ghi bữa nào']); todo.push({ act: 'gotoFood', k, label: 'Ghi bữa ăn' }); }
+  else if (p) {
+    const t = targets(p), dev = Math.abs(tot.kcal - t.kcal) / t.kcal, pr = tot.p / t.protein;
+    const kp = dev <= .1 ? 25 : dev >= .4 ? 0 : 25 * (1 - (dev - .1) / .3), pp = pr >= .9 ? 15 : 15 * Math.max(0, pr) / .9;
+    food = Math.round(kp + pp);
+    const diff = Math.round(tot.kcal - t.kcal);
+    items.push([dev <= .1 ? 'ok' : 'warn', `Calo ${fmtNum(Math.round(tot.kcal))}/${fmtNum(t.kcal)} (${diff > 0 ? '+' : ''}${fmtNum(diff)})${isToday && tot.kcal < t.kcal * .9 ? ' · ngày chưa hết' : ''}`]);
+    items.push([pr >= .9 ? 'ok' : 'warn', `Đạm ${Math.round(tot.p)}/${t.protein} g (${Math.round(pr * 100)}%)`]);
+  } else { food = 20; items.push(['info', 'Chưa có mục tiêu calo (Thực đơn → nhập thông tin)']); }
+  // tracking (20)
+  const weighed = (S.body || []).some(b => b.w && b.t >= t0 && b.t < t1), meals = new Set(list.map(f => mealOf(f.t))).size;
+  const track = (weighed ? 10 : 0) + (meals >= 3 ? 10 : meals === 2 ? 6 : meals === 1 ? 3 : 0);
+  items.push([weighed ? 'ok' : 'warn', weighed ? 'Đã cân' : 'Chưa cân']);
+  if (!weighed && isToday) todo.push({ act: 'tab', tab: 'body', label: 'Cân ngay' });
+  if (list.length && meals < 3) items.push(['info', `Mới ghi ${meals} bữa`]);
+  const score = train + food + track;
+  return { k, score, grade: score >= 85 ? 'Xuất sắc' : score >= 70 ? 'Tốt' : score >= 50 ? 'Ổn' : 'Kém', parts: [['Tập luyện', train, 40], ['Ăn uống', food, 40], ['Theo dõi', track, 20]],
+    items, todo, ws, planned, hasData: ws.length > 0 || list.length > 0 || weighed };
+}
+function dayCard() {
+  if (!S.profile && !S.workouts.length) return '';
+  const y = dayScore(addDays(dayKey(), -1)), t = dayScore(dayKey());
+  const tile = (d, lbl) => `<button class="dtile" data-act="openDay" data-k="${d.k}"><small>${lbl}</small><b style="color:${recColor(d.score * 1.0)}">${d.score}<span>/100</span></b><em>${d.grade}${S.dayAI?.[d.k] ? ' · AI: ' + esc(S.dayAI[d.k].verdict) : ''}</em></button>`;
+  return `<div class="dtiles">${tile(y, 'Tổng kết hôm qua')}${tile(t, 'Hôm nay đến giờ')}</div>`;
+}
+function openDay(k) {
+  const d = dayScore(k), a = S.dayAI?.[k];
+  openSheet(`<div class="sheet-h"><h3>${esc(dayLabel(k).charAt(0).toUpperCase() + dayLabel(k).slice(1))}</h3><button class="link" data-act="closeSheet">Đóng</button></div>
+    <div class="score"><div class="ring" style="--p:${d.score}"><b>${d.score}</b></div><div class="grow"><div class="title">${d.grade}</div>
+      ${d.parts.map(([n, v, m]) => `<div class="dpart"><span>${n}</span><div class="bar thin"><i style="width:${v / m * 100}%;background:${recColor(v / m * 100)}"></i></div><b>${v}/${m}</b></div>`).join('')}</div></div>
+    <div class="rev">${d.items.map(([kd, t]) => `<div class="rev-i"><span style="color:${REV_IC[kd][1]}">${ic(REV_IC[kd][0])}</span><span>${esc(t)}</span></div>`).join('')}</div>
+    ${d.todo.length ? `<div class="todo">${d.todo.map(x => `<button class="btn" data-act="${x.act}" ${x.id ? `data-id="${x.id}"` : ''} ${x.k ? `data-k="${x.k}"` : ''} ${x.tab ? `data-tab="${x.tab}"` : ''}>${esc(x.label)}</button>`).join('')}</div>` : ''}
+    <div id="aiBox">${a ? aiDayHtml(a) + `<button class="text-btn" data-act="aiDay" data-k="${k}">${ic('refresh')} Chấm lại</button>`
+      : `<button class="btn big mt" data-act="aiDay" data-k="${k}">${ic('bolt')} AI chấm ngày ${k === dayKey() ? 'hôm nay' : 'này'}</button>
+      <div class="muted small" style="margin-top:6px;text-align:center">${hasKey() ? 'Cần mạng' : 'Cần nhập API key trong Cài đặt'}</div>`}</div>`);
+}
+function aiDayHtml(a) {
+  const vc = { 'Đạt': 'var(--ok)', 'Tạm': 'var(--warn)', 'Không đạt': 'var(--danger)' }[a.verdict];
+  return `<div class="ai-card"><div class="ai-h">${ic('bolt')} AI chấm ngày</div>
+    <div class="verdict" style="color:${vc};background:color-mix(in srgb, ${vc} 15%, transparent)"><b>${esc(a.verdict)}</b><span>${esc(a.verdictReason)}</span></div>
+    <p>${esc(a.summary)}</p><h4>Lỗi lớn nhất</h4><p>${esc(a.biggestMistake)}</p><h4>Ngày mai phải làm</h4><p>${esc(a.tomorrow)}</p></div>`;
+}
+const DAY_SCHEMA = obj({ verdict: { type: 'string', enum: ['Đạt', 'Tạm', 'Không đạt'] }, verdictReason: { type: 'string' }, summary: { type: 'string' }, biggestMistake: { type: 'string' }, tomorrow: { type: 'string' } });
+async function aiReviewDay(k) {
+  const d = dayScore(k), p = S.profile, t = p ? targets(p) : null, tot = dayTotals(k);
+  const data = {
+    date: k, isToday: k === dayKey(), nowHour: new Date().getHours(), autoScore: d.score, breakdown: d.parts.map(([n, v, m]) => `${n} ${v}/${m}`), findings: d.items.map(i => i[1]),
+    plannedSession: d.planned?.name || 'ngày nghỉ hoặc không có lịch',
+    workouts: d.ws.map(w => ({ name: w.name, minutes: Math.round((w.endedAt - w.startedAt) / 6e4), score: reviewWorkout(w).score, exercises: w.exercises.map(e => ({ name: e.name, sets: e.sets.map(s => `${s.w}kg×${s.r}`) })) })),
+    food: (S.food[k] || []).map(f => ({ meal: mealOf(f.t), name: f.name, grams: f.g, kcal: Math.round(f.kcal), protein: Math.round(f.p) })),
+    totals: { kcal: Math.round(tot.kcal), protein: Math.round(tot.p), carbs: Math.round(tot.c), fat: Math.round(tot.f) },
+    targets: t ? { kcal: t.kcal, protein: t.protein, goal: GOALS[p.goal][0] } : null,
+    weight: (S.body || []).find(b => b.w && dayKey(b.t) === k)?.w || null,
+  };
+  return askAI({
+    system: 'Bạn là huấn luyện viên kiêm chuyên gia dinh dưỡng cực kỳ khó tính, nói tiếng Việt, phũ và thẳng. Chấm một NGÀY của người tập dựa trên JSON: buổi tập, bữa ăn đã ghi, tổng calo/đạm so với mục tiêu, cân nặng, điểm tự động. ' +
+      'Luật: cấm khen xã giao và câu an ủi; không ghi bữa ăn = coi như không kiểm soát được ăn uống, phải chê; bỏ buổi tập theo lịch là lỗi nặng; nếu isToday=true và còn sớm (nowHour < 20) thì đánh giá phần đã qua và nói còn phải làm gì trong ngày. ' +
+      'verdict: "Đạt" chỉ khi tập đúng lịch (hoặc nghỉ đúng lịch), calo trong ±10% mục tiêu, đạm ≥ 90%; thiếu dữ liệu hoặc lệch nhiều thì "Không đạt"; còn lại "Tạm". verdictReason: 1 câu có số liệu. ' +
+      'summary: 2 câu phũ. biggestMistake: 1 lỗi quan trọng nhất kèm số liệu. tomorrow: 1–2 việc cụ thể phải làm ngày mai (hoặc tối nay nếu isToday). ' +
+      'An toàn: không khuyên ăn dưới mục tiêu calo, không khuyên tập bù quá sức; không chẩn đoán y tế. Chỉ nói điều có trong dữ liệu.',
+    content: [{ text: JSON.stringify(data) }], schema: DAY_SCHEMA, think: 'MEDIUM',
+  });
+}
+// Evening check: after 21:00 (or when opened with ?check), show today's sheet once per day if something is missing.
+function eveningCheck(force) {
+  const k = dayKey();
+  if (!force && (new Date().getHours() < 21 || S.checkShown === k || S.active)) return;
+  if (!S.profile && !S.workouts.length) return;
+  const d = dayScore(k);
+  if (!force && !d.todo.length) return;
+  S.checkShown = k; save(); openDay(k);
+}
+function scoreChart() {
+  const first = Math.min(...[...S.workouts.map(w => w.startedAt), ...(S.body || []).map(b => b.t), ...Object.keys(S.food).map(dayStart)].filter(isFinite));
+  if (!isFinite(first)) return '';
+  const days = []; for (let i = 29; i >= 1; i--) { const k = addDays(dayKey(), -i); if (dayStart(k) + 864e5 > first) days.push(k); }
+  if (days.length < 2) return '';
+  const sc = days.map(k => dayScore(k).score), avg = Math.round(sc.reduce((a, b) => a + b, 0) / sc.length);
+  return `<div class="section-h"><h2>Điểm kỷ luật mỗi ngày</h2><span class="muted small">TB ${avg}/100 · ${days.length} ngày</span></div>
+    <div class="card">${chart(sc, days.map(k => new Date(k + 'T12:00').toLocaleDateString('vi-VN', { day: 'numeric', month: 'numeric' })))}</div>`;
 }
 
 /* ---------- more ---------- */
@@ -1699,7 +1839,7 @@ async function requestWake() {
     wake = await navigator.wakeLock.request('screen'); wake.addEventListener('release', () => { wake = null; }); } } catch (e) {}
 }
 function releaseWake() { try { if (wake) wake.release(); } catch (e) {} wake = null; }
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { requestWake(); tick(); } });
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { requestWake(); tick(); if ($('#sheet').hidden) eveningCheck(false); } });
 
 /* ---------- actions ---------- */
 function newSets(n, name) { return Array.from({ length: Math.max(1, n) }, () => ({ w: '', r: '', done: false })); }
@@ -1728,7 +1868,7 @@ const A = {
     const dur = num(editW._dur); if (dur < 1 || dur > 600) { toast('Thời lượng phải từ 1 đến 600 phút'); return; }
     const w = { id: editW.id, name: editW.name.trim() || 'Buổi tập', startedAt: editW.startedAt, endedAt: editW.startedAt + dur * 6e4, exercises: exs,
       ...(editW.plan ? { plan: editW.plan } : {}), ...(editW.routineId ? { routineId: editW.routineId } : {}) };
-    S.workouts = S.workouts.map(x => x.id === w.id ? w : x).sort((a, b) => b.startedAt - a.startedAt);
+    S.workouts = (S.workouts.some(x => x.id === w.id) ? S.workouts.map(x => x.id === w.id ? w : x) : [...S.workouts, w]).sort((a, b) => b.startedAt - a.startedAt);
     recomputePRs(); save(); editW = null; tab = 'history'; openId = w.id; render(); window.scrollTo(0, 0); toast('Đã lưu thay đổi');
   },
   delSetAt: d => { const ex = target().exercises[+d.i]; if (ex.sets.length > 1) { ex.sets.splice(+d.j, 1); render(); } else toast('Mỗi bài cần ít nhất 1 set (hoặc xóa cả bài)'); },
@@ -1807,17 +1947,18 @@ const A = {
   mealDel: d => { mealDraft.items.splice(+d.i, 1); renderMealSheet(); },
   mealSave: () => {
     addFood(mealDraft.items.filter(i => i.grams > 0).map(i => ({ name: i.name.trim() || 'Món ăn', g: Math.round(i.grams), kcal: i.kcal, p: i.protein, c: i.carbs, f: i.fat, src: 'ai' })));
-    mealDraft = null; sheetOnClose = null; closeSheet(); render(); toast('Đã thêm vào nhật ký');
+    const lbl = `${slot.meal.toLowerCase()} ${dayLabel(slot.k).toLowerCase()}`; mealDraft = null; slot = null; sheetOnClose = null; closeSheet(); render(); toast(`Đã thêm vào bữa ${lbl}`);
   },
   addFoodManual: () => openManualFood(),
+  setSlotMeal: d => { slot.meal = d.v; slot.guessed = false; document.querySelectorAll('[data-act="setSlotMeal"]').forEach(b => b.classList.toggle('on', b.dataset.v === d.v)); $('.slot-hint')?.remove(); },
   mfPick: d => {
     const g = num(prompt(`${d.name}: bao nhiêu gram (đã nấu chín)?`, '100')); if (g <= 0) return;
-    const [k, p, c, f] = macro(d.name, g); addFood([{ name: d.name, g, kcal: k, p, c, f, src: 'manual' }]); closeSheet(); render(); toast(`Đã thêm ${Math.round(k)} kcal`);
+    const [k, p, c, f] = macro(d.name, g); addFood([{ name: d.name, g, kcal: k, p, c, f, src: 'manual' }]); slot = null; closeSheet(); render(); toast(`Đã thêm ${Math.round(k)} kcal`);
   },
   mfSave: () => {
     const name = $('#mfName').value.trim(), k = num($('#mfKcal').value), p = num($('#mfP').value);
     if (!name || k <= 0) { toast('Nhập tên món và số calo'); return; }
-    addFood([{ name, g: 0, kcal: k, p, c: 0, f: 0, src: 'manual' }]); closeSheet(); render(); toast(`Đã thêm ${Math.round(k)} kcal`);
+    addFood([{ name, g: 0, kcal: k, p, c: 0, f: 0, src: 'manual' }]); slot = null; closeSheet(); render(); toast(`Đã thêm ${Math.round(k)} kcal`);
   },
   saveKey: () => {
     const v = $('#apiKey').value.trim();
@@ -1877,6 +2018,20 @@ const A = {
   skipDue: d => {
     const r = S.routines.find(x => x.id === d.id); if (!r || !confirm(`Bỏ qua "${r.name}" tuần này và chuyển sang buổi kế tiếp?`)) return;
     S.skips = [...(S.skips || []).filter(s => s.t >= weekStart()), { id: r.id, t: Date.now() }]; save(); render(); toast('Đã bỏ qua, chuyển sang buổi kế tiếp');
+  },
+  openDay: d => openDay(d.k),
+  aiDay: async d => {
+    const box = $('#aiBox'); box.innerHTML = `<div class="empty">${ic('refresh')} AI đang chấm ngày…</div>`;
+    try { const a = await aiReviewDay(d.k); S.dayAI = { ...(S.dayAI || {}), [d.k]: a }; save(); if ($('#aiBox')) $('#aiBox').innerHTML = aiDayHtml(a); render(); }
+    catch (e) { if ($('#aiBox')) $('#aiBox').innerHTML = `<div class="muted small" style="color:var(--danger);margin:10px 0">${esc(e.message)}</div><button class="btn big" data-act="aiDay" data-k="${d.k}">Thử lại</button>`; }
+  },
+  gotoFood: d => { foodDay = d.k; sheetOnClose = null; closeSheet(); tab = 'nutrition'; render(); window.scrollTo(0, 0); },
+  backfillDay: d => {
+    const r = S.routines.find(x => x.id === d.id), t = new Date(d.k + 'T18:00').getTime();
+    editW = { id: uid(), name: r ? r.name : 'Buổi tập', startedAt: t, endedAt: t + 3600e3, _dur: '60', prs: [], ...(r ? { routineId: r.id, plan: r.exercises.map(e => ({ name: e.name, sets: e.sets, ...(e.reps ? { reps: e.reps } : {}) })) } : {}),
+      exercises: (r ? r.exercises : []).map(e => ({ name: e.name, sets: Array.from({ length: e.sets }, () => ({ w: '', r: '', done: true })) })) };
+    editOrig = JSON.stringify(editW); sheetOnClose = null; closeSheet(); tab = 'edit'; render(); window.scrollTo(0, 0);
+    toast('Nhập kg và reps đã tập rồi bấm Lưu. Set để trống sẽ bị bỏ.', 4000);
   },
   newRoutine: () => { draft = { id: null, name: '', exercises: [] }; renderRoutineSheet(); },
   editRoutine: d => { draft = JSON.parse(JSON.stringify(S.routines.find(r => r.id === d.id))); renderRoutineSheet(); },
@@ -1966,6 +2121,8 @@ document.addEventListener('input', e => {
   else if (d.bind === 'draftName' && draft) draft.name = t.value;
   else if (t.id === 'pickQ') renderPick(t.value);
   else if (t.id === 'mfQ') renderManualList(t.value);
+  else if (t.id === 'slotDay' && slot) { slot.k = t.value; slot.guessed = false; $('.slot-hint')?.remove(); }
+  else if (t.id === 'mealHint' && mealDraft) mealDraft.hint = t.value;
   else if (d.mi != null && mealDraft) {
     const it = mealDraft.items[+d.mi]; if (!it) return;
     if (d.k === 'name') it.name = t.value;
@@ -1981,7 +2138,10 @@ $('#mealFile').addEventListener('change', async e => {
   const f = e.target.files[0]; e.target.value = ''; if (!f) return;
   try {
     const img = await photoToJpeg(f);
-    mealDraft = { img, stage: 'note', hint: '', items: [], t: foodDay === dayKey() ? Date.now() : new Date(foodDay + 'T12:00').getTime() };
+    // A library photo taken earlier (15 min – 7 days ago): guess its day and meal from the file time.
+    const lm = f.lastModified, age = Date.now() - lm;
+    slot = age > 15 * 6e4 && age < 7 * 864e5 ? { k: dayKey(lm), meal: mealOf(lm), guessed: true } : newSlot(foodDay);
+    mealDraft = { img, stage: 'note', hint: '', items: [] };
     renderMealSheet();
   } catch (err) { toast(err.message); }
 });
@@ -2004,6 +2164,7 @@ $('#importFile').addEventListener('change', async e => {
 });
 
 render(); tick(); requestWake();
+if (/[?&]check/.test(location.search)) { history.replaceState(null, '', location.pathname); eveningCheck(true); } else eveningCheck(false);
 if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('sw.js').catch(() => {});
 </script>
 </body>

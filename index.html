@@ -463,6 +463,18 @@ h2{font-weight:600;font-size:18px}
 .sleep-in{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;gap:8px;margin-top:10px}.sleep-in .slot-time{font-size:13px;font-weight:600;min-width:0;padding:0 8px}.sleep-in .slot-time input{width:auto;flex:1;min-width:0}
 .sleep-card b{font-size:15px}.sleep-warn{border:1px solid var(--warn)}.sleep-warn .qt-ic{color:var(--warn)}
 .body-rev .qt-ic{color:var(--accent)}
+.cal-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}.cal-h b{font-size:16px}.cal-h .icon:disabled{opacity:.25}
+.cal-sum{text-align:center;margin-bottom:10px}
+.cal-w,.cal-g{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}.cal-w{margin-bottom:4px}.cal-w span{text-align:center;font-size:11px;color:var(--muted);font-weight:700}
+.cal-d{aspect-ratio:1/1.2;border-radius:10px;background:var(--card2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:2px;color:var(--text);border:1.5px solid transparent;font:inherit}
+.cal-d[style]{background:color-mix(in srgb,var(--c) 20%,var(--card2))}.cal-d b{font-size:13px;font-weight:600}
+.cal-d i{font-style:normal;font-size:10px;font-weight:800;color:var(--c,var(--muted));min-height:12px;line-height:12px}
+.cal-d em{display:flex;gap:2px;min-height:4px}.cal-d u,.cal-leg u{width:4px;height:4px;border-radius:50%;display:block}
+.dt{background:var(--accent)}.df{background:var(--warn)}.ds{background:var(--sky)}.dw{background:var(--text)}.dp{background:var(--danger)}
+.cal-d.today{border-color:var(--accent)}.cal-d.off{opacity:.25;background:none}
+.cal-leg{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;font-size:11px;color:var(--muted);margin-top:12px}.cal-leg span{display:flex;align-items:center;gap:4px}.cal-leg u{width:6px;height:6px}
+.dd-sec{border-top:1px solid var(--line);padding-top:10px;margin-top:12px}.dd-sec h4{display:flex;align-items:center;gap:6px;margin:0 0 6px;font-size:14px}
+.dd-w+.dd-w{margin-top:12px}
 </style>
 </head>
 <body>
@@ -492,7 +504,7 @@ h2{font-weight:600;font-size:18px}
 <script>
 'use strict';
 const KEY = 'gymlog.v1';
-const APP_VERSION = '2026.11.20c';
+const APP_VERSION = '2026.11.20d';
 const DEFAULT_EX = EX_DB.map(e => e[0]);
 
 const $ = s => document.querySelector(s);
@@ -888,7 +900,69 @@ function exCard(ex, i) {
   </div>`;
 }
 
+/* ---------- calendar: every past day, coloured by its score; tap a day for everything logged that day ---------- */
+let histMode = 'cal', calM = null;
+function firstDataDay() {
+  const ts = [...S.workouts.map(w => w.startedAt), ...(S.body || []).map(b => b.t), ...Object.keys(S.food).filter(k => S.food[k].length).map(dayStart), ...Object.keys(S.sleep || {}).map(dayStart)].filter(isFinite);
+  return ts.length ? dayKey(Math.min(...ts)) : dayKey();
+}
+function dayHas(k) {
+  const t0 = dayStart(k), t1 = t0 + 864e5;
+  return { t: S.workouts.some(w => w.startedAt >= t0 && w.startedAt < t1), f: (S.food[k] || []).length > 0, s: !!S.sleep?.[k],
+    w: (S.body || []).some(b => b.t >= t0 && b.t < t1), p: (S.vDays || []).includes(k) };
+}
+const scoreCol = s => s >= 70 ? 'var(--ok)' : s >= 50 ? 'var(--warn)' : 'var(--danger)';
+function viewCalendar() {
+  const now = new Date(), cur = calM || new Date(now.getFullYear(), now.getMonth(), 1), y = cur.getFullYear(), m = cur.getMonth();
+  const first = firstDataDay(), today = dayKey(), fm = new Date(first + 'T12:00');
+  const canPrev = y * 12 + m > fm.getFullYear() * 12 + fm.getMonth(), canNext = y * 12 + m < now.getFullYear() * 12 + now.getMonth();
+  const days = new Date(y, m + 1, 0).getDate(), lead = (new Date(y, m, 1).getDay() + 6) % 7;
+  let cells = '<span></span>'.repeat(lead), n = 0, sum = 0, good = 0;
+  for (let d = 1; d <= days; d++) {
+    const k = dayKey(new Date(y, m, d, 12));
+    if (k > today || k < first) { cells += `<span class="cal-d off"><b>${d}</b></span>`; continue; }
+    const has = dayHas(k), any = has.t || has.f || has.s || has.w, sc = any ? dayScore(k).score : null;
+    if (any) { n++; sum += sc; if (sc >= 70) good++; }
+    cells += `<button class="cal-d${k === today ? ' today' : ''}" data-act="calDay" data-k="${k}"${sc != null ? ` style="--c:${scoreCol(sc)}"` : ''}><b>${d}</b><i>${sc ?? ''}</i>
+      <em>${has.t ? '<u class="dt"></u>' : ''}${has.f ? '<u class="df"></u>' : ''}${has.s ? '<u class="ds"></u>' : ''}${has.w ? '<u class="dw"></u>' : ''}${has.p ? '<u class="dp"></u>' : ''}</em></button>`;
+  }
+  const m0 = new Date(y, m, 1).getTime(), m1 = new Date(y, m + 1, 1).getTime(), wk = S.workouts.filter(w => w.startedAt >= m0 && w.startedAt < m1).length;
+  return `<div class="card">
+    <div class="cal-h"><button class="icon" data-act="calNav" data-v="-1" ${canPrev ? '' : 'disabled'} aria-label="Tháng trước">${ic('back')}</button>
+      <b>Tháng ${m + 1}/${y}</b><button class="icon" data-act="calNav" data-v="1" ${canNext ? '' : 'disabled'} aria-label="Tháng sau">${ic('chev')}</button></div>
+    <div class="muted small cal-sum">${wk} buổi tập · điểm TB ${n ? Math.round(sum / n) : '—'} · ${good}/${n} ngày từ 70 điểm</div>
+    <div class="cal-w">${DOW_VI.slice(1).map(x => `<span>${x}</span>`).join('')}</div>
+    <div class="cal-g">${cells}</div>
+    <div class="cal-leg"><span><u class="dt"></u>Tập</span><span><u class="df"></u>Ăn</span><span><u class="ds"></u>Ngủ</span><span><u class="dw"></u>Cân</span><span><u class="dp"></u>Ảnh body</span></div>
+  </div><div class="muted small" style="text-align:center">Bấm vào một ngày để xem lại toàn bộ ngày đó.</div>`;
+}
+// Everything logged on day k, read-only (edit buttons lead to the normal screens).
+function dayDetail(k) {
+  const t0 = dayStart(k), t1 = t0 + 864e5, ws = S.workouts.filter(w => w.startedAt >= t0 && w.startedAt < t1).sort((a, b) => a.startedAt - b.startedAt);
+  const food = [...(S.food[k] || [])].sort((a, b) => a.t - b.t), tot = dayTotals(k), sl = S.sleep?.[k], body = (S.body || []).filter(b => b.t >= t0 && b.t < t1);
+  const sec = (title, inner) => `<div class="dd-sec"><h4>${title}</h4>${inner}</div>`;
+  let out = '';
+  out += sec(`${ic('barbell')} Tập luyện`, ws.length ? ws.map(w => `<div class="dd-w"><div class="row"><b class="grow">${esc(w.name)}</b><span class="muted small">${hhmm(w.startedAt)}–${hhmm(w.endedAt)} · ${fmtDur(w.endedAt - w.startedAt)}</span></div>
+      ${w.exercises.map(e => `<div class="hist-ex"><div>${esc(e.name)}${(w.prs || []).includes(e.name) ? '<span class="badge">PR</span>' : ''}</div><div class="muted small">${e.sets.map(s => isCardio(e.name) ? fmtSet(s, e.name) : `${fmtNum(s.w)}kg × ${s.r}`).join(' · ')}</div></div>`).join('')}
+      <div class="row gap mt"><button class="btn" data-act="reviewOpen" data-id="${w.id}">${ic('bolt')} Đánh giá</button><button class="btn" data-act="dayEditW" data-id="${w.id}">${ic('edit')} Sửa</button></div></div>`).join('')
+    : '<div class="muted small">Không tập</div>');
+  out += sec(`${ic('apple')} Ăn uống${food.length ? ` · ${fmtNum(Math.round(tot.kcal))} kcal · ${Math.round(tot.p)} g đạm` : ''}`,
+    (food.length ? foodGroups(food).replace(/<button class="del" data-act="delFood"[^>]*>[\s\S]*?<\/button>/g, '') : '<div class="muted small">Không ghi bữa nào</div>') +
+    `<button class="text-btn" data-act="gotoFood" data-k="${k}">${food.length ? 'Sửa / thêm bữa ăn' : 'Ghi bù bữa ăn'}</button>`);
+  const bodyBits = [
+    sl ? `Ngủ <b>${fmtHM(sleepMin(sl))}</b> (${sl.bed}–${sl.wake})` : 'Không ghi giấc ngủ',
+    ...body.map(b => [b.w ? `Cân <b>${fmtNum(b.w)} kg</b>` : '', b.waist ? `Vòng bụng <b>${fmtNum(b.waist)} cm</b>` : ''].filter(Boolean).join(' · ')),
+    ...((S.vDays || []).includes(k) ? ['Có chụp ảnh body (xem trong kho ảnh có mật khẩu)'] : []),
+  ];
+  out += sec(`${ic('moon')} Ngủ và cơ thể`, bodyBits.map(t => `<div class="small" style="margin:4px 0">${t}</div>`).join('') +
+    `<button class="text-btn" data-act="sleepLog" data-k="${k}">${sl ? 'Sửa giấc ngủ' : 'Ghi bù giấc ngủ'}</button>`);
+  return out;
+}
 function viewHistory() {
+  const seg = `<div class="seg" style="margin-bottom:12px">${[['cal', 'Lịch'], ['list', 'Buổi tập']].map(([k, l]) => `<button class="${histMode === k ? 'on' : ''}" data-act="histMode" data-v="${k}">${l}</button>`).join('')}</div>`;
+  return seg + (histMode === 'cal' ? viewCalendar() : viewHistoryList());
+}
+function viewHistoryList() {
   if (!S.workouts.length) return '<div class="empty">Chưa có buổi tập nào.<br>Hoàn thành buổi tập đầu tiên để xem lịch sử.</div>';
   let lastMonth = '';
   return S.workouts.map(w => {
@@ -1851,6 +1925,7 @@ function openDay(k) {
     <div class="score"><div class="ring" style="--p:${d.score}"><b>${d.score}</b></div><div class="grow"><div class="title">${d.grade}</div>
       ${d.parts.map(([n, v, m]) => `<div class="dpart"><span>${n}</span><div class="bar thin"><i style="width:${v / m * 100}%;background:${recColor(v / m * 100)}"></i></div><b>${v}/${m}</b></div>`).join('')}</div></div>
     <div class="rev">${d.items.map(([kd, t]) => `<div class="rev-i"><span style="color:${REV_IC[kd][1]}">${ic(REV_IC[kd][0])}</span><span>${esc(t)}</span></div>`).join('')}</div>
+    ${dayDetail(k)}
     ${d.todo.length ? `<div class="todo">${d.todo.map(x => `<button class="btn" data-act="${x.act}" ${x.id ? `data-id="${x.id}"` : ''} ${x.k ? `data-k="${x.k}"` : ''} ${x.tab ? `data-tab="${x.tab}"` : ''}>${esc(x.label)}</button>`).join('')}</div>` : ''}
     <div id="aiBox">${a ? aiDayHtml(a) + `<button class="text-btn" data-act="aiDay" data-k="${k}">${ic('refresh')} Chấm lại</button>`
       : `<button class="btn big mt" data-act="aiDay" data-k="${k}">${ic('bolt')} AI chấm ngày ${k === dayKey() ? 'hôm nay' : 'này'}</button>
@@ -2071,7 +2146,7 @@ function bodyPending() {
 function vaultIndex() {
   const vp = {};
   vault.items.forEach(i => { const w = weekStart(i.t), x = vp[w] = vp[w] || { p: [], last: 0 }; if (!x.p.includes(i.pose)) x.p.push(i.pose); x.last = Math.max(x.last, i.t); });
-  S.vPoses = vp; save();
+  S.vPoses = vp; S.vDays = [...new Set(vault.items.map(i => dayKey(i.t)))]; save();
 }
 async function loadReviews() {
   try { const r = await vGet('meta', 'reviews'); vault.reviews = r ? JSON.parse(new TextDecoder().decode(await dec(vault.key, r))) : {}; } catch (e) { vault.reviews = {}; }
@@ -2172,7 +2247,7 @@ async function openVault() {
 
 /* ---------- more ---------- */
 function viewMore() {
-  return `<div class="card" style="padding:4px 14px">${[['history', 'calendar', 'Lịch sử', `${S.workouts.length} buổi tập`], ['body', 'scale', 'Cơ thể', 'Cân nặng, vòng bụng, ảnh tiến độ'], ['progress', 'chart', 'Tiến độ', 'Biểu đồ từng bài'], ['settings', 'sliders', 'Cài đặt', 'Thời gian nghỉ, sao lưu']]
+  return `<div class="card" style="padding:4px 14px">${[['history', 'calendar', 'Lịch sử', `Lịch từng ngày · ${S.workouts.length} buổi tập`], ['body', 'scale', 'Cơ thể', 'Cân nặng, vòng bụng, ảnh tiến độ'], ['progress', 'chart', 'Tiến độ', 'Biểu đồ từng bài'], ['settings', 'sliders', 'Cài đặt', 'Thời gian nghỉ, sao lưu']]
     .map(([k, i, l, d]) => `<button class="lib-item" data-act="tab" data-tab="${k}"><span class="ti-big">${ic(i)}</span><div class="grow"><div>${l}</div><div class="muted small">${d}</div></div><span class="chev">${ic('chev')}</span></button>`).join('')}</div>${weekSummary()}`;
 }
 
@@ -2347,6 +2422,10 @@ const A = {
     setTimeout(() => openReview(w.id, offer), 500);
   },
   saveOffer: () => { if (!routineOffer) return; draft = { id: null, ...routineOffer }; routineOffer = null; renderRoutineSheet(); },
+  histMode: d => { histMode = d.v; render(); },
+  calNav: d => { const n = new Date(), c = calM || new Date(n.getFullYear(), n.getMonth(), 1); calM = new Date(c.getFullYear(), c.getMonth() + +d.v, 1); render(); },
+  calDay: d => openDay(d.k),
+  dayEditW: d => { closeSheet(); A.editWorkout(d); },
   toggleHist: d => { openId = openId === d.id ? null : d.id; render(); },
   deleteWorkout: d => { if (confirm('Xóa buổi tập này vĩnh viễn?')) { S.workouts = S.workouts.filter(w => w.id !== d.id); recomputePRs(); save(); render(); } },
   repeatWorkout: d => {

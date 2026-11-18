@@ -492,7 +492,7 @@ h2{font-weight:600;font-size:18px}
 <script>
 'use strict';
 const KEY = 'gymlog.v1';
-const APP_VERSION = '2026.11.20b';
+const APP_VERSION = '2026.11.20c';
 const DEFAULT_EX = EX_DB.map(e => e[0]);
 
 const $ = s => document.querySelector(s);
@@ -2047,7 +2047,7 @@ function viewVault() {
         <button class="btn" data-act="vaultLock">${ic('x')} Khóa</button></div>
       <div class="seg mt">${POSES.map(p => `<button class="${vault.pose === p ? 'on' : ''}" data-act="vaultPose" data-v="${p}">${p}</button>`).join('')}</div>
       <button class="btn primary big mt" data-act="vaultShot">${ic('camera')} Chụp / chọn ảnh ${vault.pose.toLowerCase()}</button>
-      <div class="muted small mt">Cùng chỗ, cùng ánh sáng, cùng giờ (sáng, trước khi ăn) để so sánh chính xác.</div></div>
+      <div class="muted small mt">Cùng chỗ, cùng ánh sáng, cùng giờ (sáng, trước khi ăn) để so sánh chính xác. Chọn ảnh xong được xem lại trước khi lưu; bấm vào ảnh đã lưu để xem hoặc xóa.</div></div>
     ${wk.length >= 2 ? `<div class="card"><div class="title" style="margin-bottom:8px">So sánh</div>
       <div class="slot"><select id="vCmpA">${wk.map((w, i) => `<option value="${w}" ${(vault.cmp?.[0] ?? wk[wk.length - 1]) == w ? 'selected' : ''}>${lbl(w)}</option>`).join('')}</select>
       <select id="vCmpB">${wk.map(w => `<option value="${w}" ${(vault.cmp?.[1] ?? wk[0]) == w ? 'selected' : ''}>${lbl(w)}</option>`).join('')}</select></div>
@@ -2497,7 +2497,17 @@ const A = {
     openSheet(`<div class="sheet-h"><h3>${esc(it.pose)} · ${new Date(it.t).toLocaleDateString('vi-VN')}</h3><button class="link" data-act="closeSheet">Đóng</button></div>
       <img src="${src}" alt="" style="width:100%;border-radius:14px"><button class="btn danger big mt" data-act="vaultDel" data-id="${it.id}">Xóa ảnh này</button>`);
   },
-  vaultDel: async d => { if (!confirm('Xóa vĩnh viễn ảnh này?')) return; await vDel('photos', d.id); closeSheet(); await vaultLoad(); render(); },
+  vaultDel: async d => {
+    const it = vault.items.find(i => i.id === d.id), w = it ? weekStart(it.t) : null, graded = w != null && (vault.reviews?.[w] || S.bodyRev?.[w]);
+    if (!confirm(graded ? 'Xóa vĩnh viễn ảnh này? Kết quả AI chấm tuần này cũng bị xóa; chụp lại đủ 3 tư thế thì AI chấm lại.' : 'Xóa vĩnh viễn ảnh này?')) return;
+    const key = vault.key; await vDel('photos', d.id);
+    if (graded) { delete vault.reviews[w]; if (S.bodyRev) delete S.bodyRev[w]; save(); await saveReviews(key); }
+    closeSheet(); await vaultLoad(); render(); toast(graded ? 'Đã xóa ảnh và kết quả chấm tuần này' : 'Đã xóa ảnh');
+  },
+  vaultSave: () => vaultSavePending(),
+  vaultCancel: () => closeSheet(),
+  vaultRepick: () => { closeSheet(); $('#vaultFile').click(); },
+  vaultPoseSheet: d => { vault.pose = d.v; const f = vault.pendingFile; vault.pendingFile = null; closeSheet(); vault.pendingFile = f; render(); vaultPreview(); },
   vaultExport: () => vaultExport(),
   vaultImportBtn: () => $('#vaultImportFile').click(),
   saveSleep: d => {
@@ -2657,13 +2667,30 @@ $('#mealFile').addEventListener('change', async e => {
     renderMealSheet();
   } catch (err) { toast(err.message); }
 });
-$('#vaultFile').addEventListener('change', async e => {
-  const f = e.target.files[0]; e.target.value = ''; if (!f || !vault.key) return;
+function vaultPreview() {
+  const f = vault.pendingFile; if (!f) return;
+  if (vault.pendingUrl) URL.revokeObjectURL(vault.pendingUrl);
+  vault.pendingUrl = URL.createObjectURL(f);
+  const left = POSES.filter((p, i) => !posesOf(weekStart())[i] && p !== vault.pose), last = left.length === 0 && !posesOf(weekStart())[POSES.indexOf(vault.pose)];
+  openSheet(`<div class="sheet-h"><h3>Kiểm tra trước khi lưu</h3><button class="link" data-act="vaultCancel">Hủy</button></div>
+    <div class="seg" style="margin-bottom:10px">${POSES.map(p => `<button class="${vault.pose === p ? 'on' : ''}" data-act="vaultPoseSheet" data-v="${p}">${p}</button>`).join('')}</div>
+    <img src="${vault.pendingUrl}" alt="" style="width:100%;max-height:55vh;object-fit:contain;border-radius:14px;background:var(--card2)">
+    ${last ? `<div class="small mt" style="color:var(--warn)">Đây là tư thế cuối của tuần: bấm Lưu là AI chấm ngay (ảnh được gửi đi).</div>` : ''}
+    <button class="btn primary big mt" data-act="vaultSave">${ic('check')} Lưu ảnh ${vault.pose.toLowerCase()}</button>
+    <button class="btn big mt" data-act="vaultRepick">${ic('camera')} Chọn ảnh khác</button>`, () => { if (vault.pendingUrl) URL.revokeObjectURL(vault.pendingUrl); vault.pendingUrl = null; vault.pendingFile = null; });
+}
+async function vaultSavePending() {
+  const f = vault.pendingFile; if (!f || !vault.key) return;
+  vault.pendingFile = null; closeSheet();
   vault.busy = true; render();
   try { await vaultAdd(f); toast(`Đã lưu ảnh ${vault.pose.toLowerCase()} (đã mã hóa)`); } catch (err) { toast(err.message); }
   vault.busy = false; render();
   if (vault.key && bodyPending() === 'review') bodyReviewUI(weekStart());
   else if (vault.key) { const m = POSES.filter((p, i) => !posesOf(weekStart())[i]); if (m.length && m.length < 3) { vault.pose = m[0]; render(); } }
+}
+$('#vaultFile').addEventListener('change', async e => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f || !vault.key) return;
+  vault.pendingFile = f; vaultPreview();
 });
 $('#vaultImportFile').addEventListener('change', async e => {
   const f = e.target.files[0]; e.target.value = ''; if (!f) return;

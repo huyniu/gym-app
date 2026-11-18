@@ -475,6 +475,22 @@ h2{font-weight:600;font-size:18px}
 .cal-leg{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;font-size:11px;color:var(--muted);margin-top:12px}.cal-leg span{display:flex;align-items:center;gap:4px}.cal-leg u{width:6px;height:6px}
 .dd-sec{border-top:1px solid var(--line);padding-top:10px;margin-top:12px}.dd-sec h4{display:flex;align-items:center;gap:6px;margin:0 0 6px;font-size:14px}
 .dd-w+.dd-w{margin-top:12px}
+.sets-fig{margin:6px auto 2px;max-width:300px}
+.sets-row{display:grid;grid-template-columns:78px minmax(0,1fr) 28px 46px 30px;align-items:center;gap:6px;width:100%;padding:7px 0;border-top:1px solid var(--line);text-align:left;color:var(--text);font:inherit}
+.sets-row .bar{margin:0}.sets-row .sr-n{font-size:13px;font-weight:600}.sets-row b{text-align:right;font-size:14px}.sr-t{font-size:11px}.sr-d{font-size:11px;font-weight:700;text-align:right;color:var(--muted)}.sr-d.up{color:var(--ok)}.sr-d.down{color:var(--danger)}
+.stat em.bad{color:var(--danger)}
+.b3{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}.b3:last-of-type{border-bottom:0}
+.lv{font-size:12px;font-weight:800;padding:4px 10px;border-radius:99px;background:var(--card2);color:var(--muted);white-space:nowrap}
+.lv1{color:var(--sky)}.lv2{color:var(--ok)}.lv3{color:var(--warn)}.lv4{color:var(--danger)}
+.calc-1rm{font-size:15px;margin-bottom:8px}.calc-1rm b{font-size:22px;color:var(--accent);margin-left:6px}
+.calc-t{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.calc-t div{background:var(--card2);border-radius:10px;padding:8px;display:flex;flex-direction:column}
+.calc-t span{font-size:11px;color:var(--muted);font-weight:700}.calc-t b{font-size:15px}.calc-t small{font-size:10px;color:var(--muted)}
+.badges{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.badge-c{background:var(--card);border-radius:14px;padding:10px 8px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:3px;opacity:.55}
+.badge-c.on{opacity:1;box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--accent) 60%,transparent)}
+.badge-c .b-ic{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:var(--card2);color:var(--muted)}.badge-c.on .b-ic{background:color-mix(in srgb,var(--accent) 20%,transparent);color:var(--accent)}
+.badge-c b{font-size:12px;line-height:1.2}.badge-c small{font-size:10px;color:var(--muted);line-height:1.25}.badge-c em{font-style:normal;font-size:10px;color:var(--muted)}.badge-c .bar{width:100%;margin-top:2px}
+.badge-c .bar i{background:var(--accent)}
 </style>
 </head>
 <body>
@@ -504,7 +520,7 @@ h2{font-weight:600;font-size:18px}
 <script>
 'use strict';
 const KEY = 'gymlog.v1';
-const APP_VERSION = '2026.11.20d';
+const APP_VERSION = '2026.11.21';
 const DEFAULT_EX = EX_DB.map(e => e[0]);
 
 const $ = s => document.querySelector(s);
@@ -574,7 +590,7 @@ function load() {
 let S = load();
 // Meal photo thumbnails are kept 60 days so localStorage (≈5 MB) never fills up; the food entries stay.
 if (S.photos) { const cut = Date.now() - 60 * 864e5; for (const [id, p] of Object.entries(S.photos)) if (p.t < cut) delete S.photos[id]; }
-function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { toast('⚠️ Không lưu được dữ liệu'); } }
+function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { toast('⚠️ Không lưu được dữ liệu'); } if (typeof queueBadges === 'function') queueBadges(); }
 if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
 
 let tab = 'workout', openId = null, progEx = null, draft = null, sheetOnClose = null, pickCb = null;
@@ -900,6 +916,187 @@ function exCard(ex, i) {
   </div>`;
 }
 
+/* ---------- weekly sets per muscle: primary muscle 1 set, secondary ½ set ---------- */
+const SET_TARGET = { chest: [10, 20], lats: [10, 20], midBack: [8, 16], shoulders: [10, 20], biceps: [8, 16], triceps: [8, 16], quads: [10, 20], hamstrings: [8, 16],
+  glutes: [8, 16], calves: [6, 12], abs: [6, 12], obliques: [4, 10], traps: [4, 10], forearms: [4, 10], lowerBack: [4, 10], adductors: [4, 10] };
+const MAJOR = ['chest', 'lats', 'shoulders', 'biceps', 'triceps', 'quads', 'hamstrings'];
+function weekSets(ws) {
+  const out = Object.fromEntries(Object.keys(MUSCLES).map(m => [m, { n: 0, from: {} }]));
+  for (const w of S.workouts) if (w.startedAt >= ws && w.startedAt < ws + 7 * 864e5)
+    for (const e of w.exercises) {
+      const x = getEx(e.name); if (!x || isCardio(e.name)) continue;
+      const n = e.sets.length; if (!n) continue;
+      const add = (m, k) => { if (!out[m]) return; out[m].n += n * k; out[m].from[e.name] = (out[m].from[e.name] || 0) + n * k; };
+      x.p.forEach(m => add(m, 1)); (x.s || []).forEach(m => add(m, .5));
+    }
+  return out;
+}
+const setCol = (m, n) => { const [lo, hi] = SET_TARGET[m]; return n <= 0 ? null : n > hi ? '#ef4444' : n >= lo ? '#22c55e' : n >= lo / 2 ? '#eab308' : '#f97316'; };
+let setsWeek = null;
+function weekSetsCard() {
+  const ws = setsWeek ?? weekStart(), cur = weekSets(ws), prev = weekSets(ws - 7 * 864e5), isNow = ws === weekStart();
+  const first = S.workouts.length ? weekStart(Math.min(...S.workouts.map(w => w.startedAt))) : ws;
+  const lbl = t => new Date(t).toLocaleDateString('vi-VN', { day: 'numeric', month: 'numeric' });
+  const ms = Object.keys(SET_TARGET).sort((a, b) => MAJOR.includes(b) - MAJOR.includes(a));
+  const row = m => { const n = cur[m].n, [lo, hi] = SET_TARGET[m], c = setCol(m, n) || '#5f6470', d = n - prev[m].n;
+    return `<button class="sets-row" data-act="setsMuscle" data-m="${m}" data-w="${ws}"><span class="sr-n">${MUSCLES[m]}</span>
+      <span class="bar thin grow"><i style="width:${Math.min(100, n / lo * 100)}%;background:${c}"></i></span>
+      <b style="color:${c}">${fmtNum(n)}</b><span class="muted small sr-t">/ ${lo}–${hi}</span>${isNow ? `<span class="sr-d">${prev[m].n ? fmtNum(prev[m].n) : '–'}</span>` : `<span class="sr-d ${d > 0 ? 'up' : d < 0 ? 'down' : ''}">${d ? (d > 0 ? '+' : '') + fmtNum(d) : ''}</span>`}</button>`; };
+  const short = ms.filter(m => cur[m].n < SET_TARGET[m][0]);
+  let tip = '';
+  if (isNow && S.workouts.length) {
+    const st = schedState(), left = st ? Object.values(st.plan) : [];
+    const majorShort = short.filter(m => MAJOR.includes(m));
+    if (majorShort.length) tip = majorShort.slice(0, 3).map(m => {
+      const need = SET_TARGET[m][0] - cur[m].n, r = left.find(r => r.exercises.some(e => getEx(e.name)?.p.includes(m)));
+      return `${MUSCLES[m]} thiếu ${fmtNum(need)} set${r ? ` → thêm vào buổi ${esc(r.name)}` : ''}`;
+    }).join('<br>');
+  }
+  return `<div class="section-h"><h2>Số set mỗi tuần</h2><span class="muted small">cơ chính 1 set, cơ phụ ½ set</span></div>
+    <div class="card">
+      <div class="cal-h"><button class="icon" data-act="setsNav" data-v="-1" ${ws > first ? '' : 'disabled'} aria-label="Tuần trước">${ic('back')}</button>
+        <div style="text-align:center"><b>${isNow ? 'Tuần này' : 'Tuần ' + lbl(ws)}</b><div class="muted small">${lbl(ws)} – ${lbl(ws + 6 * 864e5)}</div></div>
+        <button class="icon" data-act="setsNav" data-v="1" ${isNow ? 'disabled' : ''} aria-label="Tuần sau">${ic('chev')}</button></div>
+      <div class="sets-fig">${bodySvg(m => setCol(m, cur[m].n), {})}</div>
+      <div class="legend"><span><i style="background:#f97316"></i>&lt;50%</span><span><i style="background:#eab308"></i>Chưa đủ</span><span><i style="background:#22c55e"></i>Đủ</span><span><i style="background:#ef4444"></i>Quá nhiều</span></div>
+      <div class="muted small" style="text-align:center;margin:6px 0 4px">Đủ ${ms.length - short.length}/${ms.length} nhóm cơ · cột phải: ${isNow ? 'số set cả tuần trước' : 'tăng/giảm so với tuần trước'}</div>
+      ${ms.map(row).join('')}
+      ${tip ? `<div class="coach" style="margin:12px 0 0">${ic('bulb')}<div class="grow"><div class="coach-k">Còn thiếu tuần này</div>${tip}</div></div>` : ''}
+    </div>`;
+}
+function openSetsMuscle(m, ws) {
+  const x = weekSets(+ws)[m], [lo, hi] = SET_TARGET[m], list = Object.entries(x.from).sort((a, b) => b[1] - a[1]);
+  openSheet(`<div class="sheet-h"><h3>${MUSCLES[m]}: ${fmtNum(x.n)} set</h3><button class="link" data-act="closeSheet">Đóng</button></div>
+    <div class="muted small" style="margin-bottom:8px">Khuyến nghị ${lo}–${hi} set/tuần để tăng cơ. Dưới ${lo}: cơ phát triển chậm. Trên ${hi}: dễ quá tải, hồi phục không kịp.</div>
+    ${list.length ? list.map(([n, k]) => `<div class="food"><span class="grow">${esc(n)}</span><b>${fmtNum(k)} set</b></div>`).join('') : '<div class="empty">Tuần này chưa có bài nào cho nhóm cơ này.</div>'}`);
+}
+
+/* ---------- body composition: US Navy tape formula + the AI photo estimate ---------- */
+function navyBF(waist, neck, hip) {
+  const p = S.profile; if (!p || !waist || !neck || waist <= neck) return null;
+  const v = p.sex === 'f' ? (hip ? 495 / (1.29579 - .35004 * Math.log10(waist + hip - neck) + .221 * Math.log10(p.height)) - 450 : null)
+    : 495 / (1.0324 - .19077 * Math.log10(waist - neck) + .15456 * Math.log10(p.height)) - 450;
+  return v && v > 2 && v < 60 ? Math.round(v * 10) / 10 : null;
+}
+function bfSeries() {
+  const out = []; let neck = null, hip = null;
+  for (const b of bodyLog()) { if (b.neck) neck = b.neck; if (b.hip) hip = b.hip; if (b.waist) { const v = navyBF(b.waist, neck, hip); if (v) out.push({ t: b.t, bf: v }); } }
+  return out;
+}
+function aiBF() {
+  const ks = Object.keys(S.bodyRev || {}).map(Number).sort((a, b) => b - a), k = ks.find(x => S.bodyRev[x].bodyFat && !S.bodyRev[x].retake);
+  if (k == null) return null;
+  const n = String(S.bodyRev[k].bodyFat).match(/\d+(?:[.,]\d+)?/g); if (!n) return null;
+  const v = n.map(x => +x.replace(',', '.')); return { t: k, txt: S.bodyRev[k].bodyFat, bf: v.reduce((a, b) => a + b, 0) / v.length };
+}
+function bodyComp() {
+  const log = bodyLog().filter(b => b.w), lastW = log.length ? log[log.length - 1].w : S.profile?.weight || null;
+  const nav = bfSeries(), navNow = nav[nav.length - 1] || null, ai = aiBF();
+  const bf = navNow ? navNow.bf : ai ? Math.round(ai.bf * 10) / 10 : null;
+  const old = log.filter(b => b.t <= Date.now() - 21 * 864e5).pop(), oldNav = nav.filter(x => x.t <= Date.now() - 21 * 864e5).pop();
+  return { w: lastW, bf, lean: lastW && bf != null ? Math.round(lastW * (1 - bf / 100) * 10) / 10 : null, nav: navNow, ai,
+    dW: old ? lastW - old.w : null, dBF: oldNav && navNow ? navNow.bf - oldNav.bf : null,
+    dLean: old && oldNav && navNow ? lastW * (1 - navNow.bf / 100) - old.w * (1 - oldNav.bf / 100) : null };
+}
+
+/* ---------- Big 3 strength levels (1RM ÷ body weight) ---------- */
+const BIG3 = [['Squat', ['Squat', 'Front Squat']], ['Bench Press', ['Bench Press']], ['Deadlift', ['Deadlift']]];
+const LEVELS = ['Mới tập', 'Cơ bản', 'Trung bình', 'Khá', 'Giỏi'];
+const STD = { m: { 'Squat': [.75, 1.25, 1.5, 2.25, 2.75], 'Bench Press': [.5, .75, 1, 1.5, 2], 'Deadlift': [1, 1.5, 2, 2.5, 3] },
+  f: { 'Squat': [.5, .75, 1.25, 1.5, 2], 'Bench Press': [.25, .5, .75, 1, 1.5], 'Deadlift': [.5, 1, 1.25, 1.75, 2.5] } };
+function big3() {
+  const bw = bodyComp().w, std = STD[S.profile?.sex === 'f' ? 'f' : 'm'];
+  const lifts = BIG3.map(([n, names]) => {
+    const best = Math.max(0, ...names.map(x => bestOf(x).best)), r = bw ? best / bw : 0, s = std[n];
+    let lv = 0; for (let i = 1; i < s.length; i++) if (r >= s[i]) lv = i;
+    const next = lv < s.length - 1 && bw ? Math.max(0, Math.ceil((s[lv + 1] * bw - best) / 2.5) * 2.5) : null;
+    return { n, best: Math.round(best * 10) / 10, r, lv, next };
+  });
+  return { bw, lifts, total: Math.round(lifts.reduce((a, l) => a + l.best, 0)) };
+}
+const PCT_REPS = [[100, 1], [95, 2], [90, 4], [85, 6], [80, 8], [75, 10], [70, 12], [65, 15], [60, 18]];
+function calcOut() {
+  const w = num($('#calcW')?.value), r = num($('#calcR')?.value), el = $('#calcOut'); if (!el) return;
+  if (!(w > 0 && r > 0 && r <= 30)) { el.innerHTML = '<div class="muted small">Nhập mức tạ và số rep bạn làm được (1–30 rep).</div>'; return; }
+  const one = e1rm(w, r);
+  el.innerHTML = `<div class="calc-1rm">1RM ước tính <b>${fmtNum(Math.round(one * 10) / 10)} kg</b></div>
+    <div class="calc-t">${PCT_REPS.map(([p, n]) => `<div><span>${p}%</span><b>${fmtNum(Math.round(one * p / 100 / 2.5) * 2.5)} kg</b><small>~${n} rep${p >= 85 ? ' · sức mạnh' : p >= 65 ? ' · to cơ' : ' · sức bền'}</small></div>`).join('')}</div>`;
+}
+
+/* ---------- badges ---------- */
+function badgeStats() {
+  const ws = S.workouts, today = dayKey(), p = S.profile, t = p ? targets(p) : null;
+  const first = firstDataDay(), days = []; for (let k = first; k < today; k = addDays(k, 1)) days.push(k);
+  const perfect = days.filter(k => dayScore(k).score >= 85).length;
+  const streak = test => { let n = 0, k = test(today) ? today : addDays(today, -1); while (k >= first && test(k)) { n++; k = addDays(k, -1); } return n; };
+  const protein = t ? streak(k => dayTotals(k).p >= t.protein * .9) : 0;
+  const sleep = streak(k => S.sleep?.[k] && sleepMin(S.sleep[k]) / 60 >= sleepGoal().h);
+  const perWeek = schedSeq().length || 3;
+  let wkStreak = 0; for (let w = weekStart() - (ws.filter(x => x.startedAt >= weekStart()).length >= perWeek ? -7 * 864e5 : 0) - 7 * 864e5; ; w -= 7 * 864e5) {
+    if (ws.filter(x => x.startedAt >= w && x.startedAt < w + 7 * 864e5).length >= perWeek) wkStreak++; else break; if (wkStreak > 520) break; }
+  const fullWeek = ws.length ? (() => { for (let w = weekStart(); w >= weekStart(ws[ws.length - 1].startedAt); w -= 7 * 864e5) { const s = weekSets(w); if (MAJOR.every(m => s[m].n >= SET_TARGET[m][0])) return 1; } return 0; })() : 0;
+  let photoStreak = 0; for (let w = weekStart(); ; w -= 7 * 864e5) { const v = S.vPoses?.[w]; if (v && POSES.every(x => v.p.includes(x))) photoStreak++; else if (w !== weekStart()) break; if (photoStreak > 520 || w < weekStart() - 3 * 365 * 864e5) break; }
+  const b3 = big3(), lift = n => b3.lifts.find(l => l.n === n);
+  return { nW: ws.length, prs: ws.reduce((a, w) => a + (w.prs || []).length, 0), perfect, protein, sleep, wkStreak, fullWeek, photoStreak,
+    bodyBest: Math.max(0, ...Object.values(S.bodyRev || {}).map(r => r.retake ? 0 : r.score || 0)),
+    weighDays: new Set((S.body || []).filter(b => b.w).map(b => dayKey(b.t))).size,
+    benchR: lift('Bench Press').r, squatR: lift('Squat').r, deadR: lift('Deadlift').r, total: b3.total };
+}
+const BADGES = [
+  ['w1', 'Buổi đầu tiên', 'Hoàn thành 1 buổi tập', 'nW', 1], ['w10', 'Vào guồng', '10 buổi tập', 'nW', 10], ['w25', 'Chăm chỉ', '25 buổi tập', 'nW', 25],
+  ['w50', 'Kỷ luật', '50 buổi tập', 'nW', 50], ['w100', 'Trăm buổi', '100 buổi tập', 'nW', 100], ['w200', 'Gym là nhà', '200 buổi tập', 'nW', 200],
+  ['pr1', 'Kỷ lục đầu', 'Lập 1 PR', 'prs', 1], ['pr10', 'Phá kỷ lục', '10 PR', 'prs', 10], ['pr50', 'Cỗ máy PR', '50 PR', 'prs', 50],
+  ['wk2', 'Đúng lịch', '2 tuần liền đủ số buổi', 'wkStreak', 2], ['wk4', 'Một tháng không bỏ', '4 tuần liền đủ số buổi', 'wkStreak', 4],
+  ['wk8', 'Thói quen thép', '8 tuần liền đủ số buổi', 'wkStreak', 8], ['wk12', 'Không thể cản', '12 tuần liền đủ số buổi', 'wkStreak', 12],
+  ['d1', 'Ngày hoàn hảo', '1 ngày đạt 85+ điểm', 'perfect', 1], ['d7', 'Tuần vàng', '7 ngày đạt 85+ điểm', 'perfect', 7], ['d30', 'Tháng vàng', '30 ngày đạt 85+ điểm', 'perfect', 30],
+  ['p3', 'Đủ đạm', '3 ngày liền đủ đạm', 'protein', 3], ['p7', 'Đạm cả tuần', '7 ngày liền đủ đạm', 'protein', 7], ['p30', 'Thánh đạm', '30 ngày liền đủ đạm', 'protein', 30],
+  ['s3', 'Ngủ ngoan', '3 đêm liền ngủ đủ', 'sleep', 3], ['s7', 'Tuần ngủ đủ', '7 đêm liền ngủ đủ', 'sleep', 7], ['s30', 'Đồng hồ sinh học', '30 đêm liền ngủ đủ', 'sleep', 30],
+  ['full', 'Cân đối', 'Một tuần đủ set mọi nhóm cơ chính', 'fullWeek', 1],
+  ['ph4', 'Theo dõi body', '4 tuần liền chụp ảnh body', 'photoStreak', 4], ['ph12', 'Nhật ký body', '12 tuần liền chụp ảnh body', 'photoStreak', 12],
+  ['ai70', 'Giám khảo gật đầu', 'Điểm body AI từ 70', 'bodyBest', 70], ['wd30', 'Cân đều', 'Cân 30 ngày', 'weighDays', 30],
+  ['bench1', 'Đẩy bằng người', 'Bench 1RM = 1× cân nặng', 'benchR', 1], ['squat15', 'Chân trụ', 'Squat 1RM = 1,5× cân nặng', 'squatR', 1.5],
+  ['dead2', 'Nhấc gấp đôi', 'Deadlift 1RM = 2× cân nặng', 'deadR', 2], ['t300', 'Câu lạc bộ 300', 'Tổng Big 3 đạt 300 kg', 'total', 300],
+  ['t400', 'Câu lạc bộ 400', 'Tổng Big 3 đạt 400 kg', 'total', 400], ['t500', 'Câu lạc bộ 500', 'Tổng Big 3 đạt 500 kg', 'total', 500],
+];
+function checkBadges(quiet) {
+  if (!S.profile && !S.workouts.length) return;
+  const st = badgeStats(), had = S.badges || {}, first = !S.badges, fresh = [];
+  S.badges = { ...had };
+  for (const [id, name, , k, goal] of BADGES) if (st[k] >= goal && !had[id]) { S.badges[id] = Date.now(); fresh.push(name); }
+  if (!fresh.length && !first) return;
+  localStorage.setItem(KEY, JSON.stringify(S));
+  if (quiet) return;
+  if (first) { if (fresh.length) toast(`Đã mở ${fresh.length} huy hiệu từ dữ liệu cũ. Xem ở Thêm → Hồ sơ`, 4000); }
+  else toast(`Huy hiệu mới: ${fresh.join(', ')}`, 4000);
+}
+let badgeTimer = null;
+const queueBadges = () => { clearTimeout(badgeTimer); badgeTimer = setTimeout(() => { try { checkBadges(); } catch (e) {} }, 1500); };
+
+/* ---------- profile page ---------- */
+function viewProfile() {
+  const c = bodyComp(), b3 = big3(), st = badgeStats(), got = S.badges || {}, n = BADGES.filter(b => got[b[0]]).length;
+  const delta = (v, unit, goodDown) => v == null || Math.abs(v) < .05 ? '' : `<em class="${(v < 0) === goodDown ? 'lime' : 'bad'}">${v > 0 ? '+' : ''}${fmtNum(Math.round(v * 10) / 10)}${unit} / 3 tuần</em>`;
+  return `<div class="card stats-card"><div class="stats" style="grid-template-columns:repeat(3,1fr)">
+      <div class="stat"><b>${c.w ? fmtNum(c.w) : '—'}<small>kg</small></b><span>Cân nặng</span>${delta(c.dW, ' kg', S.profile?.goal !== 'bulk')}</div>
+      <div class="stat"><b>${c.lean ? fmtNum(c.lean) : '—'}<small>kg</small></b><span>Khối nạc</span>${delta(c.dLean, ' kg', false)}</div>
+      <div class="stat"><b>${c.bf != null ? fmtNum(c.bf) : '—'}<small>%</small></b><span>Tỷ lệ mỡ</span>${delta(c.dBF, '%', true)}</div></div>
+    <div class="muted small mt">${c.nav ? `Đo thước dây (công thức Hải quân Mỹ): <b>${fmtNum(c.nav.bf)}%</b> · ` : `Chưa có số đo vòng cổ${S.profile?.sex === 'f' ? ' và vòng hông' : ''}: ghi ở trang Cơ thể để tính % mỡ. `}${c.ai ? `AI ước lượng từ ảnh: <b>${esc(c.ai.txt)}</b>` : 'Chưa có ước lượng AI từ ảnh body.'}</div>
+    <div class="muted small" style="margin-top:4px">Khối nạc = cân nặng × (1 − % mỡ). Giảm cân mà khối nạc giữ nguyên là đang mất mỡ, không mất cơ.</div></div>
+    <div class="section-h"><h2>Big 3</h2><span class="muted small">Tổng ${fmtNum(b3.total)} kg</span></div>
+    <div class="card">${b3.lifts.map(l => `<div class="b3"><div class="grow"><b>${l.n}</b><div class="muted small">${l.best ? `1RM ~${fmtNum(l.best)} kg · ${fmtNum(Math.round(l.r * 100) / 100)}× cân nặng` : 'Chưa tập bài này'}</div>
+        ${l.best && l.next != null ? `<div class="small" style="margin-top:2px">Thêm ${fmtNum(l.next)} kg để lên <b>${LEVELS[l.lv + 1]}</b></div>` : ''}</div>
+        <span class="lv lv${l.lv}">${l.best ? LEVELS[l.lv] : '—'}</span></div>`).join('')}
+      <div class="muted small mt">Mức xếp theo 1RM ước tính chia cho cân nặng (${b3.bw ? fmtNum(b3.bw) + ' kg' : 'chưa có cân nặng'}).</div></div>
+    <div class="section-h"><h2>Máy tính 1RM</h2></div>
+    <div class="card"><div class="form3" style="grid-template-columns:1fr 1fr">
+      <label>Mức tạ (kg)<input id="calcW" inputmode="decimal" placeholder="60"></label><label>Số rep<input id="calcR" inputmode="numeric" placeholder="8"></label></div>
+      <div id="calcOut" class="mt"><div class="muted small">Nhập mức tạ và số rep bạn làm được (1–30 rep).</div></div></div>
+    <div class="section-h"><h2>Huy hiệu</h2><span class="muted small">${n}/${BADGES.length}</span></div>
+    <div class="badges">${BADGES.map(([id, name, desc, k, goal]) => { const on = !!got[id], v = Math.min(goal, st[k] || 0);
+      return `<div class="badge-c${on ? ' on' : ''}"><span class="b-ic">${ic('trophy')}</span><b>${name}</b><small>${desc}</small>
+        ${on ? `<em>${new Date(got[id]).toLocaleDateString('vi-VN')}</em>` : `<div class="bar thin"><i style="width:${v / goal * 100}%"></i></div><em>${fmtNum(Math.round(v * 100) / 100)}/${fmtNum(goal)}</em>`}</div>`; }).join('')}</div>`;
+}
+
 /* ---------- calendar: every past day, coloured by its score; tap a day for everything logged that day ---------- */
 let histMode = 'cal', calM = null;
 function firstDataDay() {
@@ -1159,6 +1356,7 @@ function viewRecovery() {
       <div class="legend"><span><i style="background:#22c55e"></i>Sẵn sàng (≥85%)</span><span><i style="background:#eab308"></i>Đang hồi (50–85%)</span><span><i style="background:#ef4444"></i>Cần nghỉ (&lt;50%)</span></div>
     </div>
     <div class="coach">${ic('bulb')}<div class="grow"><div class="coach-k">Khuyến nghị tập luyện<span>Hôm nay</span></div>${advice}</div></div>
+    ${weekSetsCard()}
     <div class="section-h"><h2>Chi tiết các nhóm cơ</h2>${trained.length ? `<span class="count">${trained.length} vùng đã tập</span>` : ''}</div>
     ${[...trained, ...fresh].map(card).join('')}
     <div class="muted small" style="padding:0 4px">% hồi phục là ước tính dựa trên số set đã tập (cơ lớn hồi trong khoảng 72h, cơ nhỏ khoảng 48h), không phải số đo thật. Hãy nghe thêm cảm giác của cơ thể.</div>`;
@@ -1757,9 +1955,11 @@ function viewBody() {
       <div class="form3" style="grid-template-columns:1fr 1fr">
         <label>Cân nặng (kg)<input id="bW" inputmode="decimal" placeholder="${lastW ? esc(fmtNum(lastW.w)) : '72'}"></label>
         <label>Vòng bụng (cm)<input id="bWaist" inputmode="decimal" placeholder="${lastWa ? esc(fmtNum(lastWa.waist)) : 'không bắt buộc'}"></label>
+        <label>Vòng cổ (cm)<input id="bNeck" inputmode="decimal" placeholder="${(log.filter(b => b.neck).pop() || {}).neck ? esc(fmtNum(log.filter(b => b.neck).pop().neck)) : 'để tính % mỡ'}"></label>
+        ${S.profile?.sex === 'f' ? `<label>Vòng hông (cm)<input id="bHip" inputmode="decimal" placeholder="${(log.filter(b => b.hip).pop() || {}).hip ? esc(fmtNum(log.filter(b => b.hip).pop().hip)) : 'chỗ to nhất'}"></label>` : ''}
       </div>
       <button class="btn primary big mt" data-act="saveBody">Lưu</button>
-      <div class="muted small mt">Cân buổi sáng sau khi đi vệ sinh, trước khi ăn. Đo vòng bụng ngang rốn, thở ra bình thường, mỗi 2 tuần.</div>
+      <div class="muted small mt">Cân buổi sáng sau khi đi vệ sinh, trước khi ăn. Đo vòng bụng ngang rốn, thở ra bình thường, mỗi 2 tuần. Vòng cổ đo ngay dưới yết hầu. Có vòng cổ thì app tính % mỡ (Thêm → Hồ sơ).</div>
     </div>
     ${adviceCard(true)}
     <div class="card">
@@ -2232,7 +2432,7 @@ async function bodyReviewUI(w) {
     const r = await runBodyReview(w), t = Date.now();
     r.score = Math.max(0, Math.min(100, Math.round(r.score || 0))); r.t = t;
     vault.reviews = vault.reviews || {}; vault.reviews[w] = r; await saveReviews(key);
-    S.bodyRev = S.bodyRev || {}; S.bodyRev[w] = { t, score: r.score, verdict: r.verdict, retake: r.photoQuality === 'Chụp lại' }; save();
+    S.bodyRev = S.bodyRev || {}; S.bodyRev[w] = { t, score: r.score, verdict: r.verdict, bodyFat: r.bodyFat, retake: r.photoQuality === 'Chụp lại' }; save();
     if (vault.key) { openSheet(bodyRevHtml(r, w)); render(); }
     else toast('Đã chấm xong. Mở kho ảnh để xem kết quả.', 3500);
   } catch (e) {
@@ -2247,19 +2447,19 @@ async function openVault() {
 
 /* ---------- more ---------- */
 function viewMore() {
-  return `<div class="card" style="padding:4px 14px">${[['history', 'calendar', 'Lịch sử', `Lịch từng ngày · ${S.workouts.length} buổi tập`], ['body', 'scale', 'Cơ thể', 'Cân nặng, vòng bụng, ảnh tiến độ'], ['progress', 'chart', 'Tiến độ', 'Biểu đồ từng bài'], ['settings', 'sliders', 'Cài đặt', 'Thời gian nghỉ, sao lưu']]
+  return `<div class="card" style="padding:4px 14px">${[['profile', 'trophy', 'Hồ sơ', `Khối nạc, % mỡ, Big 3, huy hiệu ${Object.keys(S.badges || {}).length}/${BADGES.length}`], ['history', 'calendar', 'Lịch sử', `Lịch từng ngày · ${S.workouts.length} buổi tập`], ['body', 'scale', 'Cơ thể', 'Cân nặng, vòng bụng, ảnh tiến độ'], ['progress', 'chart', 'Tiến độ', 'Biểu đồ từng bài'], ['settings', 'sliders', 'Cài đặt', 'Thời gian nghỉ, sao lưu']]
     .map(([k, i, l, d]) => `<button class="lib-item" data-act="tab" data-tab="${k}"><span class="ti-big">${ic(i)}</span><div class="grow"><div>${l}</div><div class="muted small">${d}</div></div><span class="chev">${ic('chev')}</span></button>`).join('')}</div>${weekSummary()}`;
 }
 
 const TABS = [['workout', 'barbell', 'Tập'], ['recovery', 'pulse', 'Phục hồi'], ['nutrition', 'apple', 'Thực đơn'], ['library', 'book', 'Thư viện'], ['more', 'grid', 'Thêm']];
-const TITLES = { vault: 'Kho ảnh body', workout: 'Tập luyện', recovery: 'Phục hồi cơ', nutrition: 'Thực đơn', library: 'Thư viện bài tập', more: 'Thêm', body: 'Cơ thể', history: 'Lịch sử', progress: 'Tiến độ', settings: 'Cài đặt', edit: 'Sửa buổi tập' };
-const SUB = ['history', 'progress', 'settings', 'body', 'vault'];
+const TITLES = { profile: 'Hồ sơ', vault: 'Kho ảnh body', workout: 'Tập luyện', recovery: 'Phục hồi cơ', nutrition: 'Thực đơn', library: 'Thư viện bài tập', more: 'Thêm', body: 'Cơ thể', history: 'Lịch sử', progress: 'Tiến độ', settings: 'Cài đặt', edit: 'Sửa buổi tập' };
+const SUB = ['history', 'progress', 'settings', 'body', 'vault', 'profile'];
 function render() {
   if (tab !== 'vault' && vault.key) vaultLock();
   $('#hdr').innerHTML = tab === 'workout' && S.active ? activeBar()
     : tab === 'workout' ? homeHeader() : tab === 'recovery' ? recHeader()
     : `<h1>${SUB.includes(tab) ? `<button class="back" data-act="tab" data-tab="more" aria-label="Quay lại">${ic('back')}</button>` : ''}${TITLES[tab]}</h1>`;
-  main.innerHTML = ({ workout: viewWorkout, recovery: viewRecovery, nutrition: viewNutrition, library: viewLibrary, more: viewMore, body: viewBody, vault: viewVault, history: viewHistory, progress: viewProgress, settings: viewSettings, edit: viewEdit })[tab]();
+  main.innerHTML = ({ workout: viewWorkout, recovery: viewRecovery, nutrition: viewNutrition, library: viewLibrary, more: viewMore, body: viewBody, vault: viewVault, profile: viewProfile, history: viewHistory, progress: viewProgress, settings: viewSettings, edit: viewEdit })[tab]();
   const cur = SUB.includes(tab) || tab === 'edit' ? 'more' : tab;
   $('#tabs').innerHTML = TABS.map(([k, i, l]) => `<button class="${cur === k ? 'on' : ''}" data-act="tab" data-tab="${k}">${ic(i)}${l}${k === 'workout' && S.active && tab !== 'workout' ? '<span class="dot"></span>' : ''}</button>`).join('');
 }
@@ -2426,6 +2626,8 @@ const A = {
   calNav: d => { const n = new Date(), c = calM || new Date(n.getFullYear(), n.getMonth(), 1); calM = new Date(c.getFullYear(), c.getMonth() + +d.v, 1); render(); },
   calDay: d => openDay(d.k),
   dayEditW: d => { closeSheet(); A.editWorkout(d); },
+  setsNav: d => { setsWeek = (setsWeek ?? weekStart()) + +d.v * 7 * 864e5; if (setsWeek >= weekStart()) setsWeek = null; render(); },
+  setsMuscle: d => openSetsMuscle(d.m, d.w),
   toggleHist: d => { openId = openId === d.id ? null : d.id; render(); },
   deleteWorkout: d => { if (confirm('Xóa buổi tập này vĩnh viễn?')) { S.workouts = S.workouts.filter(w => w.id !== d.id); recomputePRs(); save(); render(); } },
   repeatWorkout: d => {
@@ -2527,13 +2729,16 @@ const A = {
     show(true);
   },
   saveBody: () => {
-    const w = num($('#bW').value), waist = num($('#bWaist').value);
-    if (!(w >= 30 && w <= 250) && !(waist >= 40 && waist <= 200)) { toast('Nhập cân nặng (kg) hoặc vòng bụng (cm)'); return; }
+    const w = num($('#bW').value), waist = num($('#bWaist').value), neck = num($('#bNeck')?.value), hip = num($('#bHip')?.value);
+    const okNeck = neck >= 20 && neck <= 70, okHip = hip >= 50 && hip <= 200;
+    if (!(w >= 30 && w <= 250) && !(waist >= 40 && waist <= 200) && !okNeck && !okHip) { toast('Nhập cân nặng (kg) hoặc số đo (cm)'); return; }
     S.body = S.body || [];
     let b = S.body.find(x => dayKey(x.t) === dayKey());
     if (!b) { b = { id: uid(), t: Date.now() }; S.body.push(b); }
     if (w >= 30 && w <= 250) { b.w = w; if (S.profile) S.profile.weight = w; }
     if (waist >= 40 && waist <= 200) b.waist = waist;
+    if (okNeck) b.neck = neck;
+    if (okHip) b.hip = hip;
     save(); render(); toast('Đã lưu');
   },
   delBody: d => { if (confirm('Xóa lần ghi này?')) { S.body = S.body.filter(b => b.id !== d.id); save(); render(); } },
@@ -2718,6 +2923,7 @@ document.addEventListener('input', e => {
   else if (t.id === 'pickQ') renderPick(t.value);
   else if (t.id === 'mfQ') renderManualList(t.value);
   else if (t.id === 'progQ') renderProgList(t.value);
+  else if (t.id === 'calcW' || t.id === 'calcR') calcOut();
   else if (t.id === 'setBed' && t.value) { S.settings.sleepBed = t.value; save(); }
   else if ((t.id === 'vCmpA' || t.id === 'vCmpB') && vault.key) { vault.cmp = [+$('#vCmpA').value, +$('#vCmpB').value]; render(); }
   else if (t.id === 'slotDay' && slot) { slot.k = t.value; slot.guessed = false; $('.slot-hint')?.remove(); }
@@ -2795,6 +3001,7 @@ $('#importFile').addEventListener('change', async e => {
 });
 
 render(); tick(); requestWake();
+setTimeout(() => { try { checkBadges(); } catch (e) {} }, 2500);
 if (/[?&]check/.test(location.search)) { history.replaceState(null, '', location.pathname); eveningCheck(true); } else eveningCheck(false);
 if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('sw.js').catch(() => {});
 </script>

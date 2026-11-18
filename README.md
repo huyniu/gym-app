@@ -33,7 +33,7 @@ App ghi chép tập gym cho iPhone. Đây là web app cài được lên màn h�
 Dữ liệu bài tập, lịch tập và món ăn nằm trong `data.js`.
 
 ### Nguồn ảnh
-Ảnh món ăn trong `img/food/` (thu nhỏ, cắt vuông) lấy từ Wikimedia Commons; tác giả và giấy phép từng ảnh (CC BY, CC BY-SA, CC0, public domain) nằm trong `DISH_SRC` của `data.js` và mục **Nguồn ảnh** trong Cài đặt.
+Ảnh món ăn trong `img/food/` (thu nhỏ, cắt vuông) lấy từ Wikimedia Commons và Openverse (chỉ ảnh CC0, public domain, CC BY, CC BY-SA); tác giả và giấy phép từng ảnh (CC BY, CC BY-SA, CC0, public domain) nằm trong `DISH_SRC` của `data.js` và mục **Nguồn ảnh** trong Cài đặt.
 
 Ảnh demo bài tập trong `img/ex/` (đã nén còn 360px) lấy từ [free-exercise-db](https://github.com/yuhonas/free-exercise-db). Repo này dùng giấy phép Unlicense (miễn phí bản quyền) và không ghi giấy phép riêng cho phần ảnh. Nếu sau này muốn phát hành app công khai, nên kiểm tra lại nguồn gốc ảnh.
 

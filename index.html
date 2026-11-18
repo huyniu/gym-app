@@ -460,6 +460,8 @@ h2{font-weight:600;font-size:18px}
 .vcell span{position:absolute;left:0;right:0;bottom:0;font-size:11px;font-weight:700;padding:14px 6px 5px;background:linear-gradient(transparent,rgba(0,0,0,.75))}
 .vcmp{display:grid;grid-template-columns:60px 1fr;align-items:center;gap:8px;margin-top:8px}.vcmp span{font-size:13px;font-weight:700}
 .vcmp div{display:grid;grid-template-columns:1fr 1fr;gap:6px}.vcmp img,.vcmp i{width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:10px;background:var(--card2)}
+.sleep-in{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;gap:8px;margin-top:10px}.sleep-in .slot-time{font-size:13px;font-weight:600;min-width:0;padding:0 8px}.sleep-in .slot-time input{width:auto;flex:1;min-width:0}
+.sleep-card b{font-size:15px}.sleep-warn{border:1px solid var(--warn)}.sleep-warn .qt-ic{color:var(--warn)}
 </style>
 </head>
 <body>
@@ -489,7 +491,7 @@ h2{font-weight:600;font-size:18px}
 <script>
 'use strict';
 const KEY = 'gymlog.v1';
-const APP_VERSION = '2026.11.19b';
+const APP_VERSION = '2026.11.20';
 const DEFAULT_EX = EX_DB.map(e => e[0]);
 
 const $ = s => document.querySelector(s);
@@ -779,7 +781,7 @@ function viewWorkout() {
   const a = S.active;
   if (!a) {
     const g = homeSuggestion(), st = schedState(), todayPlan = st && !st.trainedToday ? st.plan[st.dow] : null;
-    return `${backupCard()}${bodyReminder()}${dayCard()}${weekStrip()}
+    return `${backupCard()}${sleepCard()}${bodyReminder()}${dayCard()}${weekStrip()}${sleepWarn()}
     <div class="hero">${ic('barbell', 'hero-wm')}
       <div class="hero-top"><span class="hero-tag"><i></i>${esc(g.k)}</span>${g.tag ? `<span class="hero-tag2">${esc(g.tag)}</span>` : ''}</div>
       <h3>${esc(g.title)}</h3>
@@ -807,7 +809,7 @@ function viewWorkout() {
     ${S.routines.some(r => r.tpl) ? '' : `<button class="btn ghost big mt" data-act="loadTemplate">${ic('calendar')} Nạp lịch 5 buổi: Đẩy · Kéo · Chân · Thân trên · Thân dưới</button>`}`;
   }
   const fi = focusIndex();
-  return `
+  return `${sleepWarn()}
     <div class="card" style="padding:12px 16px">
       <input class="name-input" data-bind="activeName" value="${esc(a.name)}" aria-label="Tên buổi tập">
       <div class="muted small">Bắt đầu lúc ${new Date(a.startedAt).toLocaleTimeString('vi-VN', {hour:'2-digit', minute:'2-digit'})}</div>
@@ -993,6 +995,12 @@ function viewSettings() {
       <input id="apiKey" type="password" placeholder="${hasKey() ? 'Dán key mới để thay' : AI[aiProv()].hint}" autocomplete="off" autocorrect="off" spellcheck="false">
       <div class="row gap mt"><button class="btn grow" data-act="saveKey">Lưu key</button><button class="btn grow" data-act="testKey" ${hasKey() ? '' : 'disabled'}>Thử kết nối</button></div>
       ${hasKey() ? '<button class="text-btn" data-act="clearKey">Xóa key</button>' : ''}
+    </div>
+    <div class="card">
+      <div class="title" style="margin-bottom:10px">${ic('moon')} Mục tiêu giấc ngủ</div>
+      <div class="row gap" style="margin-bottom:10px"><span class="grow small">Lên giường trước</span><label class="slot-time"><input type="time" id="setBed" value="${esc(sleepGoal().bed)}" aria-label="Giờ đi ngủ mục tiêu"></label></div>
+      <div class="seg">${[7, 7.5, 8, 8.5, 9].map(v => `<button class="${sleepGoal().h === v ? 'on' : ''}" data-act="setSleepH" data-v="${v}">${fmtNum(v)}h</button>`).join('')}</div>
+      <div class="muted small mt">Mỗi sáng trang chủ hỏi giờ ngủ, giờ dậy. Giấc ngủ chiếm 15/100 điểm ngày. Muốn được nhắc đi ngủ: tạo thêm một tự động hóa trong app Phím tắt như hướng dẫn bên dưới, đặt lúc <b>${m2hm(hm2m(sleepGoal().bed) - 30)}</b>, nội dung <i>Còn 30 phút nữa là giờ ngủ. Cất điện thoại.</i></div>
     </div>
     <div class="card">
       <div class="title" style="margin-bottom:4px">${ic('clock')} Nhắc ghi chép lúc 23:55</div>
@@ -1438,10 +1446,12 @@ async function aiReviewWorkout(id) {
     previousScheduledSession: S.workouts.find(x => x.startedAt < w.startedAt && routineOfW(x))?.name || null,
     plannedMinutes: w.plan?.length ? estMinutes(w.plan) : null,
     weeklySchedule: S.routines.filter(r => r.day).map(r => r.name), history4Weeks: history,
+    sleepBeforeSession: (e => e ? { hours: Math.round(sleepMin(e) / 6) / 10, bed: e.bed, wake: e.wake } : 'không ghi')(S.sleep?.[dayKey(w.startedAt)]),
   };
   return askAI({
     system: 'Bạn là huấn luyện viên thể hình cực kỳ khó tính, nói tiếng Việt, phũ và thẳng như một HLV quân đội. Nhiệm vụ: soi lỗi buổi tập để người tập tiến bộ, KHÔNG phải để họ vui. ' +
-      'Dữ liệu JSON gồm: buổi hôm nay, kế hoạch (số set, rep mục tiêu), số phút dự kiến (plannedMinutes), thứ tự lịch tuần (scheduleOrder), buổi theo lịch trước đó (previousScheduledSession), lịch sử 4 tuần, số set mỗi nhóm cơ trong 7 ngày, nhận xét tự động (ruleReview) và hồ sơ người tập. ' +
+      'Dữ liệu JSON gồm: buổi hôm nay, kế hoạch (số set, rep mục tiêu), số phút dự kiến (plannedMinutes), thứ tự lịch tuần (scheduleOrder), buổi theo lịch trước đó (previousScheduledSession), lịch sử 4 tuần, số set mỗi nhóm cơ trong 7 ngày, nhận xét tự động (ruleReview), giấc ngủ đêm trước buổi tập (sleepBeforeSession) và hồ sơ người tập. ' +
+      'Nếu ngủ dưới 6 tiếng: tụt sức có thể do ngủ thiếu, nói thẳng việc ngủ ít là lỗi, buổi sau giữ tạ chứ không ép tăng. ' +
       'Luật bắt buộc: ' +
       '1) Cấm khen xã giao và cấm câu đệm an ủi ("không sao", "bạn đã cố gắng", "cứ từ từ", "tốt lắm", "tuyệt vời"). Không mở đầu bằng lời khen. ' +
       '2) Chỉ khen khi có số liệu chứng minh tiến bộ thật (ví dụ tăng tạ mà vẫn đủ rep). Không có thì good = []. ' +
@@ -1684,6 +1694,7 @@ function viewBody() {
     </div>
     ${ws.length >= 2 ? `<div class="section-h"><h2>Cân nặng</h2><span class="muted small">${ws.length} lần cân</span></div><div class="card">${chart(ws.slice(-60).map(b => b.w), ws.slice(-60).map(b => new Date(b.t).toLocaleDateString('vi-VN', { day: 'numeric', month: 'numeric' })))}</div>` : ''}
     ${wa.length >= 2 ? `<div class="section-h"><h2>Vòng bụng</h2></div><div class="card">${chart(wa.map(b => b.waist), wa.map(b => new Date(b.t).toLocaleDateString('vi-VN', { day: 'numeric', month: 'numeric' })))}</div>` : ''}
+    ${sleepSection()}
     ${scoreChart()}
     ${log.length ? `<div class="section-h"><h2>Lịch sử</h2></div><div class="card" style="padding:4px 14px">${[...log].reverse().slice(0, 30).map(b => `<div class="food" style="align-items:center">
       <span class="grow">${new Date(b.t).toLocaleDateString('vi-VN', { weekday: 'short', day: 'numeric', month: 'numeric' })}</span>
@@ -1713,7 +1724,62 @@ function schedState(now = Date.now()) {
   return { seq, due: seq[pos] || null, lag, dow, todayR: seq.find(r => r.day === dow) || null, trainedToday, plan, dropped: seq.slice(k), restLeft };
 }
 
-/* ---------- daily score: training 40 + food 40 + tracking 20 ---------- */
+const sleepGoal = () => ({ bed: S.settings.sleepBed || '23:30', h: S.settings.sleepH || 7.5 });
+const hm2m = s => { const [a, b] = String(s).split(':').map(Number); return a * 60 + (b || 0); };
+const m2hm = m => { m = ((m % 1440) + 1440) % 1440; return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0'); };
+const sleepMin = e => e ? (hm2m(e.wake) - hm2m(e.bed) + 1440) % 1440 : 0;
+const fmtHM = m => { m = Math.round(m); return Math.floor(m / 60) + 'h' + String(m % 60).padStart(2, '0'); };
+const lastNight = () => S.sleep?.[dayKey()] || null;
+const shortSleep = () => { const e = lastNight(); return e && sleepMin(e) < 360 ? e : null; };
+// minutes later than the goal bedtime (negative = earlier), wrapped to −12h…+12h
+const bedLate = e => (hm2m(e.bed) - hm2m(sleepGoal().bed) + 2160) % 1440 - 720;
+function sleepPts(k) { // out of 15
+  const e = S.sleep?.[k]; if (!e) return null;
+  const hrs = sleepMin(e) / 60, g = sleepGoal(), late = bedLate(e);
+  let p = hrs >= g.h ? 15 : hrs >= 7 ? 12 : hrs >= 6 ? 8 : 3;
+  if (late > 60) p = Math.max(0, p - 3);
+  return { p, hrs, late, e };
+}
+function sleepPrefill(k) {
+  const e = S.sleep?.[k]; if (e) return e;
+  const keys = Object.keys(S.sleep || {}).sort(), prev = keys.length ? S.sleep[keys[keys.length - 1]] : null, g = sleepGoal();
+  return prev || { bed: g.bed, wake: m2hm(hm2m(g.bed) + g.h * 60) };
+}
+const sleepInputs = (k, p) => { const v = sleepPrefill(k); return `<div class="sleep-in">
+    <label class="slot-time">Ngủ<input type="time" id="${p}Bed" value="${esc(v.bed)}" aria-label="Giờ đi ngủ"></label>
+    <label class="slot-time">Dậy<input type="time" id="${p}Wake" value="${esc(v.wake)}" aria-label="Giờ thức dậy"></label>
+    <button class="btn primary" data-act="saveSleep" data-k="${k}" data-p="${p}">Lưu</button></div>`; };
+function sleepCard() {
+  if ((!S.profile && !S.workouts.length) || lastNight() || new Date().getHours() < 4) return '';
+  const g = sleepGoal();
+  return `<div class="card sleep-card"><div class="row gap"><span class="qt-ic">${ic('moon')}</span><div class="grow"><b>Đêm qua ngủ thế nào?</b>
+    <div class="muted small">Mục tiêu ${fmtNum(g.h)} tiếng, lên giường trước ${g.bed}</div></div></div>${sleepInputs(dayKey(), 's')}</div>`;
+}
+function openSleep(k) {
+  const e = S.sleep?.[k];
+  openSheet(`<div class="sheet-h"><h3>Giấc ngủ đêm trước</h3><button class="link" data-act="closeSheet">Đóng</button></div>
+    <div class="muted small" style="margin-bottom:4px">Giờ lên giường và giờ thức dậy sáng ${esc(new Date(k + 'T12:00').toLocaleDateString('vi-VN', { weekday: 'long', day: 'numeric', month: 'numeric' }))}.</div>
+    ${sleepInputs(k, 'sh')}
+    ${e ? `<button class="text-btn" data-act="delSleep" data-k="${k}">Xóa lần ghi này</button>` : ''}`);
+}
+function sleepWarn() {
+  const e = shortSleep(); if (!e) return '';
+  return `<div class="card remind sleep-warn"><span class="qt-ic">${ic('moon')}</span><span class="grow"><b>Đêm qua chỉ ngủ ${fmtHM(sleepMin(e))}</b>
+    <small>Giữ mức tạ như buổi trước, đừng cố lên tạ hay ép PR. Thấy chóng mặt, tim đập bất thường thì dừng.</small></span></div>`;
+}
+function sleepSection() {
+  if (!S.profile && !S.workouts.length) return '';
+  const g = sleepGoal(), days = []; for (let i = 13; i >= 0; i--) days.push(addDays(dayKey(), -i));
+  const have = days.filter(k => S.sleep?.[k]), last7 = days.slice(-7).filter(k => S.sleep?.[k]);
+  const avg = last7.length ? last7.reduce((a, k) => a + sleepMin(S.sleep[k]), 0) / last7.length : 0;
+  return `<div class="section-h"><h2>Giấc ngủ</h2><span class="muted small">${last7.length ? `TB 7 ngày ${fmtHM(avg)} · mục tiêu ${fmtNum(g.h)}h` : `Mục tiêu ${fmtNum(g.h)}h`}</span></div>
+    <div class="card">${have.length >= 2 ? chart(have.map(k => Math.round(sleepMin(S.sleep[k]) / 6) / 10), have.map(k => new Date(k + 'T12:00').toLocaleDateString('vi-VN', { day: 'numeric', month: 'numeric' })))
+      : '<div class="muted small">Ghi giấc ngủ 2 đêm trở lên để xem biểu đồ.</div>'}
+      ${avg && avg < g.h * 60 - 30 ? `<div class="small mt" style="color:var(--warn)">Thiếu trung bình ${fmtHM(g.h * 60 - avg)} mỗi đêm. Ngủ thiếu làm phục hồi chậm và dễ đói hơn.</div>` : ''}
+      <button class="btn mt" data-act="sleepLog" data-k="${dayKey()}">${ic('moon')} ${lastNight() ? 'Sửa giấc ngủ đêm qua' : 'Ghi giấc ngủ đêm qua'}</button></div>`;
+}
+
+/* ---------- daily score: training 35 + food 35 + sleep 15 + tracking 15 (days before sleep logging began: rescaled without sleep) ---------- */
 const dayStart = k => new Date(k + 'T00:00').getTime();
 const addDays = (k, n) => { const d = new Date(k + 'T12:00'); d.setDate(d.getDate() + n); return dayKey(d); };
 const dayLabel = k => k === dayKey() ? 'Hôm nay' : k === addDays(dayKey(), -1) ? 'Hôm qua' : new Date(k + 'T12:00').toLocaleDateString('vi-VN', { weekday: 'long', day: 'numeric', month: 'numeric' });
@@ -1725,36 +1791,47 @@ function dayScore(k) {
   let train;
   if (ws.length) {
     const best = Math.max(...ws.map(w => reviewWorkout(w).score));
-    train = Math.round(40 * best / 100);
+    train = Math.round(35 * best / 100);
     items.push([best >= 70 ? 'ok' : 'warn', `Tập ${ws.map(w => `${w.name} lúc ${hhmm(w.startedAt)}–${hhmm(w.endedAt)}`).join(', ')}: ${best}/100 điểm buổi tập`]);
   } else if (planned) {
     train = 0; items.push(['warn', `${isToday ? 'Chưa tập' : 'Bỏ buổi'} ${planned.name}`]);
     todo.push(isToday ? { act: 'startRoutine', id: planned.id, label: `Tập ${planned.name}` } : { act: 'backfillDay', k, id: planned.id, label: 'Ghi bù buổi tập' });
   } else if (st) {
-    train = st.lag ? 25 : 40;
+    train = st.lag ? 22 : 35;
     items.push([st.lag ? 'info' : 'ok', st.lag ? `Ngày nghỉ nhưng lịch đang lùi ${st.lag} buổi, có thể tập bù` : 'Ngày nghỉ theo lịch']);
-  } else { train = 20; items.push(['info', 'Chưa có lịch tập, không tập']); }
-  // food (40) — nothing logged means nothing known: 0
+  } else { train = 18; items.push(['info', 'Chưa có lịch tập, không tập']); }
+  // food (35) — nothing logged means nothing known: 0
   const list = S.food[k] || [], tot = dayTotals(k), p = S.profile;
   let food = 0;
   if (!list.length) { items.push(['warn', isToday ? 'Chưa ghi bữa nào' : 'Không ghi bữa nào']); todo.push({ act: 'gotoFood', k, label: 'Ghi bữa ăn' }); }
   else if (p) {
     const t = targets(p), dev = Math.abs(tot.kcal - t.kcal) / t.kcal, pr = tot.p / t.protein;
-    const kp = dev <= .1 ? 25 : dev >= .4 ? 0 : 25 * (1 - (dev - .1) / .3), pp = pr >= .9 ? 15 : 15 * Math.max(0, pr) / .9;
+    const kp = dev <= .1 ? 22 : dev >= .4 ? 0 : 22 * (1 - (dev - .1) / .3), pp = pr >= .9 ? 13 : 13 * Math.max(0, pr) / .9;
     food = Math.round(kp + pp);
     const diff = Math.round(tot.kcal - t.kcal);
     items.push([dev <= .1 ? 'ok' : 'warn', `Calo ${fmtNum(Math.round(tot.kcal))}/${fmtNum(t.kcal)} (${diff > 0 ? '+' : ''}${fmtNum(diff)})${isToday && tot.kcal < t.kcal * .9 ? ' · ngày chưa hết' : ''}`]);
     items.push([pr >= .9 ? 'ok' : 'warn', `Đạm ${Math.round(tot.p)}/${t.protein} g (${Math.round(pr * 100)}%)`]);
-  } else { food = 20; items.push(['info', 'Chưa có mục tiêu calo (Thực đơn → nhập thông tin)']); }
-  // tracking (20)
+  } else { food = 18; items.push(['info', 'Chưa có mục tiêu calo (Thực đơn → nhập thông tin)']); }
+  // sleep (15) — the night before this day
+  const useSleep = !!S.sleepSince && k >= S.sleepSince, sp = sleepPts(k);
+  let sleep = 0;
+  if (useSleep) {
+    if (!sp) { items.push(['warn', 'Chưa ghi giấc ngủ đêm trước']); todo.push({ act: 'sleepLog', k, label: 'Ghi giấc ngủ' }); }
+    else {
+      sleep = sp.p;
+      items.push([sp.hrs >= 7 && sp.late <= 60 ? 'ok' : 'warn', `Ngủ ${fmtHM(sleepMin(sp.e))} (${sp.e.bed}–${sp.e.wake})${sp.hrs < 6 ? ', thiếu ngủ nặng' : sp.hrs < 7 ? ', thiếu ngủ' : ''}${sp.late > 60 ? `, lên giường muộn ${fmtHM(sp.late)} so với mục tiêu` : ''}`]);
+    }
+  }
+  // tracking (15)
   const weighed = (S.body || []).some(b => b.w && b.t >= t0 && b.t < t1), meals = new Set(list.map(f => mealOf(f.t))).size;
-  const track = (weighed ? 10 : 0) + (meals >= 3 ? 10 : meals === 2 ? 6 : meals === 1 ? 3 : 0);
+  const track = (weighed ? 8 : 0) + (meals >= 3 ? 7 : meals === 2 ? 4 : meals === 1 ? 2 : 0);
   items.push([weighed ? 'ok' : 'warn', weighed ? 'Đã cân' : 'Chưa cân']);
   if (!weighed && isToday) todo.push({ act: 'tab', tab: 'body', label: 'Cân ngay' });
   if (list.length && meals < 3) items.push(['info', `Mới ghi ${meals} bữa`]);
-  const score = train + food + track;
-  return { k, score, grade: score >= 85 ? 'Xuất sắc' : score >= 70 ? 'Tốt' : score >= 50 ? 'Ổn' : 'Kém', parts: [['Tập luyện', train, 40], ['Ăn uống', food, 40], ['Theo dõi', track, 20]],
-    items, todo, ws, planned, hasData: ws.length > 0 || list.length > 0 || weighed };
+  const score = useSleep ? train + food + sleep + track : Math.round((train + food + track) / 85 * 100);
+  const parts = [['Tập luyện', train, 35], ['Ăn uống', food, 35], ...(useSleep ? [['Giấc ngủ', sleep, 15]] : []), ['Theo dõi', track, 15]];
+  return { k, score, grade: score >= 85 ? 'Xuất sắc' : score >= 70 ? 'Tốt' : score >= 50 ? 'Ổn' : 'Kém', parts,
+    items, todo, ws, planned, sleep: sp, hasData: ws.length > 0 || list.length > 0 || weighed || !!sp };
 }
 function dayCard() {
   if (!S.profile && !S.workouts.length) return '';
@@ -1790,11 +1867,13 @@ async function aiReviewDay(k) {
     totals: { kcal: Math.round(tot.kcal), protein: Math.round(tot.p), carbs: Math.round(tot.c), fat: Math.round(tot.f) },
     targets: t ? { kcal: t.kcal, protein: t.protein, goal: GOALS[p.goal][0] } : null,
     weight: (S.body || []).find(b => b.w && dayKey(b.t) === k)?.w || null,
+    sleepNightBefore: d.sleep ? { hours: Math.round(d.sleep.hrs * 10) / 10, bed: d.sleep.e.bed, wake: d.sleep.e.wake, minutesLaterThanGoalBedtime: d.sleep.late } : 'không ghi',
+    sleepGoal: { hours: sleepGoal().h, bedBefore: sleepGoal().bed },
   };
   return askAI({
-    system: 'Bạn là huấn luyện viên kiêm chuyên gia dinh dưỡng cực kỳ khó tính, nói tiếng Việt, phũ và thẳng. Chấm một NGÀY của người tập dựa trên JSON: buổi tập, bữa ăn đã ghi, tổng calo/đạm so với mục tiêu, cân nặng, điểm tự động. ' +
-      'Luật: cấm khen xã giao và câu an ủi; không ghi bữa ăn = coi như không kiểm soát được ăn uống, phải chê; bỏ buổi tập theo lịch là lỗi nặng; nếu isToday=true và còn sớm (nowHour < 20) thì đánh giá phần đã qua và nói còn phải làm gì trong ngày. ' +
-      'verdict: "Đạt" chỉ khi tập đúng lịch (hoặc nghỉ đúng lịch), calo trong ±10% mục tiêu, đạm ≥ 90%; thiếu dữ liệu hoặc lệch nhiều thì "Không đạt"; còn lại "Tạm". verdictReason: 1 câu có số liệu. ' +
+    system: 'Bạn là huấn luyện viên kiêm chuyên gia dinh dưỡng cực kỳ khó tính, nói tiếng Việt, phũ và thẳng. Chấm một NGÀY của người tập dựa trên JSON: buổi tập, bữa ăn đã ghi, giấc ngủ đêm trước (sleepNightBefore, so với sleepGoal), tổng calo/đạm so với mục tiêu, cân nặng, điểm tự động. ' +
+      'Luật: cấm khen xã giao và câu an ủi; không ghi bữa ăn = coi như không kiểm soát được ăn uống, phải chê; bỏ buổi tập theo lịch là lỗi nặng; ngủ dưới 6 tiếng hoặc lên giường muộn hơn mục tiêu quá 1 tiếng là lỗi phải chê (không ghi giấc ngủ thì nhắc phải ghi); nếu isToday=true và còn sớm (nowHour < 20) thì đánh giá phần đã qua và nói còn phải làm gì trong ngày. ' +
+      'verdict: "Đạt" chỉ khi tập đúng lịch (hoặc nghỉ đúng lịch), calo trong ±10% mục tiêu, đạm ≥ 90%, ngủ ≥ 7 tiếng (nếu có ghi); thiếu dữ liệu hoặc lệch nhiều thì "Không đạt"; còn lại "Tạm". verdictReason: 1 câu có số liệu. ' +
       'summary: 2 câu phũ. biggestMistake: 1 lỗi quan trọng nhất kèm số liệu. tomorrow: 1–2 việc cụ thể phải làm ngày mai (hoặc tối nay nếu isToday). ' +
       'An toàn: không khuyên ăn dưới mục tiêu calo, không khuyên tập bù quá sức; không chẩn đoán y tế. Chỉ nói điều có trong dữ liệu.',
     content: [{ text: JSON.stringify(data) }], schema: DAY_SCHEMA, think: 'MEDIUM',
@@ -2305,6 +2384,19 @@ const A = {
   vaultDel: async d => { if (!confirm('Xóa vĩnh viễn ảnh này?')) return; await vDel('photos', d.id); closeSheet(); await vaultLoad(); render(); },
   vaultExport: () => vaultExport(),
   vaultImportBtn: () => $('#vaultImportFile').click(),
+  saveSleep: d => {
+    const bed = $('#' + d.p + 'Bed').value, wake = $('#' + d.p + 'Wake').value;
+    if (!bed || !wake) { toast('Nhập giờ ngủ và giờ dậy'); return; }
+    const m = sleepMin({ bed, wake });
+    if (m < 60 || m > 16 * 60) { toast(`${fmtHM(m)} nghe không hợp lý, kiểm tra lại giờ`); return; }
+    S.sleep = S.sleep || {}; S.sleep[d.k] = { bed, wake };
+    if (!S.sleepSince || d.k < S.sleepSince) S.sleepSince = d.k;
+    save(); if (d.p === 'sh') closeSheet(); render();
+    toast(`Đã ghi: ngủ ${fmtHM(m)}${m < 360 ? '. Ngủ thiếu, hôm nay đừng ép tạ' : ''}`, 3000);
+  },
+  sleepLog: d => openSleep(d.k),
+  delSleep: d => { if (!confirm('Xóa lần ghi giấc ngủ này?')) return; delete S.sleep[d.k]; save(); closeSheet(); render(); },
+  setSleepH: d => { S.settings.sleepH = +d.v; save(); render(); },
   focusEx: d => { focusEx = +d.i; render(); requestAnimationFrame(() => $('#ex' + d.i)?.scrollIntoView({ block: 'start', behavior: 'smooth' })); },
   bump: d => {
     const ex = target().exercises[+d.i], cur = ex.sets.findIndex(s => !s.done); if (cur < 0) return;
@@ -2421,6 +2513,7 @@ document.addEventListener('input', e => {
   else if (t.id === 'pickQ') renderPick(t.value);
   else if (t.id === 'mfQ') renderManualList(t.value);
   else if (t.id === 'progQ') renderProgList(t.value);
+  else if (t.id === 'setBed' && t.value) { S.settings.sleepBed = t.value; save(); }
   else if ((t.id === 'vCmpA' || t.id === 'vCmpB') && vault.key) { vault.cmp = [+$('#vCmpA').value, +$('#vCmpB').value]; render(); }
   else if (t.id === 'slotDay' && slot) { slot.k = t.value; slot.guessed = false; $('.slot-hint')?.remove(); }
   else if (t.id === 'slotTime' && slot && t.value) { slot.time = t.value; slot.meal = mealOf(slotTime()); slot.guessed = false; $('.slot-hint')?.remove();

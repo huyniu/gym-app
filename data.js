@@ -679,7 +679,7 @@ const foodSlug = n => n.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/
 const DISH_SRC = {
   "Xôi xéo": ["Xôi đỗ xanh.jpg","Hoangkid","CC BY-SA 4.0","https://creativecommons.org/licenses/by-sa/4.0","https://commons.wikimedia.org/wiki/File:X%C3%B4i_%C4%91%E1%BB%97_xanh.jpg"],
   "Xôi gà": ["Xôi gà.jpg","Yuichi Kosio","CC BY 2.0","https://creativecommons.org/licenses/by/2.0","https://commons.wikimedia.org/wiki/File:X%C3%B4i_g%C3%A0.jpg"],
-  "Xôi thịt kho trứng": ["Xôi đỗ xanh.jpg","Hoangkid","CC BY-SA 4.0","https://creativecommons.org/licenses/by-sa/4.0","https://commons.wikimedia.org/wiki/File:X%C3%B4i_%C4%91%E1%BB%97_xanh.jpg"],
+  "Xôi thịt kho trứng": ["Xoi thap cam.jpg","Blueconcorde","CC0","http://creativecommons.org/publicdomain/zero/1.0/deed.en","https://commons.wikimedia.org/wiki/File:Xoi_thap_cam.jpg"],
   "Bánh mì pate thịt": ["Bánh mì thịt nguội.jpg","Minh Nguyen","CC BY-SA 4.0","https://creativecommons.org/licenses/by-sa/4.0","https://commons.wikimedia.org/wiki/File:B%C3%A1nh_m%C3%AC_th%E1%BB%8Bt_ngu%E1%BB%99i.jpg"],
   "Bánh mì trứng": ["me & my egg roll banh mi cross section","goodiesfirst","CC BY 2.0","https://creativecommons.org/licenses/by/2.0/","https://www.flickr.com/photos/49215102@N00/5394359109"],
   "Bánh mì thịt nướng": ["Bánh mì thịt nướng.png","nsaum75","CC BY-SA 3.0","https://creativecommons.org/licenses/by-sa/3.0","https://commons.wikimedia.org/wiki/File:B%C3%A1nh_m%C3%AC_th%E1%BB%8Bt_n%C6%B0%E1%BB%9Bng.png"],
@@ -783,6 +783,15 @@ const DISH_SRC = {
   "Xoài": ["Ripe Mango","Vegan Feast Catering","CC BY 2.0","https://creativecommons.org/licenses/by/2.0/","https://www.flickr.com/photos/25128194@N02/4477570032"],
   "Dưa hấu": ["watermelon slices","waferboard","CC BY 2.0","https://creativecommons.org/licenses/by/2.0/","https://www.flickr.com/photos/60944931@N00/5966455913"],
   "Rượu": ["Common alcoholic beverages.jpg","TrafficJan82","Public domain","","https://commons.wikimedia.org/wiki/File:Common_alcoholic_beverages.jpg"],
+  "Miến lươn": ["Mien luon Hang Dieu.JPG","vi:User:Rungbachduong","CC BY-SA 3.0","http://creativecommons.org/licenses/by-sa/3.0/","https://commons.wikimedia.org/wiki/File:Mien_luon_Hang_Dieu.JPG"],
+  "Cơm gà xối mỡ": ["Thai-style Hainanese Crispy Fried Chicken Rice.jpg","Alpha","CC BY-SA 2.0","https://creativecommons.org/licenses/by-sa/2.0","https://commons.wikimedia.org/wiki/File:Thai-style_Hainanese_Crispy_Fried_Chicken_Rice.jpg"],
+  "Cơm niêu cá kho": ["Cơm niêu Kombo.jpg","Tuantq89","CC BY-SA 4.0","https://creativecommons.org/licenses/by-sa/4.0","https://commons.wikimedia.org/wiki/File:C%C6%A1m_ni%C3%AAu_Kombo.jpg"],
+  "Cơm cháy chà bông": ["Cơm cháy kho quẹt tại Bích La Thôn-Đông Hà (3).jpg","Phương Huy","Public domain","","https://commons.wikimedia.org/wiki/File:C%C6%A1m_ch%C3%A1y_kho_qu%E1%BA%B9t_t%E1%BA%A1i_B%C3%ADch_La_Th%C3%B4n-%C4%90%C3%B4ng_H%C3%A0_(3).jpg"],
+  "Trứng đúc thịt": ["Cơm tấm sườn chả (chả trứng) tại quán cơm bình dân đường NS ng25th9n2022 (miếng chả trứng) (2).jpg","Phương Huy","CC0","http://creativecommons.org/publicdomain/zero/1.0/deed.en","https://commons.wikimedia.org/wiki/File:C%C6%A1m_t%E1%BA%A5m_s%C6%B0%E1%BB%9Dn_ch%E1%BA%A3_(ch%E1%BA%A3_tr%E1%BB%A9ng)_t%E1%BA%A1i_qu%C3%A1n_c%C6%A1m_b%C3%ACnh_d%C3%A2n_%C4%91%C6%B0%E1%BB%9Dng_NS_ng25th9n2022_(mi%E1%BA%BFng_ch%E1%BA%A3_tr%E1%BB%A9ng)_(2).jpg"],
+  "Ốc luộc": ["Ốc đặc sản 2.JPG","Phương Huy","Public domain","","https://commons.wikimedia.org/wiki/File:%E1%BB%90c_%C4%91%E1%BA%B7c_s%E1%BA%A3n_2.JPG"],
+  "Sữa tươi có đường": ["Glass of milk.jpg","Santeri Viinamäki","CC BY-SA 4.0","https://creativecommons.org/licenses/by-sa/4.0","https://commons.wikimedia.org/wiki/File:Glass_of_milk.jpg"],
+  "Hoa quả dầm": ["USDA Eat Healthy Food Group Gallery serving size half cup (125mL) of fruit cocktail.jpg","United States Department of Agriculture","Public domain","","https://commons.wikimedia.org/wiki/File:USDA_Eat_Healthy_Food_Group_Gallery_serving_size_half_cup_(125mL)_of_fruit_cocktail.jpg"],
+  "Chuối (quả)": ["Bananas on black background 02.jpg","Krzysztof Golik","CC BY-SA 4.0","https://creativecommons.org/licenses/by-sa/4.0","https://commons.wikimedia.org/wiki/File:Bananas_on_black_background_02.jpg"],
 };
 // Image files: img/ex/<slug>-0.jpg (start position) and -1.jpg (end position), from free-exercise-db (Unlicense).
 const exSlug = name => name.toLowerCase().replace(/[^a-z0-9]+/g, '-');

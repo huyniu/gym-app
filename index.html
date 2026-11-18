@@ -453,6 +453,13 @@ h2{font-weight:600;font-size:18px}
 .pg-side{display:flex;flex-direction:column;align-items:center;gap:4px;flex:none}
 .pg-side img{width:76px;height:76px;border-radius:12px;object-fit:cover}
 .pg-side span{font-size:11px;font-weight:700;color:var(--accent);font-family:"Space Grotesk",sans-serif}
+.prog-cur{border-color:var(--accent)}.prog-cur .prog{color:var(--accent)}.ex-row2.on{border-color:var(--accent)}
+.vault-lock{text-align:center;padding:22px 18px}.vault-ic{font-size:30px;color:var(--accent)}
+.vgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.vcell{position:relative;border-radius:12px;overflow:hidden;aspect-ratio:3/4;background:var(--card2)}.vcell img{width:100%;height:100%;object-fit:cover}
+.vcell span{position:absolute;left:0;right:0;bottom:0;font-size:11px;font-weight:700;padding:14px 6px 5px;background:linear-gradient(transparent,rgba(0,0,0,.75))}
+.vcmp{display:grid;grid-template-columns:60px 1fr;align-items:center;gap:8px;margin-top:8px}.vcmp span{font-size:13px;font-weight:700}
+.vcmp div{display:grid;grid-template-columns:1fr 1fr;gap:6px}.vcmp img,.vcmp i{width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:10px;background:var(--card2)}
 </style>
 </head>
 <body>
@@ -475,12 +482,14 @@ h2{font-weight:600;font-size:18px}
 <div id="flash" aria-hidden="true"></div>
 <input type="file" id="importFile" accept="application/json,.json" hidden>
 <input type="file" id="mealFile" accept="image/*" hidden>
+<input type="file" id="vaultFile" accept="image/*" hidden>
+<input type="file" id="vaultImportFile" hidden>
 
 <script src="data.js"></script>
 <script>
 'use strict';
 const KEY = 'gymlog.v1';
-const APP_VERSION = '2026.11.18f';
+const APP_VERSION = '2026.11.19';
 const DEFAULT_EX = EX_DB.map(e => e[0]);
 
 const $ = s => document.querySelector(s);
@@ -923,6 +932,19 @@ function chart(vals, labels) {
 }
 
 let progMetric = 'best';
+// Exercise picker for the progress page: picture, names, sessions and best weight; most recent first.
+function openProgPicker() {
+  openSheet(`<div class="sheet-h"><h3>Chọn bài</h3><button class="link" data-act="closeSheet">Đóng</button></div>
+    <input id="progQ" class="search" placeholder="Tìm bài…" autocomplete="off"><div id="progList"></div>`);
+  renderProgList('');
+}
+function renderProgList(q) {
+  const f = fold(q.trim()), last = {};
+  S.workouts.forEach(w => w.exercises.forEach(e => { if (!isCardio(e.name)) last[e.name] = Math.max(last[e.name] || 0, w.startedAt); }));
+  const names = Object.keys(last).filter(n => exMatch(n, f)).sort((a, b) => last[b] - last[a]);
+  $('#progList').innerHTML = names.map(n => { const b = bestOf(n), k = S.workouts.filter(w => w.exercises.some(e => e.name === n)).length;
+    return `<button class="ex-row2${n === progEx ? ' on' : ''}" data-act="progSet" data-name="${esc(n)}">${exThumbSm(n)}<span class="grow"><b>${esc(n)}</b><small>${esc(EX_VI[n] || '')}${EX_VI[n] ? ' · ' : ''}${k} buổi · ${agoText((Date.now() - last[n]) / 36e5).toLowerCase()}</small></span><span class="prog">${b.maxW ? fmtNum(b.maxW) + ' kg' : ''}</span></button>`; }).join('') || '<div class="empty">Không tìm thấy</div>';
+}
 function viewProgress() {
   const names = [...new Set(S.workouts.flatMap(w => w.exercises.map(e => e.name)))].filter(n => !isCardio(n)).sort((a, b) => a.localeCompare(b));
   if (!names.length) return '<div class="empty">Chưa có dữ liệu.<br>Tiến độ từng bài tập sẽ hiện ở đây sau khi bạn tập.</div>';
@@ -936,7 +958,7 @@ function viewProgress() {
   const metricLabel = { best: 'Ước tính 1RM (kg)', maxW: 'Mức tạ cao nhất (kg)', vol: 'Khối lượng (kg × reps)' };
   const recent = pts.slice(-30);
   return `
-    <select data-bind="progEx" aria-label="Chọn bài tập">${names.map(n => `<option ${n === progEx ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select>
+    <button class="ex-row2 prog-cur" data-act="progPick">${exThumbSm(progEx)}<span class="grow"><b>${esc(progEx)}</b><small>${esc(EX_VI[progEx] || '')}</small></span><span class="prog">Đổi bài ${ic('chev')}</span></button>
     <div class="stats mt">
       <div class="stat"><b>${fmtNum(b.maxW)}</b><span>Tạ cao nhất (kg)</span></div>
       <div class="stat"><b>${fmtNum(Math.round(b.best * 10) / 10)}</b><span>1RM ước tính</span></div>
@@ -1254,6 +1276,7 @@ function reviewWorkout(w) {
       else items.push(['warn', `${e.name}: yếu hơn lần trước (1RM ~${fmtNum(Math.round(pb))} → ${fmtNum(Math.round(b))} kg). Ngủ đủ, ăn đủ chưa?`]);
     }
   }
+  w.exercises.filter(e => e.skipped).forEach(e => items.push(['warn', `${e.name}: bỏ qua set bù được yêu cầu`]));
   (w.prs || []).forEach(n => items.unshift(['pr', `PR mới: ${n}`]));
   // Weekly volume per muscle — only once there is more than a week of history.
   if (S.workouts.some(x => x.startedAt < w.startedAt - 6 * 864e5)) {
@@ -1403,7 +1426,7 @@ const REVIEW_SCHEMA = obj({ verdict: { type: 'string', enum: ['Đạt', 'Tạm',
 async function aiReviewWorkout(id) {
   const w = S.workouts.find(x => x.id === id);
   const sess = x => ({ date: new Date(x.startedAt).toISOString().slice(0, 10), name: x.name, minutes: Math.round((x.endedAt - x.startedAt) / 6e4),
-    exercises: x.exercises.map(e => ({ name: e.name, sets: e.sets.map(s => isCardio(e.name) ? `${s.r} phút${s.w ? ' ' + s.w + ' km' : ''}` : `${s.w}kg×${s.r}`) })) });
+    exercises: x.exercises.map(e => ({ name: e.name, sets: e.sets.map(s => isCardio(e.name) ? `${s.r} phút${s.w ? ' ' + s.w + ' km' : ''}` : `${s.w}kg×${s.r}`), ...(e.skipped ? { skippedRequiredExtraSet: true } : {}) })) });
   const history = S.workouts.filter(x => x.startedAt < w.startedAt && x.startedAt > w.startedAt - 28 * 864e5).slice(0, 20).map(sess);
   const p = S.profile, data = {
     today: sess(w), plan: w.plan || null, ruleReview: reviewWorkout(w).items.map(i => i[1]),
@@ -1620,7 +1643,7 @@ function bodyDue() {
   const out = [];
   if (!today && new Date().getHours() < 12) out.push('Cân sáng nay (trước khi ăn)');
   if (!w || daysAgo(w.t) >= 14) out.push(w ? `Đo vòng bụng (lần cuối ${daysAgo(w.t)} ngày trước)` : 'Đo vòng bụng lần đầu');
-  if (!S.photoAt || daysAgo(S.photoAt) >= 30) out.push(S.photoAt ? `Chụp ảnh tiến độ (lần cuối ${daysAgo(S.photoAt)} ngày trước)` : 'Chụp ảnh tiến độ lần đầu');
+  if (!S.photoAt || daysAgo(S.photoAt) >= 7) out.push(S.photoAt ? `Chụp ảnh body tuần này (lần cuối ${daysAgo(S.photoAt)} ngày trước)` : 'Chụp ảnh body lần đầu');
   return out;
 }
 function bodyReminder() {
@@ -1654,10 +1677,10 @@ function viewBody() {
     </div>
     ${adviceCard(true)}
     <div class="card">
-      <div class="row gap"><span class="qt-ic">${ic('camera')}</span><div class="grow"><div class="title" style="font-size:15px">Ảnh tiến độ mỗi tháng</div>
-        <div class="muted small">${S.photoAt ? `Lần cuối ${photoD === 0 ? 'hôm nay' : photoD + ' ngày trước'}` : 'Chưa chụp lần nào'}${photoD != null && photoD >= 30 ? ' · <b style="color:var(--warn)">đến lúc chụp</b>' : ''}</div></div>
-        <button class="btn" data-act="photoDone">Đã chụp</button></div>
-      <div class="muted small mt">Chụp bằng app Camera, cùng chỗ, cùng ánh sáng, cùng tư thế (trước, nghiêng, sau). Ảnh nằm trong app Ảnh; app chỉ ghi ngày để nhắc.</div>
+      <div class="row gap"><span class="qt-ic">${ic('camera')}</span><div class="grow"><div class="title" style="font-size:15px">Ảnh body mỗi tuần</div>
+        <div class="muted small">${S.photoAt ? `Lần cuối ${photoD === 0 ? 'hôm nay' : photoD + ' ngày trước'}` : 'Chưa chụp lần nào'}${photoD == null || photoD >= 7 ? ' · <b style="color:var(--warn)">đến lúc chụp</b>' : ''}</div></div></div>
+      <button class="btn primary big mt" data-act="openVault">${ic('camera')} Mở kho ảnh body (có mật khẩu)</button>
+      <div class="muted small mt">Chụp 3 tư thế (trước, nghiêng, sau) mỗi tuần, cùng chỗ và cùng ánh sáng. Ảnh được mã hóa trong app.</div>
     </div>
     ${ws.length >= 2 ? `<div class="section-h"><h2>Cân nặng</h2><span class="muted small">${ws.length} lần cân</span></div><div class="card">${chart(ws.slice(-60).map(b => b.w), ws.slice(-60).map(b => new Date(b.t).toLocaleDateString('vi-VN', { day: 'numeric', month: 'numeric' })))}</div>` : ''}
     ${wa.length >= 2 ? `<div class="section-h"><h2>Vòng bụng</h2></div><div class="card">${chart(wa.map(b => b.waist), wa.map(b => new Date(b.t).toLocaleDateString('vi-VN', { day: 'numeric', month: 'numeric' })))}</div>` : ''}
@@ -1796,6 +1819,164 @@ function scoreChart() {
     <div class="card">${chart(sc, days.map(k => new Date(k + 'T12:00').toLocaleDateString('vi-VN', { day: 'numeric', month: 'numeric' })))}</div>`;
 }
 
+/* ---------- grade each exercise right after its last set ---------- */
+function exGrade(ex) {
+  const sets = ex.sets.filter(s => s.done).map(s => ({ w: num(s.w), r: num(s.r) })), r = parseReps(ex.reps);
+  const plan = ex.planSets || sets.length, top = Math.max(...sets.map(s => s.w)), issues = [], good = [];
+  const prev = prevSession(ex.name, S.active.startedAt);
+  const e1 = Math.max(...sets.map(s => e1rm(s.w, s.r))), pe1 = prev ? Math.max(...prev.sets.map(s => e1rm(s.w, s.r))) : 0;
+  // Fail = not enough work for growth: fewer sets than planned, or total reps below plan × minimum reps
+  // (an extra set can make that up), or clearly weaker than last time (one back-off set settles it).
+  const under = r ? sets.filter(s => s.r < r[0]) : [], allTop = r ? sets.every(s => s.r >= r[1]) : false;
+  const short = r ? plan * r[0] - sets.reduce((a, s) => a + s.r, 0) : 0, drop = pe1 > 0 && e1 > 0 && e1 < pe1 * .97;
+  let score = 100 - 15 * under.length - 15 * Math.max(0, plan - sets.length) - (drop ? 15 : 0), fail = false;
+  if (sets.length < plan) { fail = true; issues.push(`Thiếu ${plan - sets.length} set so với kế hoạch`); }
+  if (short > 0) { fail = true; issues.push(`${under.length} set dưới ${r[0]} rep, thiếu ${short} rep so với mức tối thiểu (${plan} × ${r[0]})`); }
+  else if (under.length) issues.push(`${under.length} set dưới ${r[0]} rep, nhưng tổng rep đã bù đủ`);
+  if (drop) { if (!ex.extraAsked) fail = true; issues.push(`Yếu hơn buổi trước: 1RM ~${fmtNum(Math.round(pe1))} → ${fmtNum(Math.round(e1))} kg`); }
+  if (allTop && top > 0) good.push(`Đạt ${r[1]} rep mọi set → buổi sau lên ${fmtNum(top + weightStep(ex.name))} kg`);
+  else if (r && !under.length) good.push(`Trong khoảng ${r[0]}–${r[1]} rep, buổi sau giữ ${fmtNum(top)} kg và cố thêm rep`);
+  if (pe1 > 0 && e1 > pe1 * 1.01) good.push(`Mạnh hơn buổi trước: 1RM ~${fmtNum(Math.round(pe1))} → ${fmtNum(Math.round(e1))} kg`);
+  score = Math.max(0, score);
+  const step = top >= 20 ? 2.5 : 1;
+  const extraW = top > 0 ? Math.max(step, Math.round(top * .9 / step) * step) : 0;
+  return { score, sets, fail, issues, good, verdict: !fail && allTop ? 'Xuất sắc' : !fail ? 'Đạt' : 'Chưa đạt',
+    extra: fail && (ex.extraAsked || 0) < 2 ? { w: extraW, reps: r ? `${r[0]}–${r[1]}` : String(Math.max(...sets.map(s => s.r))) } : null };
+}
+function openExGrade(i) {
+  const ex = S.active?.exercises[i]; if (!ex || !ex.sets.every(s => s.done)) return;
+  const g = exGrade(ex), vc = g.verdict === 'Chưa đạt' ? 'var(--danger)' : g.verdict === 'Đạt' ? 'var(--warn)' : 'var(--ok)';
+  openSheet(`<div class="sheet-h"><h3>Chấm bài: ${esc(ex.name)}</h3><button class="link" data-act="closeSheet">Đóng</button></div>
+    <div class="score"><div class="ring" style="--p:${g.score}"><b>${g.score}</b></div><div><div class="title" style="color:${vc}">${g.verdict}</div>
+      <div class="muted small">${g.sets.map(s => `${fmtNum(s.w)}×${s.r}`).join(' · ')}${ex.reps ? ` · mục tiêu ${esc(ex.reps)}` : ''}</div></div></div>
+    <div class="rev">${g.issues.map(t => `<div class="rev-i"><span style="color:var(--danger)">${ic('info')}</span><span>${esc(t)}</span></div>`).join('')}
+      ${g.good.map(t => `<div class="rev-i"><span style="color:var(--accent)">${ic('up')}</span><span>${esc(t)}</span></div>`).join('')}</div>
+    ${g.extra ? `<div class="muted small mt">Chưa đủ để cơ phát triển. Tập bù ngay khi còn nóng người, đừng để đến lúc cardio xong.</div>
+      <button class="btn primary big mt" data-act="extraSet" data-i="${i}" data-w="${g.extra.w}">${ic('plus')} Tập thêm 1 set: ${g.extra.w ? fmtNum(g.extra.w) + ' kg × ' : ''}${esc(g.extra.reps)} rep</button>
+      <button class="text-btn" data-act="skipExtra" data-i="${i}">Bỏ qua (ghi vào đánh giá buổi tập)</button>`
+      : `<button class="btn primary big mt" data-act="closeSheet">${g.fail ? 'Đã bù 2 set, sang bài tiếp' : 'Sang bài tiếp'}</button>`}`);
+}
+/* ---------- body photo vault: IndexedDB, AES-GCM with a key derived from the user's password ----------
+   The password is never stored; only a salt and an encrypted check value. Wrong password -> decrypt fails. */
+const VAULT_DB = 'gymlog-vault', POSES = ['Trước', 'Nghiêng', 'Sau'];
+let vault = { key: null, items: [], salt: null, busy: false, fails: 0, lockUntil: 0, pose: 'Trước', cmp: null };
+function vdb() {
+  return new Promise((ok, bad) => { const r = indexedDB.open(VAULT_DB, 1);
+    r.onupgradeneeded = () => { const db = r.result; db.createObjectStore('meta'); db.createObjectStore('photos', { keyPath: 'id' }); };
+    r.onsuccess = () => ok(r.result); r.onerror = () => bad(r.error); });
+}
+async function vtx(store, mode, fn) {
+  const db = await vdb();
+  return new Promise((ok, bad) => { const t = db.transaction(store, mode), s = t.objectStore(store), res = fn(s);
+    t.oncomplete = () => ok(res && 'result' in res ? res.result : undefined); t.onerror = () => bad(t.error); });
+}
+const vGet = (store, k) => vtx(store, 'readonly', s => s.get(k));
+const vAll = store => vtx(store, 'readonly', s => s.getAll());
+const vPut = (store, v, k) => vtx(store, 'readwrite', s => k === undefined ? s.put(v) : s.put(v, k));
+const vDel = (store, k) => vtx(store, 'readwrite', s => s.delete(k));
+async function deriveKey(pw, salt) {
+  const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(pw), 'PBKDF2', false, ['deriveKey']);
+  return crypto.subtle.deriveKey({ name: 'PBKDF2', salt, iterations: 310000, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+}
+async function enc(key, buf) { const iv = crypto.getRandomValues(new Uint8Array(12)); return { iv, data: await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, buf) }; }
+const dec = (key, x) => crypto.subtle.decrypt({ name: 'AES-GCM', iv: x.iv }, key, x.data);
+const CHECK = 'gymlog-vault-ok';
+async function vaultMeta() { try { return await vGet('meta', 'kdf'); } catch (e) { return null; } }
+async function vaultSetPassword(pw) {
+  const salt = crypto.getRandomValues(new Uint8Array(16)), key = await deriveKey(pw, salt);
+  await vPut('meta', { salt, check: await enc(key, new TextEncoder().encode(CHECK)) }, 'kdf');
+  vault.key = key; vault.salt = salt; await vaultLoad();
+}
+async function vaultUnlock(pw) {
+  const m = await vaultMeta(), key = await deriveKey(pw, m.salt);
+  try { if (new TextDecoder().decode(await dec(key, m.check)) !== CHECK) throw 0; } catch (e) { return false; }
+  vault.key = key; vault.salt = m.salt; await vaultLoad(); return true;
+}
+async function vaultLoad() {
+  vaultUrls();
+  const rows = (await vAll('photos')).sort((a, b) => b.t - a.t);
+  vault.items = [];
+  for (const r of rows) { try { vault.items.push({ id: r.id, t: r.t, pose: r.pose, thumb: URL.createObjectURL(new Blob([await dec(vault.key, r.thumb)], { type: 'image/jpeg' })) }); } catch (e) { /* unreadable item */ } }
+}
+function vaultUrls() { vault.items.forEach(i => { URL.revokeObjectURL(i.thumb); if (i.full) URL.revokeObjectURL(i.full); }); }
+function vaultLock() { vaultUrls(); vault = { ...vault, key: null, items: [], cmp: null }; }
+function resizeJpeg(src, max, q) {
+  return new Promise((ok, bad) => { const img = new Image(); img.onload = () => {
+    const k = Math.min(1, max / Math.max(img.width, img.height)), c = document.createElement('canvas'); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); c.toBlob(b => b ? ok(b) : bad(new Error('Không xử lý được ảnh')), 'image/jpeg', q); };
+    img.onerror = () => bad(new Error('Không đọc được ảnh')); img.src = src; });
+}
+async function vaultAdd(file) {
+  const url = URL.createObjectURL(file);
+  try {
+    const [full, thumb] = await Promise.all([resizeJpeg(url, 1280, .82), resizeJpeg(url, 300, .7)]);
+    const age = Date.now() - file.lastModified, t = age > 10 * 6e4 && age < 60 * 864e5 ? file.lastModified : Date.now();
+    await vPut('photos', { id: uid(), t, pose: vault.pose, full: await enc(vault.key, await full.arrayBuffer()), thumb: await enc(vault.key, await thumb.arrayBuffer()) });
+    S.photoAt = Math.max(S.photoAt || 0, t); save();
+    await vaultLoad();
+  } finally { URL.revokeObjectURL(url); }
+}
+async function vaultFull(id) {
+  const it = vault.items.find(i => i.id === id); if (!it) return null;
+  if (!it.full) { const r = await vGet('photos', id); it.full = URL.createObjectURL(new Blob([await dec(vault.key, r.full)], { type: 'image/jpeg' })); }
+  return it.full;
+}
+// Export keeps everything encrypted (salt, check value, photos) so the file is safe to keep in iCloud.
+const b64 = buf => { const u = new Uint8Array(buf); let s = ''; for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode(...u.subarray(i, i + 0x8000)); return btoa(s); };
+const unb64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+const packEnc = x => ({ iv: b64(x.iv), data: b64(x.data) }), unpackEnc = x => ({ iv: unb64(x.iv), data: unb64(x.data).buffer });
+async function vaultExport() {
+  const m = await vaultMeta(), rows = await vAll('photos');
+  const json = JSON.stringify({ app: 'gymlog-vault', v: 1, salt: b64(m.salt), check: packEnc(m.check), photos: rows.map(r => ({ id: r.id, t: r.t, pose: r.pose, full: packEnc(r.full), thumb: packEnc(r.thumb) })) });
+  const name = `gym-anh-body-${dayKey()}.gymvault`, file = new File([json], name, { type: 'application/octet-stream' });
+  if (navigator.canShare && navigator.canShare({ files: [file] })) { try { await navigator.share({ files: [file], title: name }); } catch (e) {} return; }
+  const a = document.createElement('a'); a.href = URL.createObjectURL(file); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+}
+async function vaultImport(text) {
+  const d = JSON.parse(text); if (d.app !== 'gymlog-vault') throw new Error('Không phải file kho ảnh');
+  const m = await vaultMeta(), salt = unb64(d.salt);
+  if (m && b64(m.salt) !== d.salt) throw new Error('File này dùng mật khẩu/khóa khác với kho hiện tại. Chỉ nhập được vào kho trống hoặc cùng khóa.');
+  if (!m) await vPut('meta', { salt, check: unpackEnc(d.check) }, 'kdf');
+  for (const p of d.photos) await vPut('photos', { id: p.id, t: p.t, pose: p.pose, full: unpackEnc(p.full), thumb: unpackEnc(p.thumb) });
+  return d.photos.length;
+}
+function viewVault() {
+  if (vault.busy) return `<div class="empty">${ic('refresh')} Đang xử lý…</div>`;
+  if (!vault.key) {
+    const setup = vault.needsSetup;
+    return `<div class="card vault-lock">${ic('info', 'vault-ic')}
+      <div class="title" style="margin:8px 0 4px">${setup ? 'Đặt mật khẩu cho kho ảnh' : 'Kho ảnh body đang khóa'}</div>
+      <div class="muted small" style="margin-bottom:12px">${setup ? 'Ảnh được mã hóa bằng mật khẩu này. <b style="color:var(--warn)">Quên mật khẩu là mất ảnh</b>, không khôi phục được. Mật khẩu không được lưu ở đâu cả.' : 'Nhập mật khẩu để mở.'}</div>
+      <input id="vPw" type="password" inputmode="numeric" autocomplete="off" placeholder="Mật khẩu">
+      ${setup ? '<input id="vPw2" type="password" inputmode="numeric" autocomplete="off" placeholder="Nhập lại mật khẩu" style="margin-top:8px">' : ''}
+      <button class="btn primary big mt" data-act="${setup ? 'vaultSetup' : 'vaultOpen'}">${setup ? 'Tạo kho ảnh' : 'Mở khóa'}</button>
+      ${setup ? '' : '<button class="text-btn" data-act="vaultImportBtn">Nhập kho ảnh từ file sao lưu</button>'}</div>`;
+  }
+  const weeks = {}; vault.items.forEach(i => { const w = weekStart(i.t); (weeks[w] = weeks[w] || []).push(i); });
+  const wk = Object.keys(weeks).map(Number).sort((a, b) => b - a), lbl = w => `Tuần ${new Date(w).toLocaleDateString('vi-VN', { day: 'numeric', month: 'numeric' })}`;
+  const due = !S.photoAt || daysAgo(S.photoAt) >= 7;
+  return `<div class="card">
+      <div class="row gap"><div class="grow"><div class="title">Thêm ảnh tuần này</div><div class="muted small">${due ? '<b style="color:var(--warn)">Đến lúc chụp</b> · ' : ''}${S.photoAt ? 'Lần cuối ' + (daysAgo(S.photoAt) ? daysAgo(S.photoAt) + ' ngày trước' : 'hôm nay') : 'Chưa có ảnh'}</div></div>
+        <button class="btn" data-act="vaultLock">${ic('x')} Khóa</button></div>
+      <div class="seg mt">${POSES.map(p => `<button class="${vault.pose === p ? 'on' : ''}" data-act="vaultPose" data-v="${p}">${p}</button>`).join('')}</div>
+      <button class="btn primary big mt" data-act="vaultShot">${ic('camera')} Chụp / chọn ảnh ${vault.pose.toLowerCase()}</button>
+      <div class="muted small mt">Cùng chỗ, cùng ánh sáng, cùng giờ (sáng, trước khi ăn) để so sánh chính xác.</div></div>
+    ${wk.length >= 2 ? `<div class="card"><div class="title" style="margin-bottom:8px">So sánh</div>
+      <div class="slot"><select id="vCmpA">${wk.map((w, i) => `<option value="${w}" ${(vault.cmp?.[0] ?? wk[wk.length - 1]) == w ? 'selected' : ''}>${lbl(w)}</option>`).join('')}</select>
+      <select id="vCmpB">${wk.map(w => `<option value="${w}" ${(vault.cmp?.[1] ?? wk[0]) == w ? 'selected' : ''}>${lbl(w)}</option>`).join('')}</select></div>
+      ${POSES.map(p => { const [a, b] = vault.cmp || [wk[wk.length - 1], wk[0]], A = (weeks[a] || []).find(i => i.pose === p), B = (weeks[b] || []).find(i => i.pose === p);
+        return A || B ? `<div class="vcmp"><span>${p}</span><div>${A ? `<img src="${A.thumb}" data-act="vaultView" data-id="${A.id}" alt="">` : '<i></i>'}${B ? `<img src="${B.thumb}" data-act="vaultView" data-id="${B.id}" alt="">` : '<i></i>'}</div></div>` : ''; }).join('')}</div>` : ''}
+    ${wk.map(w => `<div class="section-h"><h2>${lbl(w)}</h2><span class="muted small">${weeks[w].length} ảnh</span></div>
+      <div class="vgrid">${weeks[w].map(i => `<button class="vcell" data-act="vaultView" data-id="${i.id}"><img src="${i.thumb}" alt=""><span>${i.pose} · ${new Date(i.t).toLocaleDateString('vi-VN', { day: 'numeric', month: 'numeric' })}</span></button>`).join('')}</div>`).join('') || '<div class="empty">Chưa có ảnh nào</div>'}
+    <div class="card mt"><div class="title" style="margin-bottom:4px">Sao lưu kho ảnh</div>
+      <div class="muted small" style="margin-bottom:10px">Kho ảnh không nằm trong file sao lưu thường. Xuất file riêng (vẫn mã hóa) và lưu vào iCloud. Xóa app khỏi màn hình chính mà chưa xuất là mất ảnh.</div>
+      <div class="row gap"><button class="btn grow" data-act="vaultExport">${ic('download')} Xuất kho ảnh</button><button class="btn grow" data-act="vaultImportBtn">Nhập kho ảnh</button></div></div>`;
+}
+async function openVault() {
+  tab = 'vault'; vault.busy = true; render();
+  vault.needsSetup = !(await vaultMeta()); vault.busy = false; render(); window.scrollTo(0, 0);
+}
+
 /* ---------- more ---------- */
 function viewMore() {
   return `<div class="card" style="padding:4px 14px">${[['history', 'calendar', 'Lịch sử', `${S.workouts.length} buổi tập`], ['body', 'scale', 'Cơ thể', 'Cân nặng, vòng bụng, ảnh tiến độ'], ['progress', 'chart', 'Tiến độ', 'Biểu đồ từng bài'], ['settings', 'sliders', 'Cài đặt', 'Thời gian nghỉ, sao lưu']]
@@ -1803,13 +1984,14 @@ function viewMore() {
 }
 
 const TABS = [['workout', 'barbell', 'Tập'], ['recovery', 'pulse', 'Phục hồi'], ['nutrition', 'apple', 'Thực đơn'], ['library', 'book', 'Thư viện'], ['more', 'grid', 'Thêm']];
-const TITLES = { workout: 'Tập luyện', recovery: 'Phục hồi cơ', nutrition: 'Thực đơn', library: 'Thư viện bài tập', more: 'Thêm', body: 'Cơ thể', history: 'Lịch sử', progress: 'Tiến độ', settings: 'Cài đặt', edit: 'Sửa buổi tập' };
-const SUB = ['history', 'progress', 'settings', 'body'];
+const TITLES = { vault: 'Kho ảnh body', workout: 'Tập luyện', recovery: 'Phục hồi cơ', nutrition: 'Thực đơn', library: 'Thư viện bài tập', more: 'Thêm', body: 'Cơ thể', history: 'Lịch sử', progress: 'Tiến độ', settings: 'Cài đặt', edit: 'Sửa buổi tập' };
+const SUB = ['history', 'progress', 'settings', 'body', 'vault'];
 function render() {
+  if (tab !== 'vault' && vault.key) vaultLock();
   $('#hdr').innerHTML = tab === 'workout' && S.active ? activeBar()
     : tab === 'workout' ? homeHeader() : tab === 'recovery' ? recHeader()
     : `<h1>${SUB.includes(tab) ? `<button class="back" data-act="tab" data-tab="more" aria-label="Quay lại">${ic('back')}</button>` : ''}${TITLES[tab]}</h1>`;
-  main.innerHTML = ({ workout: viewWorkout, recovery: viewRecovery, nutrition: viewNutrition, library: viewLibrary, more: viewMore, body: viewBody, history: viewHistory, progress: viewProgress, settings: viewSettings, edit: viewEdit })[tab]();
+  main.innerHTML = ({ workout: viewWorkout, recovery: viewRecovery, nutrition: viewNutrition, library: viewLibrary, more: viewMore, body: viewBody, vault: viewVault, history: viewHistory, progress: viewProgress, settings: viewSettings, edit: viewEdit })[tab]();
   const cur = SUB.includes(tab) || tab === 'edit' ? 'more' : tab;
   $('#tabs').innerHTML = TABS.map(([k, i, l]) => `<button class="${cur === k ? 'on' : ''}" data-act="tab" data-tab="${k}">${ic(i)}${l}${k === 'workout' && S.active && tab !== 'workout' ? '<span class="dot"></span>' : ''}</button>`).join('');
 }
@@ -1895,13 +2077,13 @@ async function requestWake() {
     wake = await navigator.wakeLock.request('screen'); wake.addEventListener('release', () => { wake = null; }); } } catch (e) {}
 }
 function releaseWake() { try { if (wake) wake.release(); } catch (e) {} wake = null; }
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { requestWake(); tick(); if ($('#sheet').hidden) eveningCheck(false); } });
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && vault.key) { vaultLock(); if (tab === 'vault') render(); } if (document.visibilityState === 'visible') { requestWake(); tick(); if ($('#sheet').hidden) eveningCheck(false); } });
 
 /* ---------- actions ---------- */
 function newSets(n, name) { return Array.from({ length: Math.max(1, n) }, () => ({ w: '', r: '', done: false })); }
 function startFrom(name, exercises, extra = {}) {
   focusEx = null;
-  S.active = { name, startedAt: Date.now(), exercises: exercises.map(e => ({ name: e.name, sets: newSets(e.sets), ...(e.reps ? { reps: e.reps } : {}), ...(e.rest ? { rest: e.rest } : {}) })), ...extra };
+  S.active = { name, startedAt: Date.now(), exercises: exercises.map(e => ({ name: e.name, sets: newSets(e.sets), planSets: e.sets, ...(e.reps ? { reps: e.reps } : {}), ...(e.rest ? { rest: e.rest } : {}) })), ...extra };
   restEnd = 0; save(); tab = 'workout'; requestWake(); render(); window.scrollTo(0, 0);
 }
 const A = {
@@ -1943,8 +2125,11 @@ const A = {
       const hn = weightHint(ex.name, ex.reps); if (s.w === '' && (hn || p)) s.w = String(hn ? hn.w : p.w);
       if (s.r === '' && p) s.r = String(p.r);
       if (s.r === '' || num(s.r) <= 0) { toast(isCardio(ex.name) ? 'Nhập số phút trước nhé' : 'Nhập số reps trước nhé'); return; }
+      const w = num(s.w), maxW = bestOf(ex.name).maxW;
+      if (!isCardio(ex.name) && (w > 300 || (maxW > 0 && w > maxW * 3)) && !confirm(`${fmtNum(w)} kg cho ${ex.name}${maxW ? ` (cao nhất trước đây ${fmtNum(maxW)} kg)` : ''}. Có đúng không?`)) return;
       s.done = true; if (!isCardio(ex.name)) startRest(ex.rest || S.settings.rest);
       if (ex.sets.every(x => x.done) && focusEx === +d.i) focusEx = null;
+      if (ex.sets.every(x => x.done) && !isCardio(ex.name)) setTimeout(() => openExGrade(+d.i), 250);
     } else s.done = false;
     save(); render();
   },
@@ -1953,7 +2138,7 @@ const A = {
   cancelWorkout: () => { if (confirm('Hủy buổi tập này? Dữ liệu buổi này sẽ không được lưu.')) { S.active = null; restEnd = 0; save(); releaseWake(); render(); } },
   finishWorkout: () => {
     const a = S.active;
-    const exs = a.exercises.map(e => ({ name: e.name, sets: e.sets.filter(s => s.done).map(s => ({ w: num(s.w), r: num(s.r) })) })).filter(e => e.sets.length);
+    const exs = a.exercises.map(e => ({ name: e.name, sets: e.sets.filter(s => s.done).map(s => ({ w: num(s.w), r: num(s.r) })), ...(e.skipped ? { skipped: true } : {}) })).filter(e => e.sets.length);
     if (!exs.length) { if (confirm('Chưa có set nào được tick ✓. Hủy buổi tập?')) { S.active = null; restEnd = 0; save(); releaseWake(); render(); } return; }
     if (!confirm('Kết thúc và lưu buổi tập?')) return;
     const prs = exs.filter(e => { const b = bestOf(e.name); return !isCardio(e.name) && b.maxW > 0 && Math.max(...e.sets.map(s => s.w)) > b.maxW; }).map(e => e.name);
@@ -2085,6 +2270,41 @@ const A = {
   skipAdj: () => { S.adjAt = Date.now(); save(); render(); },
   resetAdj: () => { if (confirm('Bỏ phần điều chỉnh calo, quay về mức tính theo công thức?')) { delete S.profile.adj; S.adjAt = Date.now(); save(); render(); } },
   setAi: d => { S.settings.ai = d.v; save(); render(); },
+  progPick: () => openProgPicker(),
+  progSet: d => { progEx = d.name; closeSheet(); render(); window.scrollTo(0, 0); },
+  extraSet: d => {
+    const ex = S.active.exercises[+d.i]; ex.extraAsked = (ex.extraAsked || 0) + 1; ex.skipped = false;
+    ex.sets.push({ w: +d.w ? String(d.w) : '', r: '', done: false });
+    focusEx = +d.i; save(); closeSheet(); render(); requestAnimationFrame(() => $('#ex' + d.i)?.scrollIntoView({ block: 'start', behavior: 'smooth' }));
+    toast('Set bù đã thêm. Nghỉ xong thì tập và nhập số rep.');
+  },
+  skipExtra: d => { S.active.exercises[+d.i].skipped = true; save(); closeSheet(); toast('Đã ghi: bỏ qua set bù'); },
+  openVault: () => openVault(),
+  vaultSetup: async () => {
+    const a = $('#vPw').value, b = $('#vPw2').value;
+    if (a.length < 4) { toast('Mật khẩu ít nhất 4 ký tự'); return; }
+    if (a !== b) { toast('Hai lần nhập không khớp'); return; }
+    vault.busy = true; render(); try { await vaultSetPassword(a); vault.needsSetup = false; toast('Đã tạo kho ảnh. Nhớ kỹ mật khẩu!', 3500); } finally { vault.busy = false; render(); }
+  },
+  vaultOpen: async () => {
+    if (Date.now() < vault.lockUntil) { toast(`Sai nhiều lần, đợi ${Math.ceil((vault.lockUntil - Date.now()) / 1000)} giây`); return; }
+    const pw = $('#vPw').value; if (!pw) return;
+    vault.busy = true; render(); let ok = false;
+    try { ok = await vaultUnlock(pw); } finally { vault.busy = false; }
+    if (ok) vault.fails = 0; else { vault.fails++; if (vault.fails >= 5) { vault.lockUntil = Date.now() + 30000; vault.fails = 0; } toast('Sai mật khẩu'); }
+    render();
+  },
+  vaultLock: () => { vaultLock(); render(); },
+  vaultPose: d => { vault.pose = d.v; render(); },
+  vaultShot: () => $('#vaultFile').click(),
+  vaultView: async d => {
+    const src = await vaultFull(d.id), it = vault.items.find(i => i.id === d.id); if (!src) return;
+    openSheet(`<div class="sheet-h"><h3>${esc(it.pose)} · ${new Date(it.t).toLocaleDateString('vi-VN')}</h3><button class="link" data-act="closeSheet">Đóng</button></div>
+      <img src="${src}" alt="" style="width:100%;border-radius:14px"><button class="btn danger big mt" data-act="vaultDel" data-id="${it.id}">Xóa ảnh này</button>`);
+  },
+  vaultDel: async d => { if (!confirm('Xóa vĩnh viễn ảnh này?')) return; await vDel('photos', d.id); closeSheet(); await vaultLoad(); render(); },
+  vaultExport: () => vaultExport(),
+  vaultImportBtn: () => $('#vaultImportFile').click(),
   focusEx: d => { focusEx = +d.i; render(); requestAnimationFrame(() => $('#ex' + d.i)?.scrollIntoView({ block: 'start', behavior: 'smooth' })); },
   bump: d => {
     const ex = target().exercises[+d.i], cur = ex.sets.findIndex(s => !s.done); if (cur < 0) return;
@@ -2200,6 +2420,8 @@ document.addEventListener('input', e => {
   else if (d.bind === 'draftName' && draft) draft.name = t.value;
   else if (t.id === 'pickQ') renderPick(t.value);
   else if (t.id === 'mfQ') renderManualList(t.value);
+  else if (t.id === 'progQ') renderProgList(t.value);
+  else if ((t.id === 'vCmpA' || t.id === 'vCmpB') && vault.key) { vault.cmp = [+$('#vCmpA').value, +$('#vCmpB').value]; render(); }
   else if (t.id === 'slotDay' && slot) { slot.k = t.value; slot.guessed = false; $('.slot-hint')?.remove(); }
   else if (t.id === 'slotTime' && slot && t.value) { slot.time = t.value; slot.meal = mealOf(slotTime()); slot.guessed = false; $('.slot-hint')?.remove();
     document.querySelectorAll('[data-act="setSlotMeal"]').forEach(b => b.classList.toggle('on', b.dataset.v === slot.meal)); }
@@ -2225,6 +2447,17 @@ $('#mealFile').addEventListener('change', async e => {
     mealDraft = { img, stage: 'note', hint: '', items: [] };
     renderMealSheet();
   } catch (err) { toast(err.message); }
+});
+$('#vaultFile').addEventListener('change', async e => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f || !vault.key) return;
+  vault.busy = true; render();
+  try { await vaultAdd(f); toast(`Đã lưu ảnh ${vault.pose.toLowerCase()} (đã mã hóa)`); } catch (err) { toast(err.message); }
+  vault.busy = false; render();
+});
+$('#vaultImportFile').addEventListener('change', async e => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  try { const n = await vaultImport(await f.text()); vault.needsSetup = false; if (vault.key) await vaultLoad(); render(); toast(`Đã nhập ${n} ảnh. Mở khóa bằng mật khẩu của file đó.`, 4000); }
+  catch (err) { toast(err.message, 4500); }
 });
 $('#importFile').addEventListener('change', async e => {
   const f = e.target.files[0]; e.target.value = ''; if (!f) return;

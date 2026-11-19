@@ -518,6 +518,62 @@ h2{font-weight:600;font-size:18px}
 .wr-d{width:34px;display:flex;flex-direction:column;align-items:center}.wr-d small{font-size:11px;color:var(--muted)}.wr-d b{font-size:18px}
 .cal-wrow .grow b{display:block;font-size:14px}.cal-wrow .grow small{display:block;font-size:12px;color:var(--muted);margin-top:2px}
 .wr-s{font-size:13px;font-weight:800;padding:4px 9px;border-radius:99px}
+.exm{display:flex;align-items:center;gap:10px;min-width:0}.exm img,.exm-ph{width:44px;height:44px;border-radius:10px;object-fit:cover;flex:none;background:var(--card2)}
+.exm-ph{display:grid;place-items:center;font-size:9px;font-weight:700;color:var(--muted);text-align:center;line-height:1.1;padding:2px}
+.exm-t{display:flex;flex-direction:column;min-width:0}.exm-t b{font-size:14px;line-height:1.25}.exm-t small{font-size:12px;color:var(--muted)}.exm-t em{font-style:normal;font-size:12px;color:var(--muted)}
+.exm-t .badge{align-self:flex-start;margin:2px 0}.hist-ex{padding:6px 0}
+.tip{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;color:var(--muted);vertical-align:middle;padding:0;flex:none}.tip svg{width:16px;height:16px}
+.tip-body{font-size:15px;line-height:1.55;color:var(--text)}
+.tasks{display:flex;align-items:center;gap:10px;margin-bottom:12px}.tasks>span{font-size:12px;font-weight:700;color:var(--muted);white-space:nowrap}
+.tasks-row{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding:2px 0}.tasks-row::-webkit-scrollbar{display:none}
+.task{display:flex;align-items:center;gap:6px;white-space:nowrap;background:var(--card);border:1px solid color-mix(in srgb,var(--warn) 45%,transparent);color:var(--text);border-radius:99px;padding:8px 13px;font-size:13px;font-weight:700}
+.task svg{width:16px;height:16px;color:var(--warn)}
+details.fold summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:6px}details.fold summary::-webkit-details-marker{display:none}
+details.fold summary::after{content:'›';margin-left:auto;font-size:22px;color:var(--muted);transition:transform .2s}details.fold[open] summary::after{transform:rotate(90deg)}
+.abar2{display:flex;align-items:center;gap:12px;padding:4px 2px}.abar2 b{display:block;font-size:20px;line-height:1.2}.abar2 small{color:var(--muted);font-size:13px}
+.ab-time{display:flex;align-items:center;gap:7px;background:var(--card);border-radius:99px;padding:9px 14px;font:700 17px 'Space Grotesk',sans-serif;font-variant-numeric:tabular-nums}
+.ab-time i{width:8px;height:8px;border-radius:50%;background:var(--accent);animation:pulse 1.6s infinite}.ab-time.paused i{background:var(--warn);animation:none}
+.hero2{position:relative;background:#fff;border-radius:22px;overflow:hidden;margin-bottom:16px}
+.h2-img{display:block;width:100%;aspect-ratio:16/10;position:relative;padding:0}.h2-img img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.h2-img .f2{animation:demoflip 2.4s steps(1) infinite}.h2-ph{display:grid;place-items:center;height:100%;color:#333;font-size:24px;font-weight:800;padding:20px;text-align:center}
+.h2-tag{position:absolute;left:12px;top:12px;display:flex;align-items:center;gap:6px;background:rgba(40,42,48,.85);color:var(--accent);font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;padding:7px 12px;border-radius:99px}
+.h2-tag i{width:7px;height:7px;border-radius:50%;background:var(--accent)}
+.h2-info{position:absolute;right:12px;top:12px;width:36px;height:36px;border-radius:50%;background:rgba(40,42,48,.85);color:#fff;display:grid;place-items:center}
+.h2-name{position:absolute;left:12px;bottom:28px;background:rgba(40,42,48,.88);color:#fff;border-radius:14px;padding:8px 12px;max-width:70%}.h2-name b{display:block;font-size:17px}.h2-name small{font-size:12px;color:#c9cbd1}
+.h2-prog{position:absolute;left:12px;right:12px;bottom:10px;display:flex;gap:4px}.h2-prog i{flex:1;height:5px;border-radius:3px;background:rgba(0,0,0,.18);overflow:hidden}.h2-prog i b{display:block;height:100%;background:#65a30d}.h2-prog i.on{background:rgba(0,0,0,.3)}
+.ec-head{display:flex;align-items:center;gap:8px;margin:4px 2px 10px;font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}.ec-head b{color:var(--text);margin-left:4px}
+.ec-head .icon{width:38px;height:38px;border-radius:50%;background:var(--card)}.ec-head .icon.add{background:color-mix(in srgb,var(--accent) 22%,transparent);color:var(--accent)}
+.ec{background:var(--card);border-radius:20px;margin-bottom:10px;overflow:hidden}.ec.cur{box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--accent) 45%,transparent)}
+.ec-h{display:flex;align-items:center;gap:4px;padding:10px 8px 10px 12px}.ec-hb{display:flex;align-items:center;gap:12px;flex:1;min-width:0;text-align:left;color:var(--text);padding:0}
+.ec-hb img,.ec-hb .exm-ph{width:52px;height:52px;border-radius:12px;object-fit:cover;flex:none;background:var(--card2)}
+.ec-hb b{display:block;font-size:16px}.ec.cur .ec-hb b{color:var(--accent)}.ec-hb small{display:block;font-size:12px;color:var(--muted)}
+.ec-meta{display:flex;align-items:center;flex-wrap:wrap;gap:6px;font-size:12px;color:var(--muted);margin-top:3px}
+.st{font-style:normal;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;border-radius:99px;background:var(--card2)}
+.st.cur{background:var(--accent);color:#0b0d10}.st.done{background:color-mix(in srgb,var(--ok) 22%,transparent);color:var(--ok)}.st.part{color:var(--warn)}
+.rest-c{display:inline-flex;align-items:center;gap:3px;color:var(--accent)}.rest-c svg{width:12px;height:12px}
+.ec.done{opacity:.75}
+.ec-b{padding:0 12px 10px}.ec-note{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:12px;color:var(--muted);margin-bottom:8px}
+.ec-cols,.ec-row{display:grid;grid-template-columns:34px minmax(0,1fr) 64px 64px 40px;align-items:center;gap:6px}
+.ec-cols{font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:0 4px 6px}
+.ec-row{padding:6px 4px;border-top:1px solid var(--line)}.ec-row .no{font-weight:700;color:var(--muted);text-align:center}.ec-row .pv{font-size:12px;color:var(--muted)}
+.ec-row input{width:100%;text-align:center;padding:8px 4px;font-weight:700}.ec-row.done{opacity:.6}
+.ring-btn{width:34px;height:34px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;justify-self:center}.ring-btn.on{background:var(--accent);border-color:var(--accent);color:#0b0d10}
+.ec-cur .ring-btn{border-color:var(--accent);width:40px;height:40px}
+.ec-cur{background:color-mix(in srgb,var(--accent) 9%,var(--card2));border-radius:16px;padding:12px;margin:4px 0 6px}
+.ec-cur-h{display:flex;align-items:center;gap:10px;margin-bottom:10px}.ec-cur-h b{color:var(--accent);letter-spacing:.1em;text-transform:uppercase;font-size:13px}.ec-cur-h span{flex:1;font-size:13px;color:var(--muted)}
+.stps{display:grid;grid-template-columns:1fr 1fr;gap:8px}.stps.one{grid-template-columns:1fr}
+.stp{display:flex;align-items:center;background:var(--bg);border-radius:14px;padding:6px}.stp button{width:40px;height:40px;border-radius:50%;background:var(--card2);display:grid;place-items:center;color:var(--text);flex:none}
+.stp label{flex:1;display:flex;flex-direction:column;align-items:center;min-width:0}.stp input{width:100%;background:none;border:0;text-align:center;font:800 26px 'Space Grotesk',sans-serif;padding:0;color:var(--text)}
+.stp small{font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.ec-f{display:flex;gap:16px;padding:8px 4px 2px}.ec-f button{display:flex;align-items:center;gap:6px;color:var(--accent);font-weight:800;font-size:13px;letter-spacing:.06em;text-transform:uppercase}.ec-f button.muted{color:var(--muted)}
+body.on-active main{padding-bottom:calc(170px + env(safe-area-inset-bottom))}
+.abot{position:fixed;left:0;right:0;margin:0 auto;width:calc(min(100vw, var(--frame)) - 16px);bottom:calc(70px + env(safe-area-inset-bottom));z-index:9;display:flex;align-items:center;gap:8px;background:rgba(20,21,24,.96);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid var(--line);border-radius:24px;padding:8px}
+.ab-side{display:flex;flex-direction:column;align-items:center;gap:3px;width:62px;font-size:9px;font-weight:800;letter-spacing:.02em;white-space:nowrap;text-transform:uppercase;color:var(--accent)}
+.ab-side svg{width:22px;height:22px}.ab-side.end{color:var(--danger)}.ab-side .sq{width:16px;height:16px;border-radius:4px;background:var(--danger);display:block;margin:3px 0}
+.ab-main{flex:1;display:flex;flex-direction:column;align-items:center;background:var(--accent);color:#0b0d10;border-radius:99px;padding:11px 8px;box-shadow:0 6px 24px color-mix(in srgb,var(--accent) 35%,transparent)}
+.ab-main b{display:flex;align-items:center;gap:6px;font-size:14px;font-weight:900;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap}.ab-main b svg{width:18px;height:18px}.ab-main small{font-size:12px;opacity:.75}
+.ab-main.rest{background:var(--card2);color:var(--text);box-shadow:none}.ab-main.rest b{color:var(--accent);font-variant-numeric:tabular-nums}.ab-main.off{background:var(--card2);color:var(--warn);box-shadow:none}
+.menu-list{display:flex;flex-direction:column}.menu-list button{display:flex;align-items:center;gap:12px;padding:14px 4px;border-bottom:1px solid var(--line);color:var(--text);font-size:15px;text-align:left}.menu-list button.danger{color:var(--danger)}
 </style>
 </head>
 <body>
@@ -548,7 +604,7 @@ h2{font-weight:600;font-size:18px}
 <script>
 'use strict';
 const KEY = 'gymlog.v1';
-const APP_VERSION = '2026.11.21d';
+const APP_VERSION = '2026.11.22b';
 const DEFAULT_EX = EX_DB.map(e => e[0]);
 
 const $ = s => document.querySelector(s);
@@ -562,6 +618,7 @@ const ICONS = {
   grid: '<rect x="4" y="4" width="6.5" height="6.5" rx="2"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="2"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="2"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="2"/>',
   check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
   play: '<path d="M8 5.5v13l10.5-6.5z" fill="currentColor"/>',
+  pause: '<path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" fill="currentColor" stroke="none"/>',
   chev: '<path d="M9.5 6l6 6-6 6"/>',
   back: '<path d="M15 5l-7 7 7 7"/>',
   x: '<path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/>',
@@ -823,6 +880,31 @@ function activeBar() {
     <div class="abar-stats"><span>${ic('barbell')}<b>${fmtNum(Math.round(kg))}</b> kg tải</span><span>${ic('check')}<b>${done.length}/${sets.length}</b> set xong</span><span>${ic('grid')}<b>${a.exercises.length}</b> bài</span></div>`;
 }
 
+const TIPS = {
+  sets: ['Số set mỗi tuần', 'Mỗi set tính cho <b>cơ chính</b> 1 set, cho <b>cơ phụ</b> ½ set (VD đẩy ngực: ngực 1, vai trước và tay sau ½).<br><br>Khoảng khuyến nghị để tăng cơ: dưới mức thấp thì cơ lớn chậm, trên mức cao thì dễ quá tải.<br><br>Cột bên phải: tuần này là số set cả tuần trước; tuần cũ là tăng/giảm so với tuần trước nữa.'],
+  rec: ['Bản đồ cơ', '% hồi phục là ước tính từ số set đã tập: cơ lớn hồi khoảng 72 giờ, cơ nhỏ khoảng 48 giờ. Không phải số đo thật, hãy nghe thêm cảm giác cơ thể.'],
+  comp: ['Khối nạc và % mỡ', '% mỡ tính bằng thước dây theo công thức Hải quân Mỹ (chiều cao, vòng cổ, vòng bụng; nữ thêm vòng hông). AI cũng ước lượng % mỡ từ ảnh body hằng tuần để đối chiếu.<br><br>Khối nạc = cân nặng × (1 − % mỡ). Giảm cân mà khối nạc giữ nguyên là đang mất mỡ, không mất cơ.'],
+  big3: ['Big 3', 'Mức sức mạnh = 1RM ước tính (từ các set đã tập) chia cho cân nặng, so với bảng chuẩn phổ biến: Mới tập → Cơ bản → Trung bình → Khá → Giỏi.'],
+  ai: ['AI', 'Dùng để chụp bữa ăn tính calo, nhận món trên mâm, chấm buổi tập, chấm ngày và chấm ảnh body.<br><br><b>Gemini</b> (miễn phí): vào <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" style="color:var(--accent)">aistudio.google.com</a> → Get API key → Create API key. Key bắt đầu bằng AQ. hoặc AIza. Gói miễn phí giới hạn số lượt mỗi phút và mỗi ngày.<br><br><b>Claude</b>: tạo key tại <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener" style="color:var(--accent)">console.anthropic.com</a> (cần nạp trước).<br><br>Key chỉ lưu trên máy này, không nằm trong file sao lưu.'],
+  sleep: ['Giấc ngủ', 'Mỗi sáng trang chủ có nút ghi giờ ngủ, giờ dậy. Giấc ngủ chiếm 15/100 điểm ngày; ngủ dưới 6 tiếng thì màn hình tập cảnh báo giữ mức tạ.<br><br>Muốn được nhắc đi ngủ: tạo một tự động hóa trong app Phím tắt (xem mục Nhắc ghi chép), đặt trước giờ ngủ 30 phút.'],
+  backup: ['Sao lưu', 'Dữ liệu chỉ nằm trên iPhone này. <b style="color:var(--warn)">Xóa app khỏi màn hình chính là mất toàn bộ dữ liệu.</b> Sao lưu mỗi tuần: Xuất dữ liệu → Lưu vào Tệp → iCloud Drive.'],
+  body: ['Cách đo', 'Cân buổi sáng sau khi đi vệ sinh, trước khi ăn.<br>Vòng bụng: ngang rốn, thở ra bình thường, 2 tuần một lần.<br>Vòng cổ: ngay dưới yết hầu. Có vòng cổ thì app tính được % mỡ (Thêm → Hồ sơ).'],
+  photo: ['Ảnh body', 'Chụp 3 tư thế (trước, nghiêng, sau) mỗi tuần, cùng chỗ, cùng ánh sáng, cùng giờ (sáng, trước khi ăn).<br><br>Chọn ảnh xong được xem lại trước khi lưu. Đủ 3 tư thế là AI chấm ngay, khắt khe; ảnh xấu thì bắt chụp lại.<br><br>Ảnh được mã hóa bằng mật khẩu kho. Kho ảnh không nằm trong file sao lưu thường: dùng nút Xuất kho ảnh.'],
+  menu: ['Thực đơn mẫu', 'Định lượng tính theo đồ đã nấu chín, chỉ để tham khảo. Đổi món tương đương được: ức gà ↔ cá ↔ thịt bò nạc, cơm ↔ bún ↔ khoai. Có bệnh lý thì hỏi chuyên gia dinh dưỡng.'],
+};
+const tip = k => `<button class="tip" data-act="tip" data-k="${k}" aria-label="Giải thích">${ic('info')}</button>`;
+// Home: everything still to do today, as one row of small buttons
+function todayTasks() {
+  if (!S.profile && !S.workouts.length) return '';
+  const out = [], hr = new Date().getHours(), t0 = dayStart(dayKey());
+  if (!lastNight() && hr >= 4) out.push(['sleepLog', 'moon', 'Giấc ngủ', `data-k="${dayKey()}"`]);
+  if (!(S.body || []).some(b => b.w && b.t >= t0) && hr < 12) out.push(['tab', 'scale', 'Cân', 'data-tab="body"']);
+  const bp = bodyPending(), photoDue = !S.photoAt || daysAgo(S.photoAt) >= 7;
+  if (bp || photoDue) out.push(['openVault', 'camera', bp === 'review' ? 'Chấm body' : bp === 'retake' ? 'Chụp lại body' : 'Ảnh body', '']);
+  const wa = bodyLog().filter(b => b.waist).pop(); if (S.profile && (!wa || daysAgo(wa.t) >= 14)) out.push(['tab', 'scale', 'Đo bụng', 'data-tab="body"']);
+  if (S.workouts.length >= 3) { const since = S.lastBackup || Math.min(...S.workouts.map(w => w.startedAt)); if (Date.now() - since >= 7 * 864e5) out.push(['exportData', 'download', 'Sao lưu', '']); }
+  return out.length ? `<div class="tasks"><span>Cần làm</span><div class="tasks-row">${out.map(([a, i, l, x]) => `<button class="task" data-act="${a}" ${x}>${ic(i)}${l}</button>`).join('')}</div></div>` : '';
+}
 function backupCard() {
   if (S.workouts.length < 3) return '';
   const since = S.lastBackup || Math.min(...S.workouts.map(w => w.startedAt));
@@ -839,7 +921,7 @@ function viewWorkout() {
   const a = S.active;
   if (!a) {
     const g = homeSuggestion(), st = schedState(), todayPlan = st && !st.trainedToday ? st.plan[st.dow] : null;
-    return `${backupCard()}${sleepCard()}${bodyReminder()}${dayCard()}${weekStrip()}${sleepWarn()}
+    return `${todayTasks()}${dayCard()}${weekStrip()}${sleepWarn()}
     <div class="hero">${ic('barbell', 'hero-wm')}
       <div class="hero-top"><span class="hero-tag"><i></i>${esc(g.k)}</span>${g.tag ? `<span class="hero-tag2">${esc(g.tag)}</span>` : ''}</div>
       <h3>${esc(g.title)}</h3>
@@ -866,15 +948,7 @@ function viewWorkout() {
       </div>`).join('') : `<button class="btn ghost big" data-act="newRoutine">${ic('plus')} Tạo routine đầu tiên (VD: Push / Pull / Legs)</button>`}
     ${S.routines.some(r => r.tpl) ? '' : `<button class="btn ghost big mt" data-act="loadTemplate">${ic('calendar')} Nạp lịch 5 buổi: Đẩy · Kéo · Chân · Thân trên · Thân dưới</button>`}`;
   }
-  const fi = focusIndex();
-  return `${sleepWarn()}
-    <div class="card" style="padding:12px 16px">
-      <input class="name-input" data-bind="activeName" value="${esc(a.name)}" aria-label="Tên buổi tập">
-      <div class="muted small">Bắt đầu lúc ${new Date(a.startedAt).toLocaleTimeString('vi-VN', {hour:'2-digit', minute:'2-digit'})}</div>
-    </div>
-    ${a.exercises.map((ex, i) => i === fi ? exCard(ex, i) : i === fi + 1 ? nextCard(ex, i) : exRow2(ex, i)).join('') || '<div class="empty">Thêm bài tập đầu tiên để bắt đầu</div>'}
-    <button class="btn primary big" data-act="addExercise">${ic('plus')} Thêm bài tập</button>
-    <button class="text-btn" data-act="cancelWorkout">Hủy buổi tập</button>`;
+  return viewActive();
 }
 // The exercise shown expanded: the one the user tapped, else the first with an unfinished set.
 let focusEx = null;
@@ -883,6 +957,115 @@ function focusIndex() {
   if (focusEx != null && ex[focusEx]) return focusEx;
   const i = ex.findIndex(e => e.sets.some(s => !s.done));
   return i < 0 ? ex.length - 1 : i;
+}
+const exVi = name => EX_VI[name] || (getEx(name)?.p || []).map(m => MUSCLES[m]).join(', ');
+const exPic = name => { const src = exImg(name, 0); return src ? `<img src="${src}" alt="" loading="lazy">` : `<span class="exm-ph">${esc((exVi(name).split(',')[0] || name).slice(0, 14))}</span>`; };
+function exTag(name, extra = '') {
+  return `<span class="exm">${exPic(name)}
+    <span class="exm-t"><b>${esc(name)}</b>${exVi(name) ? `<small>${esc(exVi(name))}</small>` : ''}${extra}</span></span>`;
+}
+/* ---------- active workout screen: big demo, exercise cards with steppers, bottom action bar ---------- */
+let exAllOpen = false;
+const activeMs = a => Date.now() - a.startedAt - (a.pausedMs || 0) - (a.pausedAt ? Date.now() - a.pausedAt : 0);
+const isBodyEx = n => EX_LOAD[n] === 'body';
+const exTitle = n => EX_VI[n] || n;
+// current exercise and set: the tapped one, else the first unfinished set
+function activePos() {
+  const a = S.active, i = focusIndex(), ex = a.exercises[i];
+  return { i, j: ex ? ex.sets.findIndex(s => !s.done) : -1 };
+}
+function openPos() {
+  const a = S.active, p = activePos(); if (p.j >= 0) return p;
+  for (let i = 0; i < a.exercises.length; i++) { const j = a.exercises[i].sets.findIndex(s => !s.done); if (j >= 0) return { i, j }; }
+  return { i: p.i, j: -1 };
+}
+// value shown for a set field: typed value, else target hint, else last time
+function setVal(ex, j, f) {
+  const s = ex.sets[j]; if (s[f] !== '') return num(s[f]);
+  const last = lastSets(ex.name), p = last && (last[j] || last[last.length - 1]);
+  if (f === 'w') { const hn = ex.reps ? weightHint(ex.name, ex.reps) : null; return hn ? hn.w : p ? p.w : 0; }
+  const r = parseReps(ex.reps); return p ? p.r : r ? r[1] : isCardio(ex.name) ? 20 : 10;
+}
+function abar2() {
+  const a = S.active, sets = a.exercises.flatMap(e => e.sets), done = sets.filter(s => s.done).length;
+  return `<div class="abar2"><div class="grow"><b>${esc(a.name)}</b><small>${done}/${sets.length} hiệp</small></div>
+    <span class="ab-time${a.pausedAt ? ' paused' : ''}"><i></i><span id="elapsed">${fmtDur(activeMs(a))}</span></span></div>`;
+}
+function heroCard() {
+  const a = S.active, { i, j } = activePos(), ex = a.exercises[i]; if (!ex) return '';
+  const img = exImg(ex.name, 0);
+  return `<div class="hero2">
+    <button class="h2-img" data-act="showEx" data-name="${esc(ex.name)}">${img ? `<img src="${img}" alt=""><img class="f2" src="${exImg(ex.name, 1)}" alt="">` : `<span class="h2-ph">${esc(exTitle(ex.name))}</span>`}</button>
+    <span class="h2-tag"><i></i>${j < 0 ? 'Xong bài' : 'Đang tập'} · ${i + 1} / ${a.exercises.length}</span>
+    <button class="h2-info" data-act="showEx" data-name="${esc(ex.name)}" aria-label="Cách tập">${ic('info')}</button>
+    <div class="h2-name"><b>${esc(exTitle(ex.name))}</b><small>${j < 0 ? `${ex.sets.length}/${ex.sets.length} hiệp` : `Hiệp ${j + 1} / ${ex.sets.length}`}</small></div>
+    <div class="h2-prog">${a.exercises.map((e, k) => `<i class="${k === i ? 'on' : ''}"><b style="width:${e.sets.filter(s => s.done).length / e.sets.length * 100}%"></b></i>`).join('')}</div>
+  </div>`;
+}
+function stepper(i, j, f, val, unit) {
+  return `<div class="stp"><button data-act="step" data-i="${i}" data-j="${j}" data-f="${f}" data-v="-1" aria-label="Giảm">${ic('minus')}</button>
+    <label><input inputmode="decimal" data-i="${i}" data-j="${j}" data-f="${f}" value="${esc(fmtNum(val))}" aria-label="${unit}"><small>${unit}</small></label>
+    <button data-act="step" data-i="${i}" data-j="${j}" data-f="${f}" data-v="1" aria-label="Tăng">${ic('plus')}</button></div>`;
+}
+function exCard2(ex, i, curI) {
+  const cardio = isCardio(ex.name), body = isBodyEx(ex.name), n = ex.sets.filter(s => s.done).length, all = n === ex.sets.length;
+  const open = i === curI || exAllOpen, cur = ex.sets.findIndex(s => !s.done), last = lastSets(ex.name), hint = ex.reps ? weightHint(ex.name, ex.reps) : null;
+  const st = all ? ['done', 'Xong'] : i === curI ? ['cur', 'Đang tập'] : n ? ['part', 'Dở'] : ['todo', 'Chưa'];
+  const prevTxt = j => { const p = last && last[j]; return p ? fmtSet(p, ex.name) : '—'; };
+  const unitW = cardio ? 'km' : 'kg', unitR = cardio ? 'phút' : 'reps';
+  return `<div class="ec ${st[0]}${open ? ' open' : ''}" id="ex${i}">
+    <div class="ec-h"><button class="ec-hb" data-act="focusEx" data-i="${i}">${exPic(ex.name)}
+      <span class="grow"><b>${esc(exTitle(ex.name))}</b><small>${EX_VI[ex.name] ? esc(ex.name) : esc(exVi(ex.name))}</small>
+        <span class="ec-meta"><em class="st ${st[0]}">${st[1]}</em>${n}/${ex.sets.length} hiệp${ex.reps ? ` · ${esc(ex.reps)}` : ''}${!cardio ? ` <span class="rest-c">${ic('clock')}${fmtRest(ex.rest || S.settings.rest)}</span>` : ''}</span></span></button>
+      <button class="icon" data-act="exMenu" data-i="${i}" aria-label="Tùy chọn">⋯</button></div>
+    ${open ? `<div class="ec-b">
+      ${hint || (EX_LOAD[ex.name] && !body) ? `<div class="ec-note">${hint ? `<span class="up-pill${hint.up ? '' : ' hold'}">${ic(hint.up ? 'up' : 'minus')} ${hint.up ? 'Lên' : 'Giữ'} ${fmtNum(hint.w)} kg</span>` : ''}${EX_LOAD[ex.name] && !body ? `<span>${LOAD_NOTE[EX_LOAD[ex.name]]}</span>` : ''}</div>` : ''}
+      <div class="ec-cols"><span>Hiệp</span><span>Lần trước</span><span>${body ? '' : unitW}</span><span>${unitR}</span><span></span></div>
+      ${ex.sets.map((s, j) => j === cur && i === curI ? `<div class="ec-cur">
+          <div class="ec-cur-h"><b>Hiệp ${j + 1}</b><span>Lần trước: ${prevTxt(j)}</span><button class="ring-btn" data-act="toggleSet" data-i="${i}" data-j="${j}" aria-label="Hoàn thành hiệp"></button></div>
+          <div class="stps${body ? ' one' : ''}">${body ? '' : stepper(i, j, 'w', setVal(ex, j, 'w'), unitW)}${stepper(i, j, 'r', setVal(ex, j, 'r'), unitR)}</div></div>`
+        : `<div class="ec-row ${s.done ? 'done' : ''}"><span class="no">${j + 1}</span><span class="pv">${prevTxt(j)}</span>
+          <span>${body ? '' : `<input inputmode="decimal" data-i="${i}" data-j="${j}" data-f="w" value="${esc(s.w)}" placeholder="${esc(fmtNum(setVal(ex, j, 'w')))}">`}</span>
+          <span><input inputmode="decimal" data-i="${i}" data-j="${j}" data-f="r" value="${esc(s.r)}" placeholder="${esc(fmtNum(setVal(ex, j, 'r')))}"></span>
+          <button class="ring-btn${s.done ? ' on' : ''}" data-act="toggleSet" data-i="${i}" data-j="${j}" aria-label="Hoàn thành hiệp">${s.done ? ic('check') : ''}</button></div>`).join('')}
+      <div class="ec-f"><button data-act="addSet" data-i="${i}">${ic('plus')} Thêm hiệp</button>${ex.sets.length > 1 ? `<button class="muted" data-act="delSet" data-i="${i}">${ic('minus')} Bớt</button>` : ''}</div>
+    </div>` : ''}
+  </div>`;
+}
+function abot() {
+  const a = S.active; if (!a) return '';
+  const { i, j } = openPos(), ex = a.exercises[i], resting = restEnd > Date.now() && !a.pausedAt;
+  let main;
+  if (a.pausedAt) main = `<button class="ab-main off" data-act="pauseWorkout"><b>Đang tạm dừng</b><small>Bấm để tiếp tục</small></button>`;
+  else if (resting) main = `<button class="ab-main rest" data-act="restSkip"><b>Nghỉ <span id="abRest">${fmtDur(restEnd - Date.now() + 999)}</span></b><small>Bấm để bỏ qua</small></button>`;
+  else if (ex && j >= 0) { const c = isCardio(ex.name), w = setVal(ex, j, 'w'), r = setVal(ex, j, 'r');
+    main = `<button class="ab-main" data-act="completeSet"><b>${ic('check')} Hoàn thành hiệp</b><small>Hiệp ${j + 1} · ${c ? `${fmtNum(r)} phút` : isBodyEx(ex.name) ? `${fmtNum(r)} reps` : `${fmtNum(w)} kg × ${fmtNum(r)}`}</small></button>`; }
+  else main = `<button class="ab-main" data-act="finishWorkout"><b>${ic('check')} Kết thúc buổi tập</b><small>Đã xong mọi hiệp</small></button>`;
+  return `<div class="abot" data-state="${a.pausedAt ? 'pause' : resting ? 'rest' : 'set'}">
+    <button class="ab-side" data-act="pauseWorkout">${ic(a.pausedAt ? 'play' : 'pause')}<span>${a.pausedAt ? 'Tiếp tục' : 'Tạm dừng'}</span></button>
+    ${main}
+    <button class="ab-side end" data-act="finishWorkout"><i class="sq"></i><span>Kết thúc</span></button></div>`;
+}
+function viewActive() {
+  const a = S.active, curI = activePos().i, n = a.exercises.filter(e => e.sets.every(s => s.done)).length;
+  return `${sleepWarn()}${heroCard()}
+    <div class="ec-head"><span>Bài tập <b>${n}/${a.exercises.length}</b></span><span class="grow"></span>
+      <button class="icon" data-act="exAll" aria-label="${exAllOpen ? 'Thu gọn' : 'Mở tất cả'}">${ic(exAllOpen ? 'minus' : 'grid')}</button>
+      <button class="icon add" data-act="addExercise" aria-label="Thêm bài">${ic('plus')}</button></div>
+    ${a.exercises.map((ex, i) => exCard2(ex, i, curI)).join('') || '<div class="empty">Thêm bài tập đầu tiên để bắt đầu</div>'}
+    <button class="text-btn" data-act="cancelWorkout">Hủy buổi tập</button>
+    ${abot()}`;
+}
+function openExMenu(i) {
+  const a = S.active, ex = a.exercises[i];
+  openSheet(`<div class="sheet-h"><h3>${esc(exTitle(ex.name))}</h3><button class="link" data-act="closeSheet">Đóng</button></div>
+    <div class="menu-list">
+      <button data-act="showEx" data-name="${esc(ex.name)}">${ic('info')} Cách tập</button>
+      ${i > 0 ? `<button data-act="exMove" data-i="${i}" data-d="-1">${ic('up')} Chuyển lên</button>` : ''}
+      ${i < a.exercises.length - 1 ? `<button data-act="exMove" data-i="${i}" data-d="1"><span style="transform:rotate(180deg);display:inline-flex">${ic('up')}</span> Chuyển xuống</button>` : ''}
+      <button data-act="exRest" data-i="${i}">${ic('clock')} Thời gian nghỉ: ${fmtRest(ex.rest || S.settings.rest)}</button>
+      <button class="danger" data-act="exRemove" data-i="${i}">${ic('x')} Xóa bài khỏi buổi</button>
+    </div>`);
 }
 function exThumbSm(name) { const src = exImg(name, 0); return src ? `<img src="${src}" alt="" loading="lazy">` : `<span class="ph">${ic('barbell')}</span>`; }
 function exRow2(ex, i) {
@@ -919,8 +1102,8 @@ function exCard(ex, i) {
   const last = lastSets(ex.name), b = bestOf(ex.name), editing = tab === 'edit', cardio = isCardio(ex.name), hint = !editing && ex.reps ? weightHint(ex.name, ex.reps) : null;
   const cur = editing ? -1 : ex.sets.findIndex(s => !s.done), img = exImg(ex.name, 0);
   return `<div class="card${editing ? '' : ' ex-focus'}" id="ex${i}">
-    <div class="row gap"><button class="grow ex-name" data-act="showEx" data-name="${esc(ex.name)}" style="flex-direction:column;align-items:flex-start;gap:0">
-        <span class="title">${esc(ex.name)}${getEx(ex.name)?.steps?.length ? ` <span class="info">${ic('info')}</span>` : ''}</span>${EX_VI[ex.name] ? `<span class="ex-sub">${esc(EX_VI[ex.name])}</span>` : ''}</button>
+    <div class="row gap">${editing || !img ? `<span class="exm">${exPic(ex.name)}</span>` : ''}<button class="grow ex-name" data-act="showEx" data-name="${esc(ex.name)}" style="flex-direction:column;align-items:flex-start;gap:0">
+        <span class="title">${esc(ex.name)}${getEx(ex.name)?.steps?.length ? ` <span class="info">${ic('info')}</span>` : ''}</span>${exVi(ex.name) ? `<span class="ex-sub">${esc(exVi(ex.name))}</span>` : ''}</button>
       ${i > 0 ? `<button class="icon" data-act="moveEx" data-i="${i}" aria-label="Chuyển lên">${ic('up')}</button>` : ''}
       <button class="icon" data-act="removeEx" data-i="${i}" aria-label="Xóa bài tập">${ic('x')}</button></div>
     ${img && !editing ? `<button class="demo ex-photo" data-act="showEx" data-name="${esc(ex.name)}"><img src="${img}" alt=""><img class="f2" src="${exImg(ex.name, 1)}" alt=""></button>` : ''}
@@ -972,32 +1155,32 @@ function weekSetsCard() {
       <span class="bar thin grow"><i style="width:${Math.min(100, n / lo * 100)}%;background:${c}"></i></span>
       <b style="color:${c}">${fmtNum(n)}</b><span class="muted small sr-t">/ ${lo}–${hi}</span>${isNow ? `<span class="sr-d">${prev[m].n ? fmtNum(prev[m].n) : '–'}</span>` : `<span class="sr-d ${d > 0 ? 'up' : d < 0 ? 'down' : ''}">${d ? (d > 0 ? '+' : '') + fmtNum(d) : ''}</span>`}</button>`; };
   const short = ms.filter(m => cur[m].n < SET_TARGET[m][0]);
-  let tip = '';
+  let gap = '';
   if (isNow && S.workouts.length) {
     const st = schedState(), left = st ? Object.values(st.plan) : [];
     const majorShort = short.filter(m => MAJOR.includes(m));
-    if (majorShort.length) tip = majorShort.slice(0, 3).map(m => {
+    if (majorShort.length) gap = majorShort.slice(0, 3).map(m => {
       const need = SET_TARGET[m][0] - cur[m].n, r = left.find(r => r.exercises.some(e => getEx(e.name)?.p.includes(m)));
       return `${MUSCLES[m]} thiếu ${fmtNum(need)} set${r ? ` → thêm vào buổi ${esc(r.name)}` : ''}`;
     }).join('<br>');
   }
-  return `<div class="section-h"><h2>Số set mỗi tuần</h2><span class="muted small">cơ chính 1 set, cơ phụ ½ set</span></div>
+  return `<div class="section-h"><h2>Số set mỗi tuần ${tip('sets')}</h2></div>
     <div class="card">
       <div class="cal-h"><button class="icon" data-act="setsNav" data-v="-1" ${ws > first ? '' : 'disabled'} aria-label="Tuần trước">${ic('back')}</button>
         <div style="text-align:center"><b>${isNow ? 'Tuần này' : 'Tuần ' + lbl(ws)}</b><div class="muted small">${lbl(ws)} – ${lbl(ws + 6 * 864e5)}</div></div>
         <button class="icon" data-act="setsNav" data-v="1" ${isNow ? 'disabled' : ''} aria-label="Tuần sau">${ic('chev')}</button></div>
       <div class="sets-fig">${bodySvg(m => setCol(m, cur[m].n), {})}</div>
       <div class="legend"><span><i style="background:#f97316"></i>&lt;50%</span><span><i style="background:#eab308"></i>Chưa đủ</span><span><i style="background:#22c55e"></i>Đủ</span><span><i style="background:#ef4444"></i>Quá nhiều</span></div>
-      <div class="muted small" style="text-align:center;margin:6px 0 4px">Đủ ${ms.length - short.length}/${ms.length} nhóm cơ · cột phải: ${isNow ? 'số set cả tuần trước' : 'tăng/giảm so với tuần trước'}</div>
+      <div class="muted small" style="text-align:center;margin:6px 0 4px">Đủ ${ms.length - short.length}/${ms.length} nhóm cơ</div>
       ${ms.map(row).join('')}
-      ${tip ? `<div class="coach" style="margin:12px 0 0">${ic('bulb')}<div class="grow"><div class="coach-k">Còn thiếu tuần này</div>${tip}</div></div>` : ''}
+      ${gap ? `<div class="coach" style="margin:12px 0 0">${ic('bulb')}<div class="grow"><div class="coach-k">Còn thiếu tuần này</div>${gap}</div></div>` : ''}
     </div>`;
 }
 function openSetsMuscle(m, ws) {
   const x = weekSets(+ws)[m], [lo, hi] = SET_TARGET[m], list = Object.entries(x.from).sort((a, b) => b[1] - a[1]);
   openSheet(`<div class="sheet-h"><h3>${MUSCLES[m]}: ${fmtNum(x.n)} set</h3><button class="link" data-act="closeSheet">Đóng</button></div>
     <div class="muted small" style="margin-bottom:8px">Khuyến nghị ${lo}–${hi} set/tuần để tăng cơ. Dưới ${lo}: cơ phát triển chậm. Trên ${hi}: dễ quá tải, hồi phục không kịp.</div>
-    ${list.length ? list.map(([n, k]) => `<div class="food"><span class="grow">${esc(n)}</span><b>${fmtNum(k)} set</b></div>`).join('') : '<div class="empty">Tuần này chưa có bài nào cho nhóm cơ này.</div>'}`);
+    ${list.length ? list.map(([n, k]) => `<div class="food" style="align-items:center"><span class="grow">${exTag(n)}</span><b>${fmtNum(k)} set</b></div>`).join('') : '<div class="empty">Tuần này chưa có bài nào cho nhóm cơ này.</div>'}`);
 }
 
 /* ---------- body composition: US Navy tape formula + the AI photo estimate ---------- */
@@ -1109,13 +1292,13 @@ function viewProfile() {
       <div class="stat"><b>${c.w ? fmtNum(c.w) : '—'}<small>kg</small></b><span>Cân nặng</span>${delta(c.dW, ' kg', S.profile?.goal !== 'bulk')}</div>
       <div class="stat"><b>${c.lean ? fmtNum(c.lean) : '—'}<small>kg</small></b><span>Khối nạc</span>${delta(c.dLean, ' kg', false)}</div>
       <div class="stat"><b>${c.bf != null ? fmtNum(c.bf) : '—'}<small>%</small></b><span>Tỷ lệ mỡ</span>${delta(c.dBF, '%', true)}</div></div>
-    <div class="muted small mt">${c.nav ? `Đo thước dây (công thức Hải quân Mỹ): <b>${fmtNum(c.nav.bf)}%</b> · ` : `Chưa có số đo vòng cổ${S.profile?.sex === 'f' ? ' và vòng hông' : ''}: ghi ở trang Cơ thể để tính % mỡ. `}${c.ai ? `AI ước lượng từ ảnh: <b>${esc(c.ai.txt)}</b>` : 'Chưa có ước lượng AI từ ảnh body.'}</div>
-    <div class="muted small" style="margin-top:4px">Khối nạc = cân nặng × (1 − % mỡ). Giảm cân mà khối nạc giữ nguyên là đang mất mỡ, không mất cơ.</div></div>
-    <div class="section-h"><h2>Big 3</h2><span class="muted small">Tổng ${fmtNum(b3.total)} kg</span></div>
+    <div class="muted small mt row"><span class="grow">${c.nav ? `Thước dây <b>${fmtNum(c.nav.bf)}%</b>` : 'Chưa có vòng cổ'}${c.ai ? ` · AI từ ảnh <b>${esc(c.ai.txt)}</b>` : ''}</span>${tip('comp')}</div>
+</div>
+    <div class="section-h"><h2>Big 3 ${tip('big3')}</h2><span class="muted small">Tổng ${fmtNum(b3.total)} kg</span></div>
     <div class="card">${b3.lifts.map(l => `<div class="b3"><div class="grow"><b>${l.n}</b><div class="muted small">${l.best ? `1RM ~${fmtNum(l.best)} kg · ${fmtNum(Math.round(l.r * 100) / 100)}× cân nặng` : 'Chưa tập bài này'}</div>
         ${l.best && l.next != null ? `<div class="small" style="margin-top:2px">Thêm ${fmtNum(l.next)} kg để lên <b>${LEVELS[l.lv + 1]}</b></div>` : ''}</div>
         <span class="lv lv${l.lv}">${l.best ? LEVELS[l.lv] : '—'}</span></div>`).join('')}
-      <div class="muted small mt">Mức xếp theo 1RM ước tính chia cho cân nặng (${b3.bw ? fmtNum(b3.bw) + ' kg' : 'chưa có cân nặng'}).</div></div>
+</div>
     <div class="section-h"><h2>Máy tính 1RM</h2></div>
     <div class="card"><div class="form3" style="grid-template-columns:1fr 1fr">
       <label>Mức tạ (kg)<input id="calcW" inputmode="decimal" placeholder="60"></label><label>Số rep<input id="calcR" inputmode="numeric" placeholder="8"></label></div>
@@ -1197,7 +1380,7 @@ function viewCalendar() {
     <div class="c2-w">${DOW_VI.slice(1).map(x => `<span>${x}</span>`).join('')}</div>
     <div class="c2-g">${'<span></span>'.repeat(lead)}${days.map((k, i) => cell(k, i + 1)).join('')}</div>
     <div class="c2-leg"><span><b class="c2-tr"></b>Có tập</span><span><i style="background:var(--ok)"></i><i style="background:var(--warn)"></i><i style="background:var(--danger)"></i>Điểm ngày</span><span><b class="c2-now"></b>Hôm nay</span></div>
-  </div>${statCards(days, 'trong tháng')}<div class="muted small" style="text-align:center">Bấm vào một ngày để xem lại toàn bộ ngày đó.</div>`;
+  </div>${statCards(days, 'trong tháng')}`;
 }
 // Everything logged on day k, read-only (edit buttons lead to the normal screens).
 function dayDetail(k) {
@@ -1206,7 +1389,7 @@ function dayDetail(k) {
   const sec = (title, inner) => `<div class="dd-sec"><h4>${title}</h4>${inner}</div>`;
   let out = '';
   out += sec(`${ic('barbell')} Tập luyện`, ws.length ? ws.map(w => `<div class="dd-w"><div class="row"><b class="grow">${esc(w.name)}</b><span class="muted small">${hhmm(w.startedAt)}–${hhmm(w.endedAt)} · ${fmtDur(w.endedAt - w.startedAt)}</span></div>
-      ${w.exercises.map(e => `<div class="hist-ex"><div>${esc(e.name)}${(w.prs || []).includes(e.name) ? '<span class="badge">PR</span>' : ''}</div><div class="muted small">${e.sets.map(s => isCardio(e.name) ? fmtSet(s, e.name) : `${fmtNum(s.w)}kg × ${s.r}`).join(' · ')}</div></div>`).join('')}
+      ${w.exercises.map(e => `<div class="hist-ex">${exTag(e.name, `${(w.prs || []).includes(e.name) ? '<span class="badge">PR</span>' : ''}<em>${e.sets.map(s => isCardio(e.name) ? fmtSet(s, e.name) : `${fmtNum(s.w)}×${s.r}`).join(' · ')}</em>`)}</div>`).join('')}
       <div class="row gap mt"><button class="btn" data-act="reviewOpen" data-id="${w.id}">${ic('bolt')} Đánh giá</button><button class="btn" data-act="dayEditW" data-id="${w.id}">${ic('edit')} Sửa</button></div></div>`).join('')
     : '<div class="muted small">Không tập</div>');
   out += sec(`${ic('apple')} Ăn uống${food.length ? ` · ${fmtNum(Math.round(tot.kcal))} kcal · ${Math.round(tot.p)} g đạm` : ''}`,
@@ -1240,7 +1423,7 @@ function viewHistoryList() {
         <span class="chev" style="transform:rotate(${open ? 90 : 0}deg)">${ic('chev')}</span>
       </button>
       ${open ? `<div class="hist-body">
-        ${w.exercises.map(e => `<div class="hist-ex"><div>${esc(e.name)}${(w.prs || []).includes(e.name) ? '<span class="badge">PR</span>' : ''}</div><div class="muted small">${e.sets.map(s => isCardio(e.name) ? fmtSet(s, e.name) : `${fmtNum(s.w)}kg × ${s.r}`).join(' · ')}</div></div>`).join('')}
+        ${w.exercises.map(e => `<div class="hist-ex">${exTag(e.name, `${(w.prs || []).includes(e.name) ? '<span class="badge">PR</span>' : ''}<em>${e.sets.map(s => isCardio(e.name) ? fmtSet(s, e.name) : `${fmtNum(s.w)}×${s.r}`).join(' · ')}</em>`)}</div>`).join('')}
         <div class="row gap mt" style="flex-wrap:wrap">
           <button class="btn" data-act="reviewOpen" data-id="${w.id}">${ic('bolt')} Đánh giá</button>
           <button class="btn" data-act="editWorkout" data-id="${w.id}">${ic('edit')} Sửa</button>
@@ -1324,36 +1507,33 @@ function viewSettings() {
       <div class="muted small mt">Đồng hồ nghỉ tự chạy khi bạn tick ✓ một set.</div>
     </div>
     <div class="card">
-      <div class="title" style="margin-bottom:10px">${ic('bolt')} AI</div>
+      <div class="title row" style="margin-bottom:10px"><span class="grow">${ic('bolt')} AI</span>${tip('ai')}</div>
       <div class="seg" style="margin-bottom:10px">${[['gemini', 'Gemini (miễn phí)'], ['claude', 'Claude']].map(([k, l]) => `<button class="${aiProv() === k ? 'on' : ''}" data-act="setAi" data-v="${k}">${l}</button>`).join('')}</div>
-      <div class="muted small" style="margin-bottom:10px">Dùng để chụp bữa ăn tính calo và AI nhận xét buổi tập. ${aiProv() === 'gemini'
-        ? 'Lấy key miễn phí tại <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" style="color:var(--accent)">aistudio.google.com</a> → Get API key → Create API key (key bắt đầu bằng AQ. hoặc AIza). Gói miễn phí có giới hạn số lượt mỗi phút và mỗi ngày.'
-        : 'Tạo key tại <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener" style="color:var(--accent)">console.anthropic.com</a> → API Keys (cần nạp trước, tối thiểu $5).'} Key chỉ lưu trên máy này và <b>không</b> nằm trong file sao lưu.</div>
       ${hasKey() ? `<div class="small" style="margin-bottom:8px">Đã lưu key ${AI[aiProv()].name} <b>…${esc(getKey().slice(-4))}</b></div>` : ''}
       <input id="apiKey" type="password" placeholder="${hasKey() ? 'Dán key mới để thay' : AI[aiProv()].hint}" autocomplete="off" autocorrect="off" spellcheck="false">
       <div class="row gap mt"><button class="btn grow" data-act="saveKey">Lưu key</button><button class="btn grow" data-act="testKey" ${hasKey() ? '' : 'disabled'}>Thử kết nối</button></div>
+      ${aiProv() === 'gemini' && hasKey() ? `<div class="small mt">Model: <b>${esc(gemModel())}</b>${lastAI ? ` · lần gần nhất ${(lastAI.ms / 1000).toFixed(1).replace('.', ',')} giây` : ''}</div>
+        <button class="btn big mt" data-act="aiSpeed">${ic('bolt')} Đo tốc độ và chọn model nhanh nhất</button>` : ''}
       ${hasKey() ? '<button class="text-btn" data-act="clearKey">Xóa key</button>' : ''}
     </div>
     <div class="card">
-      <div class="title" style="margin-bottom:10px">${ic('moon')} Mục tiêu giấc ngủ</div>
+      <div class="title row" style="margin-bottom:10px"><span class="grow">${ic('moon')} Mục tiêu giấc ngủ</span>${tip('sleep')}</div>
       <div class="row gap" style="margin-bottom:10px"><span class="grow small">Lên giường trước</span><label class="slot-time"><input type="time" id="setBed" value="${esc(sleepGoal().bed)}" aria-label="Giờ đi ngủ mục tiêu"></label></div>
       <div class="seg">${[7, 7.5, 8, 8.5, 9].map(v => `<button class="${sleepGoal().h === v ? 'on' : ''}" data-act="setSleepH" data-v="${v}">${fmtNum(v)}h</button>`).join('')}</div>
-      <div class="muted small mt">Mỗi sáng trang chủ hỏi giờ ngủ, giờ dậy. Giấc ngủ chiếm 15/100 điểm ngày. Muốn được nhắc đi ngủ: tạo thêm một tự động hóa trong app Phím tắt như hướng dẫn bên dưới, đặt lúc <b>${m2hm(hm2m(sleepGoal().bed) - 30)}</b>, nội dung <i>Còn 30 phút nữa là giờ ngủ. Cất điện thoại.</i></div>
     </div>
-    <div class="card">
-      <div class="title" style="margin-bottom:4px">${ic('clock')} Nhắc ghi chép lúc 23:55</div>
-      <div class="muted small" style="margin-bottom:8px">Web app không tự hẹn giờ thông báo được, nên dùng app <b>Phím tắt</b> có sẵn trên iPhone:</div>
+    <details class="card fold">
+      <summary class="title">${ic('clock')} Nhắc ghi chép lúc 23:55</summary>
+      <div class="muted small" style="margin:8px 0">Web app không tự hẹn giờ được, nên dùng app <b>Phím tắt</b> của iPhone:</div>
       <ol class="steps small" style="font-size:14px">
         <li>Mở app <b>Phím tắt</b> → tab <b>Tự động hóa</b> → nút <b>+</b>.</li>
         <li>Chọn <b>Thời gian trong ngày</b> → đặt <b>23:55</b>, <b>Hằng ngày</b> → chọn <b>Chạy ngay lập tức</b> → Tiếp.</li>
         <li>Thêm tác vụ <b>Hiển thị thông báo</b>, nội dung: <i>Đã ghi ăn và tập hôm nay chưa? Mở Gym Log.</i> → Xong.</li>
         <li>(Tùy chọn) Thêm tác vụ <b>Mở ứng dụng</b> và chọn <b>Gym Log</b> nếu có trong danh sách.</li>
       </ol>
-      <div class="muted small mt">Mở app sau 21:00 mà hôm nay còn thiếu (chưa tập, chưa ghi bữa, chưa cân), app tự hiện bảng kiểm tra để ghi bù.</div>
-    </div>
+      <div class="muted small mt">Mở app sau 21:00 mà còn thiếu, app tự hiện bảng để ghi bù.</div>
+    </details>
     <div class="card">
-      <div class="title" style="margin-bottom:4px">Sao lưu dữ liệu</div>
-      <div class="muted small" style="margin-bottom:6px">Dữ liệu chỉ nằm trên iPhone này. <b style="color:var(--warn)">Xóa app khỏi màn hình chính là mất toàn bộ dữ liệu.</b> Hãy sao lưu mỗi tuần: Xuất dữ liệu → Lưu vào Tệp → iCloud Drive.</div>
+      <div class="title row" style="margin-bottom:6px"><span class="grow">${ic('download')} Sao lưu dữ liệu</span>${tip('backup')}</div>
       <div class="small" style="margin-bottom:10px">Lần sao lưu cuối: <b>${S.lastBackup ? fmtDate(S.lastBackup) + ' (' + agoText((Date.now() - S.lastBackup) / 36e5) + ')' : 'chưa có'}</b></div>
       <div class="row gap"><button class="btn grow" data-act="exportData">Xuất dữ liệu</button><button class="btn grow" data-act="importData">Nhập dữ liệu</button></div>
     </div>
@@ -1412,7 +1592,7 @@ function viewRecovery() {
   };
   return `
     <div class="card">
-      <div class="map-h"><span>${ic('pulse')} Bản đồ cơ</span>
+      <div class="map-h"><span>${ic('pulse')} Bản đồ cơ ${tip('rec')}</span>
         <div class="seg mini">${[['front', 'Trước'], ['back', 'Sau']].map(([k, l]) => `<button class="${recSide === k ? 'on' : ''}" data-act="recSide" data-v="${k}">${l}</button>`).join('')}</div></div>
       <div class="bodymap">
         <div class="mcol">${L.map(label).join('')}</div>
@@ -1425,7 +1605,7 @@ function viewRecovery() {
     ${weekSetsCard()}
     <div class="section-h"><h2>Chi tiết các nhóm cơ</h2>${trained.length ? `<span class="count">${trained.length} vùng đã tập</span>` : ''}</div>
     ${[...trained, ...fresh].map(card).join('')}
-    <div class="muted small" style="padding:0 4px">% hồi phục là ước tính dựa trên số set đã tập (cơ lớn hồi trong khoảng 72h, cơ nhỏ khoảng 48h), không phải số đo thật. Hãy nghe thêm cảm giác của cơ thể.</div>`;
+`;
 }
 let recSide = 'front';
 function openMuscle(m) {
@@ -1444,7 +1624,7 @@ function openMuscle(m) {
       <b>${b.maxW ? fmtNum(b.maxW) + ' kg' : 'Tạ người'}</b></button>`).join('')}</div>` : ''}
     ${sessions.length ? `<h4>Lịch sử gần đây</h4>${sessions.map(w => `<div class="mhist">
       <div class="muted small">${fmtDate(w.startedAt)} · ${agoText((Date.now() - w.endedAt) / 36e5)}</div>
-      ${w.exercises.filter(hits).map(e => `<div class="mhist-ex"><span>${esc(e.name)}</span><span class="muted">${e.sets.map(fmtSet).join(' · ')}</span></div>`).join('')}
+      ${w.exercises.filter(hits).map(e => `<div class="hist-ex">${exTag(e.name, `<em>${e.sets.map(fmtSet).join(' · ')}</em>`)}</div>`).join('')}
     </div>`).join('')}` : '<div class="empty">Chưa có buổi tập nào cho nhóm cơ này.</div>'}
     ${suggest.length ? `<h4>Bài tập gợi ý</h4><div class="chips wrap">${suggest.map(n => `<button class="chip" data-act="showEx" data-name="${esc(n)}">${esc(n)}</button>`).join('')}</div>` : ''}`);
 }
@@ -1568,7 +1748,7 @@ function viewNutrition() {
       <div class="row"><div class="title grow">${meal}</div><span class="muted small">${fmtNum(Math.round(k))} kcal</span></div>
       ${items.map(([f, g, m]) => `<div class="food"><span class="grow">${esc(f)}</span><span>${portion(f, g)}</span></div>`).join('')}</div>`; }).join('')}
     <div class="card"><div class="muted small">Tổng thực đơn: <b style="color:var(--text)">${fmtNum(Math.round(tot[0]))} kcal</b> · Đạm ${Math.round(tot[1])}g · Tinh bột ${Math.round(tot[2])}g · Béo ${Math.round(tot[3])}g</div></div>
-    <div class="muted small" style="padding:0 4px">Định lượng tính theo đồ đã nấu chín, số liệu chỉ để tham khảo. Có thể đổi món tương đương: ức gà ↔ cá ↔ thịt bò nạc, cơm ↔ bún ↔ khoai. Nếu có bệnh lý, hãy hỏi chuyên gia dinh dưỡng.</div>`;
+    <div style="text-align:center">${tip('menu')}</div>`;
 }
 let nutEdit = false, pDraft = null;
 
@@ -1688,6 +1868,10 @@ async function aiFetch(url, opt, who) {
 }
 const askAI = o => aiProv() === 'gemini' ? askGemini(o) : askClaude(o);
 const GEMINI_MAIN = 'gemini-3.8-flash';
+const gemModel = () => S.settings.gemModel || GEMINI_MAIN;
+let lastAI = null; // { model, ms } of the last successful Gemini call
+// Gemini 3+ takes a thinking level; 2.x Flash takes a token budget (0 = no thinking).
+const thinkCfg = (model, think) => /gemini-[3-9]/.test(model) ? { thinkingLevel: think } : /flash/.test(model) ? { thinkingBudget: think === 'MEDIUM' ? 1024 : 0 } : {};
 let geminiAlts = null; // other Flash models this key can use, looked up only when the main one is overloaded
 async function geminiAltModels() {
   if (geminiAlts) return geminiAlts;
@@ -1696,10 +1880,34 @@ async function geminiAltModels() {
     const d = await r.json();
     geminiAlts = (d.models || []).filter(m => (m.supportedGenerationMethods || []).includes('generateContent'))
       .map(m => m.name.replace(/^models\//, ''))
-      .filter(n => /flash/i.test(n) && !/image|tts|audio|live|embed|preview|exp/i.test(n) && n !== GEMINI_MAIN)
+      .filter(n => /flash/i.test(n) && !/image|tts|audio|live|embed|preview|exp/i.test(n) && n !== gemModel())
       .sort((a, b) => b.localeCompare(a, 'en', { numeric: true })).slice(0, 3);
   } catch (e) { geminiAlts = []; }
   return geminiAlts;
+}
+async function geminiSpeedTest(onStep) {
+  const r = await fetch('https://generativelanguage.googleapis.com/v1beta/models?pageSize=200', { headers: { 'x-goog-api-key': getKey() } });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error('Google trả lỗi ' + r.status + ': ' + (d.error?.message || r.statusText));
+  const names = (d.models || []).filter(m => (m.supportedGenerationMethods || []).includes('generateContent')).map(m => m.name.replace(/^models\//, ''))
+    .filter(n => /flash/i.test(n) && !/image|tts|audio|live|embed|exp|thinking/i.test(n)).sort((a, b) => b.localeCompare(a, 'en', { numeric: true })).slice(0, 6);
+  const c = document.createElement('canvas'); c.width = 320; c.height = 240; const g = c.getContext('2d');
+  g.fillStyle = '#f5f0e6'; g.fillRect(0, 0, 320, 240); g.fillStyle = '#fff'; g.beginPath(); g.arc(160, 120, 90, 0, 7); g.fill(); g.fillStyle = '#b5651d'; g.fillRect(110, 90, 100, 60);
+  const img = c.toDataURL('image/jpeg', .8).split(',')[1], res = [];
+  for (const m of names) {
+    onStep(m, null);
+    const t0 = Date.now();
+    try {
+      const x = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-goog-api-key': getKey() },
+        body: JSON.stringify({ contents: [{ role: 'user', parts: [{ inlineData: { mimeType: 'image/jpeg', data: img } }, { text: 'Ước tính calo món trong ảnh.' }] }],
+          generationConfig: { responseMimeType: 'application/json', responseJsonSchema: MEAL_SCHEMA, thinkingConfig: thinkCfg(m, 'MINIMAL') } }) });
+      const j = await x.json().catch(() => ({}));
+      const ok = x.ok && j.candidates?.[0]?.content?.parts?.some(p => p.text && !p.thought);
+      res.push({ m, ms: Date.now() - t0, ok, err: ok ? '' : (x.status === 429 ? 'hết lượt miễn phí' : x.status >= 500 ? 'quá tải' : (j.error?.message || 'lỗi ' + x.status).slice(0, 60)) });
+    } catch (e) { res.push({ m, ms: Date.now() - t0, ok: false, err: e.message.slice(0, 60) }); }
+    onStep(m, res[res.length - 1]);
+  }
+  return res;
 }
 async function askGemini({ system, content, schema, think = 'MINIMAL' }) {
   if (!hasKey()) throw new Error('Chưa có API key Gemini. Vào Thêm → Cài đặt để nhập.');
@@ -1713,7 +1921,7 @@ async function askGemini({ system, content, schema, think = 'MINIMAL' }) {
         systemInstruction: { parts: [{ text: system }] },
         contents: [{ role: 'user', parts: content.map(c => c.image ? { inlineData: { mimeType: 'image/jpeg', data: c.image } } : { text: c.text }) }],
         // thinkingLevel is for the main model; fallbacks use their own default thinking.
-        generationConfig: { responseMimeType: 'application/json', responseJsonSchema: schema, ...(main ? { thinkingConfig: { thinkingLevel: think } } : {}) },
+        generationConfig: { responseMimeType: 'application/json', responseJsonSchema: schema, ...(main ? { thinkingConfig: thinkCfg(model, think) } : {}) },
       }),
     }, 'Gemini');
     const raw = await res.json().catch(() => ({})), d = Array.isArray(raw) ? raw[0] || {} : raw;
@@ -1722,9 +1930,10 @@ async function askGemini({ system, content, schema, think = 'MINIMAL' }) {
   // Overloaded (503): wait and retry the main model. Out of quota (429) or overloaded: try other Flash models,
   // each has its own free quota. Keep the main model's error to report if nothing works.
   const quota = o => o.res.status === 429 || o.d.error?.status === 'RESOURCE_EXHAUSTED';
-  let out = await call(GEMINI_MAIN, true);
-  if (out.res.status === 400 && /thinking/i.test(out.d.error?.message || '') && think !== 'LOW') { think = 'LOW'; out = await call(GEMINI_MAIN, true); }
-  if (out.busy || out.res.status === 404) { await new Promise(r => setTimeout(r, 1200)); out = await call(GEMINI_MAIN, true); }
+  const t0 = Date.now(), main = gemModel();
+  let out = await call(main, true);
+  if (out.res.status === 400 && /thinking/i.test(out.d.error?.message || '') && think !== 'LOW') { think = 'LOW'; out = await call(main, true); }
+  if (out.busy || out.res.status === 404) { await new Promise(r => setTimeout(r, 1200)); out = await call(main, true); }
   const first = out;
   if (out.busy || quota(out) || out.res.status === 404) for (const m of await geminiAltModels()) { out = await call(m, false); if (!out.busy && !quota(out)) break; }
   if (!out.res.ok && first.res.status !== out.res.status && (quota(first) || first.busy)) out = first;
@@ -1741,6 +1950,7 @@ async function askGemini({ system, content, schema, think = 'MINIMAL' }) {
   if (c?.finishReason === 'MAX_TOKENS') throw new Error('Câu trả lời bị cắt ngắn, thử lại.');
   const text = (c?.content?.parts || []).filter(p => !p.thought && p.text).map(p => p.text).join('');
   if (!text) throw new Error(c?.finishReason && c.finishReason !== 'STOP' ? 'Gemini từ chối yêu cầu này.' : 'Gemini không trả về kết quả, thử lại.');
+  lastAI = { model: d.modelVersion || main, ms: Date.now() - t0 };
   return JSON.parse(text);
 }
 async function askClaude({ system, content, schema, maxTokens = 4000 }) {
@@ -1863,7 +2073,7 @@ function foodLogCard(t) {
     <div class="bar"><i style="width:${Math.min(100, pct)}%;background:${left >= 0 ? 'var(--accent)' : 'var(--danger)'}"></i></div>
     <div class="barlbl"><span>Đạm (Protein)</span><b class="sky">${Math.round(tot.p)} / ${t.protein} g (${ppct}%)</b></div>
     <div class="bar"><i style="width:${Math.min(100, ppct)}%;background:var(--sky)"></i></div>
-    <div class="deficit">${ic('flame')}<span>${deficit >= 0 ? `Thâm hụt <b>${fmtNum(Math.round(deficit))} kcal</b>` : `Dư <b>${fmtNum(Math.round(-deficit))} kcal</b>`} so với mức tiêu hao ${fmtNum(t.tdee)} kcal/ngày${isToday ? ' (tính đến giờ)' : ''}.</span></div>
+    <div class="deficit">${ic('flame')}<span>${deficit >= 0 ? `Thâm hụt <b>${fmtNum(Math.round(deficit))} kcal</b>` : `Dư <b>${fmtNum(Math.round(-deficit))} kcal</b>`} · tiêu hao ${fmtNum(t.tdee)}</span></div>
   </div>
   <div class="row gap meal-btns"><button class="btn primary" data-act="snapMeal">${ic('camera')} Chụp bữa ăn</button><button class="btn" data-act="addFoodManual">${ic('edit')} Nhập tay</button></div>
   <button class="btn big fam-btn" data-act="famOpen">${ic('apple')} Mâm cơm gia đình <small>đếm phần mình ăn</small></button>
@@ -1911,7 +2121,7 @@ function renderMealSheet() {
       <button class="btn primary big mt" data-act="mealAnalyze">${ic('bolt')} AI tính calo</button>
       <div class="muted small" style="margin-top:6px;text-align:center">Ảnh được gửi tới ${aiProv() === 'gemini' ? 'Google (Gemini)' : 'Anthropic (Claude) · khoảng 500đ/ảnh'} để phân tích</div>`
     : m.stage === 'busy' ? `<div class="empty">${ic('refresh')} ${m.img ? 'AI đang xem ảnh…' : 'AI đang ước tính…'} <span class="ai-sec" data-t0="${Date.now()}"></span></div>`
-    : `${m.note ? `<div class="muted small" style="margin:10px 0">${esc(m.note)}</div>` : ''}
+    : `${m.note ? `<div class="muted small" style="margin:10px 0">${esc(m.note)}</div>` : ''}${lastAI && aiProv() === 'gemini' ? `<div class="muted small" style="margin:-4px 0 6px;font-size:11px">${esc(lastAI.model)} · ${(lastAI.ms / 1000).toFixed(1).replace('.', ',')} giây</div>` : ''}
       <div class="muted small" style="margin:8px 0 4px">Sửa số gram nếu AI đoán sai, calo tự tính lại.</div>
       ${m.items.map((it, i) => `<div class="mi"><input class="mi-name" data-mi="${i}" data-k="name" value="${esc(it.name)}">
         <input class="mi-g" inputmode="decimal" data-mi="${i}" data-k="grams" value="${fmtNum(Math.round(it.grams))}"><span class="muted small">g</span>
@@ -2115,7 +2325,7 @@ function viewBody() {
       <div class="stat"><b>${lastWa ? fmtNum(lastWa.waist) : '—'}<small>cm</small></b><span>Vòng bụng</span>${change(wa, 'waist', 'cm')}</div>
     </div>${tr ? `<div class="muted small" style="text-align:center;margin-top:8px">Trung bình 7 ngày: ${fmtNum(Math.round(tr.now * 10) / 10)} kg (${fmtSigned(tr.rate)} kg so với tuần trước)</div>` : ''}</div>
     <div class="card">
-      <div class="title" style="margin-bottom:10px">Ghi hôm nay</div>
+      <div class="title row" style="margin-bottom:10px"><span class="grow">Ghi hôm nay</span>${tip('body')}</div>
       <div class="form3" style="grid-template-columns:1fr 1fr">
         <label>Cân nặng (kg)<input id="bW" inputmode="decimal" placeholder="${lastW ? esc(fmtNum(lastW.w)) : '72'}"></label>
         <label>Vòng bụng (cm)<input id="bWaist" inputmode="decimal" placeholder="${lastWa ? esc(fmtNum(lastWa.waist)) : 'không bắt buộc'}"></label>
@@ -2123,16 +2333,16 @@ function viewBody() {
         ${S.profile?.sex === 'f' ? `<label>Vòng hông (cm)<input id="bHip" inputmode="decimal" placeholder="${(log.filter(b => b.hip).pop() || {}).hip ? esc(fmtNum(log.filter(b => b.hip).pop().hip)) : 'chỗ to nhất'}"></label>` : ''}
       </div>
       <button class="btn primary big mt" data-act="saveBody">Lưu</button>
-      <div class="muted small mt">Cân buổi sáng sau khi đi vệ sinh, trước khi ăn. Đo vòng bụng ngang rốn, thở ra bình thường, mỗi 2 tuần. Vòng cổ đo ngay dưới yết hầu. Có vòng cổ thì app tính % mỡ (Thêm → Hồ sơ).</div>
+
     </div>
     ${adviceCard(true)}
     <div class="card">
-      <div class="row gap"><span class="qt-ic">${ic('camera')}</span><div class="grow"><div class="title" style="font-size:15px">Ảnh body mỗi tuần</div>
+      <div class="row gap"><span class="qt-ic">${ic('camera')}</span><div class="grow"><div class="title row" style="font-size:15px"><span class="grow">Ảnh body mỗi tuần</span>${tip('photo')}</div>
         ${(() => { const ks = Object.keys(S.bodyRev || {}).map(Number).sort((a, b) => b - a), r = ks.length ? S.bodyRev[ks[0]] : null, bp = bodyPending();
           return bp ? `<div class="small" style="color:var(--danger)">${bp === 'retake' ? 'AI yêu cầu chụp lại' : 'Chưa được AI chấm (bắt buộc)'}</div>` : r && !r.retake ? `<div class="small">AI chấm tuần ${new Date(ks[0]).toLocaleDateString('vi-VN', { day: 'numeric', month: 'numeric' })}: <b style="color:${VC[r.verdict]}">${r.score}/100 · ${esc(r.verdict)}</b></div>` : ''; })()}
         <div class="muted small">${S.photoAt ? `Lần cuối ${photoD === 0 ? 'hôm nay' : photoD + ' ngày trước'}` : 'Chưa chụp lần nào'}${photoD == null || photoD >= 7 ? ' · <b style="color:var(--warn)">đến lúc chụp</b>' : ''}</div></div></div>
       <button class="btn primary big mt" data-act="openVault">${ic('camera')} Mở kho ảnh body (có mật khẩu)</button>
-      <div class="muted small mt">Chụp 3 tư thế (trước, nghiêng, sau) mỗi tuần, cùng chỗ và cùng ánh sáng. Đủ 3 tư thế là AI chấm ngay, chấm khắt khe. Ảnh lưu mã hóa trong app.</div>
+
     </div>
     ${ws.length >= 2 ? `<div class="section-h"><h2>Cân nặng</h2><span class="muted small">${ws.length} lần cân</span></div><div class="card">${chart(ws.slice(-60).map(b => b.w), ws.slice(-60).map(b => new Date(b.t).toLocaleDateString('vi-VN', { day: 'numeric', month: 'numeric' })))}</div>` : ''}
     ${wa.length >= 2 ? `<div class="section-h"><h2>Vòng bụng</h2></div><div class="card">${chart(wa.map(b => b.waist), wa.map(b => new Date(b.t).toLocaleDateString('vi-VN', { day: 'numeric', month: 'numeric' })))}</div>` : ''}
@@ -2370,12 +2580,13 @@ function exGrade(ex) {
 function openExGrade(i) {
   const ex = S.active?.exercises[i]; if (!ex || !ex.sets.every(s => s.done)) return;
   const g = exGrade(ex), vc = g.verdict === 'Chưa đạt' ? 'var(--danger)' : g.verdict === 'Đạt' ? 'var(--warn)' : 'var(--ok)';
-  openSheet(`<div class="sheet-h"><h3>Chấm bài: ${esc(ex.name)}</h3><button class="link" data-act="closeSheet">Đóng</button></div>
+  openSheet(`<div class="sheet-h"><h3>Chấm bài</h3><button class="link" data-act="closeSheet">Đóng</button></div>
+    <div style="margin-bottom:10px">${exTag(ex.name)}</div>
     <div class="score"><div class="ring" style="--p:${g.score}"><b>${g.score}</b></div><div><div class="title" style="color:${vc}">${g.verdict}</div>
       <div class="muted small">${g.sets.map(s => `${fmtNum(s.w)}×${s.r}`).join(' · ')}${ex.reps ? ` · mục tiêu ${esc(ex.reps)}` : ''}</div></div></div>
     <div class="rev">${g.issues.map(t => `<div class="rev-i"><span style="color:var(--danger)">${ic('info')}</span><span>${esc(t)}</span></div>`).join('')}
       ${g.good.map(t => `<div class="rev-i"><span style="color:var(--accent)">${ic('up')}</span><span>${esc(t)}</span></div>`).join('')}</div>
-    ${g.extra ? `<div class="muted small mt">Chưa đủ để cơ phát triển. Tập bù ngay khi còn nóng người, đừng để đến lúc cardio xong.</div>
+    ${g.extra ? `<div class="muted small mt">Tập bù ngay khi còn nóng người.</div>
       <button class="btn primary big mt" data-act="extraSet" data-i="${i}" data-w="${g.extra.w}">${ic('plus')} Tập thêm 1 set: ${g.extra.w ? fmtNum(g.extra.w) + ' kg × ' : ''}${esc(g.extra.reps)} rep</button>
       <button class="text-btn" data-act="skipExtra" data-i="${i}">Bỏ qua (ghi vào đánh giá buổi tập)</button>`
       : `<button class="btn primary big mt" data-act="closeSheet">${g.fail ? 'Đã bù 2 set, sang bài tiếp' : 'Sang bài tiếp'}</button>`}`);
@@ -2482,11 +2693,11 @@ function viewVault() {
   const wk = Object.keys(weeks).map(Number).sort((a, b) => b - a), lbl = w => `Tuần ${new Date(w).toLocaleDateString('vi-VN', { day: 'numeric', month: 'numeric' })}`;
   const due = !S.photoAt || daysAgo(S.photoAt) >= 7;
   return `${bodyRevCard()}<div class="card">
-      <div class="row gap"><div class="grow"><div class="title">Thêm ảnh tuần này</div><div class="muted small">${due ? '<b style="color:var(--warn)">Đến lúc chụp</b> · ' : ''}${S.photoAt ? 'Lần cuối ' + (daysAgo(S.photoAt) ? daysAgo(S.photoAt) + ' ngày trước' : 'hôm nay') : 'Chưa có ảnh'}</div></div>
+      <div class="row gap"><div class="grow"><div class="title">Thêm ảnh tuần này ${tip('photo')}</div><div class="muted small">${due ? '<b style="color:var(--warn)">Đến lúc chụp</b> · ' : ''}${S.photoAt ? 'Lần cuối ' + (daysAgo(S.photoAt) ? daysAgo(S.photoAt) + ' ngày trước' : 'hôm nay') : 'Chưa có ảnh'}</div></div>
         <button class="btn" data-act="vaultLock">${ic('x')} Khóa</button></div>
       <div class="seg mt">${POSES.map(p => `<button class="${vault.pose === p ? 'on' : ''}" data-act="vaultPose" data-v="${p}">${p}</button>`).join('')}</div>
       <button class="btn primary big mt" data-act="vaultShot">${ic('camera')} Chụp / chọn ảnh ${vault.pose.toLowerCase()}</button>
-      <div class="muted small mt">Cùng chỗ, cùng ánh sáng, cùng giờ (sáng, trước khi ăn) để so sánh chính xác. Chọn ảnh xong được xem lại trước khi lưu; bấm vào ảnh đã lưu để xem hoặc xóa.</div></div>
+</div>
     ${wk.length >= 2 ? `<div class="card"><div class="title" style="margin-bottom:8px">So sánh</div>
       <div class="slot"><select id="vCmpA">${wk.map((w, i) => `<option value="${w}" ${(vault.cmp?.[0] ?? wk[wk.length - 1]) == w ? 'selected' : ''}>${lbl(w)}</option>`).join('')}</select>
       <select id="vCmpB">${wk.map(w => `<option value="${w}" ${(vault.cmp?.[1] ?? wk[0]) == w ? 'selected' : ''}>${lbl(w)}</option>`).join('')}</select></div>
@@ -2495,7 +2706,7 @@ function viewVault() {
     ${wk.map(w => `<div class="section-h"><h2>${lbl(w)}</h2>${vault.reviews[w] ? `<button class="link" data-act="bodyRevView" data-w="${w}" style="color:${vault.reviews[w].photoQuality === 'Chụp lại' ? 'var(--danger)' : VC[vault.reviews[w].verdict]}">${vault.reviews[w].photoQuality === 'Chụp lại' ? 'Chụp lại' : `AI ${vault.reviews[w].score}/100`}</button>` : `<span class="muted small">${weeks[w].length} ảnh</span>`}</div>
       <div class="vgrid">${weeks[w].map(i => `<button class="vcell" data-act="vaultView" data-id="${i.id}"><img src="${i.thumb}" alt=""><span>${i.pose} · ${new Date(i.t).toLocaleDateString('vi-VN', { day: 'numeric', month: 'numeric' })}</span></button>`).join('')}</div>`).join('') || '<div class="empty">Chưa có ảnh nào</div>'}
     <div class="card mt"><div class="title" style="margin-bottom:4px">Sao lưu kho ảnh</div>
-      <div class="muted small" style="margin-bottom:10px">Kho ảnh không nằm trong file sao lưu thường. Xuất file riêng (vẫn mã hóa) và lưu vào iCloud. Xóa app khỏi màn hình chính mà chưa xuất là mất ảnh.</div>
+      <div class="muted small" style="margin-bottom:10px">Không nằm trong sao lưu thường, nhớ xuất riêng.</div>
       <div class="row gap"><button class="btn grow" data-act="vaultExport">${ic('download')} Xuất kho ảnh</button><button class="btn grow" data-act="vaultImportBtn">Nhập kho ảnh</button></div></div>`;
 }
 /* ---------- AI body review: mandatory once a week's 3 poses are in. Full results stay encrypted in the vault;
@@ -2583,7 +2794,7 @@ function bodyRevCard() {
         : bp === 'review' ? '<b style="color:var(--warn)">Chưa chấm, bắt buộc trước khi xong tuần</b>'
         : bp === 'retake' ? `<b style="color:var(--danger)">AI yêu cầu chụp lại:</b> ${esc(r?.photoIssue || '')}`
         : r ? `<b style="color:${VC[r.verdict]}">${r.score}/100 · ${esc(r.verdict)}</b> · mỡ ~${esc(r.bodyFat)}` : ''}</div></div></div>
-    ${bp === 'review' ? `<button class="btn primary big mt" data-act="bodyReview" data-w="${w}">${ic('bolt')} Chấm ngay</button><div class="muted small mt">Gửi 3 ảnh tuần này và ảnh lần chấm trước (thu nhỏ) tới ${AI[aiProv()].name}.</div>`
+    ${bp === 'review' ? `<button class="btn primary big mt" data-act="bodyReview" data-w="${w}">${ic('bolt')} Chấm ngay</button>`
       : r && !bp ? `<button class="btn mt" data-act="bodyRevView" data-w="${w}">Xem chi tiết</button>` : ''}
     ${(() => { const ws = Object.keys(vault.reviews || {}).map(Number).filter(x => vault.reviews[x].photoQuality !== 'Chụp lại').sort((a, b) => a - b);
       return ws.length >= 2 ? `<div class="mt">${chart(ws.map(x => vault.reviews[x].score), ws.map(x => new Date(x).toLocaleDateString('vi-VN', { day: 'numeric', month: 'numeric' })))}</div>` : ''; })()}
@@ -2619,8 +2830,9 @@ const TABS = [['workout', 'barbell', 'Tập'], ['recovery', 'pulse', 'Phục h�
 const TITLES = { profile: 'Hồ sơ', vault: 'Kho ảnh body', workout: 'Tập luyện', recovery: 'Phục hồi cơ', nutrition: 'Thực đơn', library: 'Thư viện bài tập', more: 'Thêm', body: 'Cơ thể', history: 'Lịch sử', progress: 'Tiến độ', settings: 'Cài đặt', edit: 'Sửa buổi tập' };
 const SUB = ['history', 'progress', 'settings', 'body', 'vault', 'profile'];
 function render() {
+  document.body.classList.toggle('on-active', tab === 'workout' && !!S.active);
   if (tab !== 'vault' && vault.key) vaultLock();
-  $('#hdr').innerHTML = tab === 'workout' && S.active ? activeBar()
+  $('#hdr').innerHTML = tab === 'workout' && S.active ? abar2()
     : tab === 'workout' ? homeHeader() : tab === 'recovery' ? recHeader()
     : `<h1>${SUB.includes(tab) ? `<button class="back" data-act="tab" data-tab="more" aria-label="Quay lại">${ic('back')}</button>` : ''}${TITLES[tab]}</h1>`;
   main.innerHTML = ({ workout: viewWorkout, recovery: viewRecovery, nutrition: viewNutrition, library: viewLibrary, more: viewMore, body: viewBody, vault: viewVault, profile: viewProfile, history: viewHistory, progress: viewProgress, settings: viewSettings, edit: viewEdit })[tab]();
@@ -2659,7 +2871,7 @@ function exRow(n, h, act) {
 function renderRoutineSheet() {
   openSheet(`<div class="sheet-h"><h3>${draft.id ? 'Sửa' : 'Tạo'} routine</h3><button class="link" data-act="closeSheet">Đóng</button></div>
     <input class="search" data-bind="draftName" placeholder="Tên routine (VD: Push Day)" value="${esc(draft.name)}">
-    ${draft.exercises.map((e, i) => `<div class="row r-ex"><span class="grow">${esc(e.name)}${e.reps ? `<span class="muted small"> · ${esc(e.reps)}</span>` : ''}</span>
+    ${draft.exercises.map((e, i) => `<div class="row r-ex"><span class="grow">${exTag(e.name, e.reps ? `<em>${esc(e.reps)} rep</em>` : '')}</span>
       <button class="icon" data-act="draftSets" data-i="${i}" data-d="-1" aria-label="Bớt set">${ic('minus')}</button><span class="pill">${e.sets} set</span>
       <button class="icon" data-act="draftSets" data-i="${i}" data-d="1" aria-label="Thêm set">${ic('plus')}</button>
       <button class="icon" data-act="draftRemove" data-i="${i}" aria-label="Xóa">${ic('x')}</button></div>`).join('') || '<div class="empty">Chưa có bài tập</div>'}
@@ -2685,7 +2897,10 @@ function startRest(sec) { restTotal = sec; restEnd = Date.now() + sec * 1000; pe
 function stopRest() { restEnd = 0; persistRest(); tick(); }
 function tick() {
   document.querySelectorAll('.ai-sec').forEach(s => { s.textContent = Math.floor((Date.now() - +s.dataset.t0) / 1000) + ' giây'; });
-  const el = $('#elapsed'); if (el && S.active) el.textContent = fmtDur(Date.now() - S.active.startedAt);
+  const el = $('#elapsed'); if (el && S.active) el.textContent = fmtDur(activeMs(S.active));
+  const ab = $('.abot');
+  if (ab && S.active) { const want = S.active.pausedAt ? 'pause' : restEnd > Date.now() ? 'rest' : 'set';
+    if (ab.dataset.state !== want) ab.outerHTML = abot(); else if (want === 'rest') $('#abRest').textContent = fmtDur(restEnd - Date.now() + 999); }
   const bar = $('#rest');
   if (!restEnd || !S.active) { bar.hidden = true; document.body.classList.remove('has-rest'); return; }
   const left = restEnd - Date.now();
@@ -2697,7 +2912,7 @@ function tick() {
     else if (over < 30 * 60e3) { flash(); toast(`⏰ Đã hết giờ nghỉ ${over < 60e3 ? Math.round(over / 1000) + ' giây' : Math.round(over / 60e3) + ' phút'} trước`, 4000); }
     restEnd = 0; persistRest(); bar.hidden = true; document.body.classList.remove('has-rest'); return;
   }
-  bar.hidden = false; document.body.classList.add('has-rest');
+  const onScreen = tab === 'workout'; bar.hidden = onScreen; document.body.classList.toggle('has-rest', !onScreen);
   $('#restTime').textContent = fmtDur(left + 999);
   $('#restRing').style.setProperty('--p', Math.min(100, left / (restTotal * 1000) * 100));
 }
@@ -2775,7 +2990,7 @@ const A = {
     if (!exs.length) { if (confirm('Chưa có set nào được tick ✓. Hủy buổi tập?')) { S.active = null; restEnd = 0; save(); releaseWake(); render(); } return; }
     if (!confirm('Kết thúc và lưu buổi tập?')) return;
     const prs = exs.filter(e => { const b = bestOf(e.name); return !isCardio(e.name) && b.maxW > 0 && Math.max(...e.sets.map(s => s.w)) > b.maxW; }).map(e => e.name);
-    const w = { id: uid(), name: a.name.trim() || 'Buổi tập', startedAt: a.startedAt, endedAt: Date.now(), exercises: exs, prs,
+    const w = { id: uid(), name: a.name.trim() || 'Buổi tập', startedAt: a.startedAt, endedAt: a.startedAt + activeMs(a), exercises: exs, prs,
       plan: a.exercises.map(e => ({ name: e.name, sets: e.sets.length, ...(e.reps ? { reps: e.reps } : {}) })), ...(a.routineId ? { routineId: a.routineId } : {}) };
     S.workouts.unshift(w); S.active = null; restEnd = 0; save(); releaseWake();
     tab = 'history'; openId = w.id; render(); window.scrollTo(0, 0);
@@ -2878,6 +3093,24 @@ const A = {
     try { localStorage.setItem(p.store, v); } catch (e) {} render(); toast('Đã lưu key ' + p.name);
   },
   clearKey: () => { if (confirm('Xóa API key khỏi máy này?')) { try { localStorage.removeItem(AI[aiProv()].store); } catch (e) {} render(); } },
+  aiSpeed: async () => {
+    if (!hasKey()) { toast('Nhập key Gemini trước'); return; }
+    const rows = {}, show = done => openSheet(`<div class="sheet-h"><h3>Đo tốc độ Gemini</h3><button class="link" data-act="closeSheet">Đóng</button></div>
+      <div class="muted small" style="margin-bottom:8px">Gửi cùng một ảnh món ăn nhỏ tới từng model Flash mà key của bạn dùng được, rồi chọn model nhanh nhất trả lời được.</div>
+      <div class="rev">${Object.entries(rows).map(([m, x]) => `<div class="rev-i"><span style="color:${!x ? 'var(--muted)' : x.ok ? 'var(--ok)' : 'var(--danger)'}">${ic(!x ? 'clock' : x.ok ? 'check' : 'x')}</span>
+        <span class="grow">${esc(m)}${m === gemModel() ? ' <b class="lime">· đang dùng</b>' : ''}<br><span class="muted small">${!x ? 'đang thử…' : x.ok ? (x.ms / 1000).toFixed(1).replace('.', ',') + ' giây' : esc(x.err)}</span></span></div>`).join('')}</div>
+      ${done || ''}`);
+    show(); let res;
+    try { res = await geminiSpeedTest((m, x) => { rows[m] = x; show(); }); }
+    catch (e) { show(`<div class="small mt" style="color:var(--danger)">${esc(e.message)}</div>`); return; }
+    const okR = res.filter(x => x.ok).sort((a, b) => a.ms - b.ms);
+    if (!okR.length) { show('<div class="small mt" style="color:var(--danger)">Không model nào trả lời được lúc này (thường do hết lượt miễn phí hoặc Google quá tải). Thử lại sau.</div>'); return; }
+    const best = okR[0], before = gemModel(); S.settings.gemModel = best.m; save(); geminiAlts = null;
+    show(`<div class="small mt">Đã chọn <b class="lime">${esc(best.m)}</b> (${(best.ms / 1000).toFixed(1).replace('.', ',')} giây)${before !== best.m ? `, thay cho ${esc(before)}` : ''}. Các lần chụp bữa ăn, chấm buổi tập, chấm ngày và chấm body đều dùng model này; model khác chỉ dùng khi model này quá tải.</div>
+      <button class="text-btn" data-act="aiModelReset">Quay về model mặc định (${GEMINI_MAIN})</button>`);
+    render();
+  },
+  aiModelReset: () => { delete S.settings.gemModel; save(); geminiAlts = null; closeSheet(); render(); toast('Đã quay về ' + GEMINI_MAIN); },
   testKey: async () => {
     const p = aiProv(), name = AI[p].name, lines = [];
     const show = done => openSheet(`<div class="sheet-h"><h3>Kiểm tra kết nối ${name}</h3><button class="link" data-act="closeSheet">Đóng</button></div>
@@ -2901,6 +3134,7 @@ const A = {
     });
     show(true);
   },
+  tip: d => openSheet(`<div class="sheet-h"><h3>${TIPS[d.k][0]}</h3><button class="link" data-act="closeSheet">Đóng</button></div><div class="tip-body">${TIPS[d.k][1]}</div>`),
   saveBody: () => {
     const w = num($('#bW').value), waist = num($('#bWaist').value), neck = num($('#bNeck')?.value), hip = num($('#bHip')?.value);
     const okNeck = neck >= 20 && neck <= 70, okHip = hip >= 50 && hip <= 200;
@@ -2980,6 +3214,32 @@ const A = {
   sleepLog: d => openSleep(d.k),
   delSleep: d => { if (!confirm('Xóa lần ghi giấc ngủ này?')) return; delete S.sleep[d.k]; save(); closeSheet(); render(); },
   setSleepH: d => { S.settings.sleepH = +d.v; save(); render(); },
+  step: d => {
+    const ex = S.active.exercises[+d.i], j = +d.j, f = d.f, cardio = isCardio(ex.name);
+    const sz = f === 'r' ? 1 : cardio ? .5 : EX_LOAD[ex.name] === 'db' ? 1 : 2.5;
+    const v = Math.max(0, Math.round((setVal(ex, j, f) + +d.v * sz) * 100) / 100);
+    ex.sets[j][f] = String(v);
+    if (f === 'w') for (let k = j + 1; k < ex.sets.length; k++) if (!ex.sets[k].done) ex.sets[k].w = String(v);
+    save(); render();
+  },
+  completeSet: () => {
+    const { i, j } = openPos(); if (j < 0) return;
+    const ex = S.active.exercises[i], s = ex.sets[j];
+    if (s.r === '') s.r = String(setVal(ex, j, 'r'));
+    if (s.w === '') s.w = isBodyEx(ex.name) ? '0' : String(setVal(ex, j, 'w'));
+    A.toggleSet({ i: String(i), j: String(j) });
+  },
+  pauseWorkout: () => {
+    const a = S.active, now = Date.now();
+    if (!a.pausedAt) { a.pausedAt = now; if (restEnd > now) { a.restLeft = restEnd - now; restEnd = 0; persistRest(); } toast('Đã tạm dừng'); }
+    else { a.pausedMs = (a.pausedMs || 0) + now - a.pausedAt; a.pausedAt = null; if (a.restLeft) { restEnd = now + a.restLeft; a.restLeft = 0; persistRest(); } }
+    save(); render();
+  },
+  exAll: () => { exAllOpen = !exAllOpen; render(); },
+  exMenu: d => openExMenu(+d.i),
+  exMove: d => { const a = S.active.exercises, i = +d.i, k = i + +d.d; [a[i], a[k]] = [a[k], a[i]]; focusEx = null; closeSheet(); save(); render(); },
+  exRest: d => { const ex = S.active.exercises[+d.i], z = [60, 90, 120, 150, 180], c = ex.rest || S.settings.rest; ex.rest = z[(z.indexOf(c) + 1) % z.length] || 90; save(); render(); openExMenu(+d.i); },
+  exRemove: d => { closeSheet(); A.removeEx(d); },
   focusEx: d => { focusEx = +d.i; render(); requestAnimationFrame(() => $('#ex' + d.i)?.scrollIntoView({ block: 'start', behavior: 'smooth' })); },
   bump: d => {
     const ex = target().exercises[+d.i], cur = ex.sets.findIndex(s => !s.done); if (cur < 0) return;

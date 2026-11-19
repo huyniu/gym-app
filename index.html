@@ -574,6 +574,14 @@ body.on-active main{padding-bottom:calc(170px + env(safe-area-inset-bottom))}
 .ab-main b{display:flex;align-items:center;gap:6px;font-size:14px;font-weight:900;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap}.ab-main b svg{width:18px;height:18px}.ab-main small{font-size:12px;opacity:.75}
 .ab-main.rest{background:var(--card2);color:var(--text);box-shadow:none}.ab-main.rest b{color:var(--accent);font-variant-numeric:tabular-nums}.ab-main.off{background:var(--card2);color:var(--warn);box-shadow:none}
 .menu-list{display:flex;flex-direction:column}.menu-list button{display:flex;align-items:center;gap:12px;padding:14px 4px;border-bottom:1px solid var(--line);color:var(--text);font-size:15px;text-align:left}.menu-list button.danger{color:var(--danger)}
+.warm{display:flex;align-items:center;gap:8px;background:color-mix(in srgb,var(--warn) 12%,transparent);border-radius:12px;padding:8px 10px;font-size:13px;margin-bottom:8px}.warm svg{width:16px;height:16px;color:var(--warn);flex:none}
+.plates{display:flex;align-items:center;gap:8px;font-size:13px;margin-top:8px;color:var(--muted)}.plates svg{width:16px;height:16px;color:var(--accent);flex:none}.plates .grow{color:var(--text)}.plates .link{font-size:12px}
+.swap-row{display:flex;align-items:center;gap:8px;width:100%;padding:10px 0;border-bottom:1px solid var(--line);text-align:left;color:var(--text)}.swap-row .exm{flex:1}.swap-row>svg{color:var(--muted)}
+.next-meal{display:flex;align-items:center;gap:12px;width:100%;background:var(--card);border-radius:16px;padding:12px 14px;margin:0 0 12px;text-align:left;color:var(--text)}
+.next-meal>svg:first-child{width:22px;height:22px;color:var(--warn)}.next-meal b{display:block;font-size:15px}.next-meal small{font-size:12px;color:var(--muted)}.next-meal>svg:last-child{color:var(--muted)}
+.nm-left{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}.nm-left div{background:var(--card2);border-radius:12px;padding:10px;text-align:center}.nm-left b{font-size:22px;display:block}.nm-left small{font-size:11px;color:var(--muted)}
+.nm{background:var(--card2);border-radius:16px;padding:12px;margin-bottom:10px}.nm-h{display:flex;align-items:center;gap:10px}.nm-h small{display:block;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}.nm-h b{font-size:15px}
+.nm-k{text-align:right}.nm-k b{display:block;font-size:18px;color:var(--accent)}.nm-k small{font-size:11px;color:var(--sky)}.nm-items{font-size:12px;color:var(--muted);margin-top:8px;line-height:1.5}.nm .btn{width:100%}
 </style>
 </head>
 <body>
@@ -604,7 +612,7 @@ body.on-active main{padding-bottom:calc(170px + env(safe-area-inset-bottom))}
 <script>
 'use strict';
 const KEY = 'gymlog.v1';
-const APP_VERSION = '2026.11.22b';
+const APP_VERSION = '2026.11.22c';
 const DEFAULT_EX = EX_DB.map(e => e[0]);
 
 const $ = s => document.querySelector(s);
@@ -1020,10 +1028,12 @@ function exCard2(ex, i, curI) {
       <button class="icon" data-act="exMenu" data-i="${i}" aria-label="Tùy chọn">⋯</button></div>
     ${open ? `<div class="ec-b">
       ${hint || (EX_LOAD[ex.name] && !body) ? `<div class="ec-note">${hint ? `<span class="up-pill${hint.up ? '' : ' hold'}">${ic(hint.up ? 'up' : 'minus')} ${hint.up ? 'Lên' : 'Giữ'} ${fmtNum(hint.w)} kg</span>` : ''}${EX_LOAD[ex.name] && !body ? `<span>${LOAD_NOTE[EX_LOAD[ex.name]]}</span>` : ''}</div>` : ''}
+      ${i === curI ? (wu => wu && wu.length ? `<div class="warm">${ic('flame')}<span>Khởi động: <b>${wu.map(([w, r]) => `${fmtNum(w)}×${r}`).join(' · ')}</b></span></div>` : '')(warmups(ex, i)) : ''}
       <div class="ec-cols"><span>Hiệp</span><span>Lần trước</span><span>${body ? '' : unitW}</span><span>${unitR}</span><span></span></div>
       ${ex.sets.map((s, j) => j === cur && i === curI ? `<div class="ec-cur">
           <div class="ec-cur-h"><b>Hiệp ${j + 1}</b><span>Lần trước: ${prevTxt(j)}</span><button class="ring-btn" data-act="toggleSet" data-i="${i}" data-j="${j}" aria-label="Hoàn thành hiệp"></button></div>
-          <div class="stps${body ? ' one' : ''}">${body ? '' : stepper(i, j, 'w', setVal(ex, j, 'w'), unitW)}${stepper(i, j, 'r', setVal(ex, j, 'r'), unitR)}</div></div>`
+          <div class="stps${body ? ' one' : ''}">${body ? '' : stepper(i, j, 'w', setVal(ex, j, 'w'), unitW)}${stepper(i, j, 'r', setVal(ex, j, 'r'), unitR)}</div>
+          ${!body && !cardio && platesText(setVal(ex, j, 'w'), EX_LOAD[ex.name]) ? `<div class="plates">${ic('barbell')}<span class="grow">${platesText(setVal(ex, j, 'w'), EX_LOAD[ex.name])}</span>${EX_LOAD[ex.name] === 'bb' ? `<button class="link" data-act="barKg">thanh ${barKg()} kg</button>` : ''}</div>` : ''}</div>`
         : `<div class="ec-row ${s.done ? 'done' : ''}"><span class="no">${j + 1}</span><span class="pv">${prevTxt(j)}</span>
           <span>${body ? '' : `<input inputmode="decimal" data-i="${i}" data-j="${j}" data-f="w" value="${esc(s.w)}" placeholder="${esc(fmtNum(setVal(ex, j, 'w')))}">`}</span>
           <span><input inputmode="decimal" data-i="${i}" data-j="${j}" data-f="r" value="${esc(s.r)}" placeholder="${esc(fmtNum(setVal(ex, j, 'r')))}"></span>
@@ -1063,9 +1073,100 @@ function openExMenu(i) {
       <button data-act="showEx" data-name="${esc(ex.name)}">${ic('info')} Cách tập</button>
       ${i > 0 ? `<button data-act="exMove" data-i="${i}" data-d="-1">${ic('up')} Chuyển lên</button>` : ''}
       ${i < a.exercises.length - 1 ? `<button data-act="exMove" data-i="${i}" data-d="1"><span style="transform:rotate(180deg);display:inline-flex">${ic('up')}</span> Chuyển xuống</button>` : ''}
+      <button data-act="exSwap" data-i="${i}">${ic('refresh')} Đổi bài (máy đang bận)</button>
       <button data-act="exRest" data-i="${i}">${ic('clock')} Thời gian nghỉ: ${fmtRest(ex.rest || S.settings.rest)}</button>
       <button class="danger" data-act="exRemove" data-i="${i}">${ic('x')} Xóa bài khỏi buổi</button>
     </div>`);
+}
+/* ---------- warm-up sets and plates per side ---------- */
+const barKg = () => S.settings.barKg || 20;
+const PLATES = [25, 20, 15, 10, 5, 2.5, 1.25];
+function platesText(w, load) {
+  if (load !== 'bb' && load !== 'smith') return '';
+  const bar = load === 'bb' ? barKg() : 0;
+  let side = (w - bar) / 2; if (side <= 0) return load === 'bb' ? 'Thanh không' : '';
+  const out = []; for (const p of PLATES) while (side >= p - 1e-9) { out.push(p); side -= p; }
+  return (out.length ? 'Mỗi bên: ' + out.map(fmtNum).join(' + ') : '') + (side > .01 ? ` (lẻ ${fmtNum(Math.round(side * 2 * 100) / 100)} kg)` : '');
+}
+// Warm-up only for the first exercise that works these muscles in the session, before its first set.
+function warmups(ex, i) {
+  const load = EX_LOAD[ex.name]; if (!load || load === 'body' || isCardio(ex.name) || ex.sets.some(s => s.done)) return null;
+  const a = S.active, p = getEx(ex.name)?.p || [];
+  if (a.exercises.slice(0, i).some(e => e.sets.some(s => s.done) && (getEx(e.name)?.p || []).some(m => p.includes(m)))) return null;
+  const w = setVal(ex, 0, 'w'), step = load === 'db' ? 1 : 2.5, rnd = v => Math.round(v / step) * step;
+  if (load === 'bb' || load === 'smith') {
+    const bar = load === 'bb' ? barKg() : 0; if (w < bar + 20) return null;
+    const out = load === 'bb' ? [[bar, 10]] : [];
+    for (const [k, r] of [[.4, 8], [.6, 5], [.8, 3]]) { const v = rnd(w * k); if (v > (out[out.length - 1]?.[0] || 0) && v < w) out.push([v, r]); }
+    return out;
+  }
+  if (w < (load === 'db' ? 10 : 20)) return null;
+  return [[rnd(w * .5), 10], [rnd(w * .75), 5]].filter(([v]) => v > 0 && v < w);
+}
+
+/* ---------- swap an exercise for one that works the same muscles ---------- */
+function swapCandidates(name) {
+  const x = getEx(name); if (!x) return [];
+  const used = new Set(S.active.exercises.map(e => e.name));
+  return EX_DB.map(e => getEx(e[0])).filter(y => y && y.name !== name && !used.has(y.name) && !isCardio(y.name) && y.p.some(m => x.p.includes(m)))
+    .map(y => ({ n: y.name, s: 3 * y.p.filter(m => x.p.includes(m)).length + (y.s || []).filter(m => (x.s || []).includes(m)).length - y.p.filter(m => !x.p.includes(m)).length + (exImg(y.name, 0) ? .5 : 0) + (name.split(' ').slice(-1)[0] === y.name.split(' ').slice(-1)[0] ? 2 : 0) }))
+    .sort((a, b) => b.s - a.s).slice(0, 8).map(o => o.n);
+}
+function openSwap(i) {
+  const ex = S.active.exercises[i], c = swapCandidates(ex.name);
+  openSheet(`<div class="sheet-h"><h3>Đổi bài</h3><button class="link" data-act="closeSheet">Đóng</button></div>
+    <div class="muted small" style="margin-bottom:8px">Thay cho <b>${esc(exTitle(ex.name))}</b>, cùng nhóm cơ chính:</div>
+    ${c.length ? c.map(n => `<button class="swap-row" data-act="swapTo" data-i="${i}" data-name="${esc(n)}">${exTag(n)}${ic('chev')}</button>`).join('') : '<div class="empty">Không có bài tương tự</div>'}`);
+}
+function swapTo(i, name) {
+  const a = S.active, ex = a.exercises[i], done = ex.sets.filter(s => s.done).length, left = ex.sets.length - done;
+  const fresh = { name, sets: Array.from({ length: Math.max(1, left) }, () => ({ w: '', r: '', done: false })), planSets: Math.max(1, left), ...(ex.reps ? { reps: ex.reps } : {}), ...(ex.rest ? { rest: ex.rest } : {}) };
+  if (done) { ex.sets = ex.sets.filter(s => s.done); ex.planSets = done; a.exercises.splice(i + 1, 0, fresh); focusEx = i + 1; }
+  else { a.exercises[i] = fresh; focusEx = i; }
+  save(); closeSheet(); render(); toast(`Đã đổi sang ${exTitle(name)}`);
+}
+
+/* ---------- what to eat next: fit the rest of today's calories and protein ---------- */
+const PROT = ['Ức gà', 'Cá basa', 'Thịt bò nạc', 'Thịt heo nạc', 'Đậu phụ'], CARB = ['Cơm trắng', 'Khoai lang luộc', 'Bún'];
+function foodItem(n, g) { const f = FOODS[n], k = g / 100; return { name: `${n} ${fmtNum(g)} g`, base: n, g, kcal: f[0] * k, p: f[1] * k, c: f[2] * k, f: f[3] * k }; }
+function nextMealIdeas() {
+  const p = S.profile; if (!p) return null;
+  const t = targets(p), tot = dayTotals(foodDay), K = Math.round(t.kcal - tot.kcal), P = Math.round(t.protein - tot.p);
+  const late = foodDay === dayKey() && new Date().getHours() >= 20, ideas = [];
+  if (K < 120) return { K, P, ideas, full: true };
+  const hr = foodDay === dayKey() ? new Date().getHours() : 12, meals = hr < 10 ? 3 : hr < 15 ? 2 : 1;
+  const Km = K / meals, Pm = Math.max(0, P) / meals;
+  const veg = foodItem('Rau xanh luộc', 200), oil = { ...foodItem('Dầu ăn', 5), name: 'Dầu nấu 1 thìa' }, fixed = veg.kcal + oil.kcal;
+  // home-cooked: a protein sized to the protein gap, then rice/potato/noodles for what is left
+  PROT.forEach((pn, k) => {
+    const pf = FOODS[pn], need = Math.max(Pm, 20);
+    let gp = Math.min(250, Math.max(80, Math.round(need / (pf[1] / 100) / 10) * 10));
+    if (gp * pf[0] / 100 + fixed > Km) gp = Math.max(60, Math.floor((Km - fixed) * .9 / (pf[0] / 100) / 10) * 10);
+    const cn = CARB[k % CARB.length], rest = Km - gp * pf[0] / 100 - fixed;
+    const gc = Math.min(late ? 100 : 300, Math.max(0, Math.floor(rest / (FOODS[cn][0] / 100) / 10) * 10));
+    const items = [foodItem(pn, gp), ...(gc >= 50 ? [foodItem(cn, gc)] : []), veg, oil];
+    ideas.push({ kind: 'Tự nấu / cơm bình dân', items });
+  });
+  // eating out: a dish that fits, protein first
+  DISHES.filter(d => d[3] <= Km * 1.1 && d[3] >= Km * .4 && d[4] >= 15).sort((a, b) => (b[4] - Math.abs(Km - b[3]) / 25) - (a[4] - Math.abs(Km - a[3]) / 25)).slice(0, 2)
+    .forEach(d => ideas.push({ kind: 'Ăn ngoài', dish: d[0], items: [{ name: `${d[0]} (${d[1]})`, dish: d[0], g: d[2], kcal: d[3], p: d[4], c: d[5], f: d[6] }] }));
+  const sum = it => it.reduce((a, x) => ({ kcal: a.kcal + x.kcal, p: a.p + x.p }), { kcal: 0, p: 0 });
+  const homes = ideas.filter(x => !x.dish).sort((a, b) => sum(b.items).p - sum(a.items).p).slice(0, 2), outs = ideas.filter(x => x.dish);
+  return { K, P, late, meals, Km, ideas: [...homes, ...outs].map(x => ({ ...x, tot: sum(x.items) })) };
+}
+let nextIdeas = null;
+function openNextMeal() {
+  const r = nextIdeas = nextMealIdeas(); if (!r) { toast('Nhập thông tin cơ thể ở Thực đơn trước'); return; }
+  openSheet(`<div class="sheet-h"><h3>Bữa tiếp ăn gì?</h3><button class="link" data-act="closeSheet">Đóng</button></div>
+    <div class="nm-left"><div><b>${fmtNum(Math.max(0, r.K))}</b><small>kcal còn lại</small></div><div><b class="sky">${fmtNum(Math.max(0, r.P))}</b><small>g đạm còn thiếu</small></div></div>
+    ${!r.full && r.meals > 1 ? `<div class="muted small" style="margin:-4px 0 10px;text-align:center">Còn khoảng ${r.meals} bữa → bữa này nên ~${fmtNum(Math.round(r.Km / 10) * 10)} kcal</div>` : ''}
+    ${r.full ? `<div class="empty">Đã gần đủ calo hôm nay.${r.P > 10 ? ' Còn thiếu đạm: 3 lòng trắng trứng hoặc 1 hũ sữa chua không đường.' : ' Đói thì ăn rau, dưa chuột, uống nước.'}</div>`
+    : r.ideas.map((x, i) => `<div class="nm">
+      <div class="nm-h">${x.dish ? foodThumb({ dish: x.dish }) : `<span class="fthumb ph">${ic('apple')}</span>`}<div class="grow"><small>${x.kind}</small><b>${esc(x.dish || x.items[0].base + (x.items[1]?.base && x.items[1].base !== 'Rau xanh luộc' ? ' + ' + x.items[1].base.toLowerCase() : ''))}</b></div>
+        <div class="nm-k"><b>${fmtNum(Math.round(x.tot.kcal))}</b><small>${Math.round(x.tot.p)} g đạm</small></div></div>
+      ${x.dish ? '' : `<div class="nm-items">${x.items.map(it => esc(it.name)).join(' · ')}</div>`}
+      <button class="btn mt" data-act="nextMealAdd" data-i="${i}">${ic('plus')} Ghi bữa này</button></div>`).join('')}
+    ${r.late ? '<div class="muted small mt">Đã sau 20h nên tinh bột được giảm bớt.</div>' : ''}`);
 }
 function exThumbSm(name) { const src = exImg(name, 0); return src ? `<img src="${src}" alt="" loading="lazy">` : `<span class="ph">${ic('barbell')}</span>`; }
 function exRow2(ex, i) {
@@ -2075,6 +2176,7 @@ function foodLogCard(t) {
     <div class="bar"><i style="width:${Math.min(100, ppct)}%;background:var(--sky)"></i></div>
     <div class="deficit">${ic('flame')}<span>${deficit >= 0 ? `Thâm hụt <b>${fmtNum(Math.round(deficit))} kcal</b>` : `Dư <b>${fmtNum(Math.round(-deficit))} kcal</b>`} · tiêu hao ${fmtNum(t.tdee)}</span></div>
   </div>
+  <button class="next-meal" data-act="nextMeal">${ic('bulb')}<span class="grow"><b>Bữa tiếp ăn gì?</b><small>Còn ${fmtNum(Math.max(0, Math.round(left)))} kcal · ${fmtNum(Math.max(0, Math.round(t.protein - tot.p)))} g đạm</small></span>${ic('chev')}</button>
   <div class="row gap meal-btns"><button class="btn primary" data-act="snapMeal">${ic('camera')} Chụp bữa ăn</button><button class="btn" data-act="addFoodManual">${ic('edit')} Nhập tay</button></div>
   <button class="btn big fam-btn" data-act="famOpen">${ic('apple')} Mâm cơm gia đình <small>đếm phần mình ăn</small></button>
   ${['Sáng', 'Trưa', 'Chiều', 'Tối'].map(m => { const it = list.filter(f => mealOf(f.t) === m).sort((a, b) => a.t - b.t); return it.length ? `<div class="card meal-card">
@@ -3240,6 +3342,15 @@ const A = {
   exMove: d => { const a = S.active.exercises, i = +d.i, k = i + +d.d; [a[i], a[k]] = [a[k], a[i]]; focusEx = null; closeSheet(); save(); render(); },
   exRest: d => { const ex = S.active.exercises[+d.i], z = [60, 90, 120, 150, 180], c = ex.rest || S.settings.rest; ex.rest = z[(z.indexOf(c) + 1) % z.length] || 90; save(); render(); openExMenu(+d.i); },
   exRemove: d => { closeSheet(); A.removeEx(d); },
+  exSwap: d => openSwap(+d.i),
+  swapTo: d => swapTo(+d.i, d.name),
+  barKg: () => { S.settings.barKg = barKg() === 20 ? 15 : 20; save(); render(); toast(`Thanh đòn ${barKg()} kg`); },
+  nextMeal: () => openNextMeal(),
+  nextMealAdd: d => {
+    const x = nextIdeas?.ideas[+d.i]; if (!x) return;
+    addFood(x.items.map(it => ({ name: it.name, g: Math.round(it.g), kcal: it.kcal, p: it.p, c: it.c, f: it.f, src: 'suggest', ...(it.dish ? { dish: it.dish } : {}) })));
+    closeSheet(); render(); toast(`Đã ghi ${fmtNum(Math.round(x.tot.kcal))} kcal`);
+  },
   focusEx: d => { focusEx = +d.i; render(); requestAnimationFrame(() => $('#ex' + d.i)?.scrollIntoView({ block: 'start', behavior: 'smooth' })); },
   bump: d => {
     const ex = target().exercises[+d.i], cur = ex.sets.findIndex(s => !s.done); if (cur < 0) return;

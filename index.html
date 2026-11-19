@@ -602,6 +602,15 @@ body.on-active main{padding-bottom:calc(170px + env(safe-area-inset-bottom))}
 .rd-res{margin-top:12px;border-radius:14px;padding:12px;background:color-mix(in srgb,var(--ok) 12%,transparent)}.rd-res.lv1{background:color-mix(in srgb,var(--warn) 14%,transparent)}.rd-res.lv2{background:color-mix(in srgb,var(--danger) 14%,transparent)}
 .rd-res b{display:block;font-size:15px}.rd-res span{display:block;font-size:13px;margin-top:2px}.rd-res small{display:block;font-size:12px;color:var(--muted);margin-top:4px}
 .goal{padding:8px 0;border-bottom:1px solid var(--line)}.goal:last-child{border:0}.goal b{font-size:14px}.goal .bar{margin:6px 0}.goal .row.small{font-size:12px;gap:8px}
+.mi2{background:var(--card2);border-radius:12px;padding:8px;margin-top:8px}.mi2 .mi-name{background:none;border:0;padding:4px 2px;font-weight:700}
+.mi-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:4px}.mi-row label{display:flex;flex-direction:column;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;gap:3px}
+.mi-row input{text-align:center;font-weight:700;padding:8px 4px;font-size:15px;text-transform:none;letter-spacing:0}
+.mi-fix{display:flex;gap:6px;margin-top:10px}.mi-fix input{flex:1;min-width:0}.mi-fix .btn{white-space:nowrap;padding:10px 12px}
+.fedit{cursor:pointer}
+.sfb{display:flex;align-items:center;gap:10px;padding:4px 4px 8px}.sfb-s{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;font:800 15px 'Space Grotesk',sans-serif;color:#0b0d10;flex:none}
+.sfb b{display:block;font-size:14px}.sfb small{display:block;font-size:12px;color:var(--muted);line-height:1.35}
+.sfb-adj{flex:none;background:var(--card2);border-radius:10px;padding:8px 10px;font-size:12px;font-weight:800;color:var(--accent);white-space:nowrap}
+.ring-btn b{font-size:12px;font-weight:800;color:#0b0d10}
 </style>
 </head>
 <body>
@@ -632,7 +641,7 @@ body.on-active main{padding-bottom:calc(170px + env(safe-area-inset-bottom))}
 <script>
 'use strict';
 const KEY = 'gymlog.v1';
-const APP_VERSION = '2026.11.23';
+const APP_VERSION = '2026.11.23c';
 const DEFAULT_EX = EX_DB.map(e => e[0]);
 
 const $ = s => document.querySelector(s);
@@ -1060,7 +1069,7 @@ function exCard2(ex, i, curI) {
         : `<div class="ec-row ${s.done ? 'done' : ''}"><span class="no">${j + 1}</span><span class="pv">${prevTxt(j)}</span>
           <span>${body ? '' : `<input inputmode="decimal" data-i="${i}" data-j="${j}" data-f="w" value="${esc(s.w)}" placeholder="${esc(fmtNum(setVal(ex, j, 'w')))}">`}</span>
           <span><input inputmode="decimal" data-i="${i}" data-j="${j}" data-f="r" value="${esc(s.r)}" placeholder="${esc(fmtNum(setVal(ex, j, 'r')))}"></span>
-          <button class="ring-btn${s.done ? ' on' : ''}" data-act="toggleSet" data-i="${i}" data-j="${j}" aria-label="Hoàn thành hiệp">${s.done ? ic('check') : ''}</button></div>`).join('')}
+          ${(g => `<button class="ring-btn${s.done ? ' on' : ''}"${g ? ` style="background:${g.col};border-color:${g.col}"` : ''} data-act="toggleSet" data-i="${i}" data-j="${j}" aria-label="Hoàn thành hiệp">${g ? `<b>${g.score}</b>` : s.done ? ic('check') : ''}</button>`)(setGrade(ex, j))}</div>`).join('')}
       <div class="ec-f"><button data-act="addSet" data-i="${i}">${ic('plus')} Thêm hiệp</button>${ex.sets.length > 1 ? `<button class="muted" data-act="delSet" data-i="${i}">${ic('minus')} Bớt</button>` : ''}</div>
     </div>` : ''}
   </div>`;
@@ -1074,7 +1083,7 @@ function abot() {
   else if (ex && j >= 0) { const c = isCardio(ex.name), w = setVal(ex, j, 'w'), r = setVal(ex, j, 'r');
     main = `<button class="ab-main" data-act="completeSet"><b>${ic('check')} Hoàn thành hiệp</b><small>Hiệp ${j + 1} · ${c ? `${fmtNum(r)} phút` : isBodyEx(ex.name) ? `${fmtNum(r)} reps` : `${fmtNum(w)} kg × ${fmtNum(r)}`}</small></button>`; }
   else main = `<button class="ab-main" data-act="finishWorkout"><b>${ic('check')} Kết thúc buổi tập</b><small>Đã xong mọi hiệp</small></button>`;
-  return `<div class="abot" data-state="${a.pausedAt ? 'pause' : resting ? 'rest' : 'set'}">${resting ? rirChips() : ''}<div class="ab-row">
+  return `<div class="abot" data-state="${a.pausedAt ? 'pause' : resting ? 'rest' : 'set'}">${resting ? setFeedback() + rirChips() : ''}<div class="ab-row">
     <button class="ab-side" data-act="pauseWorkout">${ic(a.pausedAt ? 'play' : 'pause')}<span>${a.pausedAt ? 'Tiếp tục' : 'Tạm dừng'}</span></button>
     ${main}
     <button class="ab-side end" data-act="finishWorkout"><i class="sq"></i><span>Kết thúc</span></button></div></div>`;
@@ -1193,6 +1202,38 @@ function openNextMeal() {
 }
 /* ---------- effort per set: reps left in the tank (RIR), asked during the rest ---------- */
 const RIR = [[0, 'Hết sức'], [1, 'Còn 1'], [2, 'Còn 2'], [3, 'Còn 3+']];
+function setGrade(ex, j) {
+  const s = ex.sets[j]; if (!s?.done || isCardio(ex.name)) return null;
+  const w = num(s.w), r = num(s.r), tr = parseReps(ex.reps), body = isBodyEx(ex.name), notes = [];
+  const last = lastSets(ex.name), p = last && last[j], hint = ex.reps ? weightHint(ex.name, ex.reps) : null;
+  const step = body ? 0 : EX_LOAD[ex.name] === 'db' ? 1 : 2.5;
+  let score = 100, adj = 0;
+  if (tr && r < tr[0]) { score -= Math.min(45, 15 * (tr[0] - r)); notes.push(`thiếu ${tr[0] - r} rep so với mục tiêu ${tr[0]}–${tr[1]}`); }
+  else if (tr && r >= tr[1]) notes.push(`chạm ${tr[1]} rep`);
+  else if (tr) notes.push(`trong khoảng ${tr[0]}–${tr[1]} rep`);
+  if (p) {
+    const now = body ? r : e1rm(w, r), was = body ? p.r : e1rm(p.w, p.r);
+    if (now > was * 1.01) notes.push(body ? `hơn lần trước ${r - p.r} rep` : `mạnh hơn lần trước (${fmtSet(p, ex.name)})`);
+    else if (now < was * .97) { score -= 10; notes.push(`yếu hơn lần trước (${fmtSet(p, ex.name)})`); }
+    else notes.push(`ngang lần trước (${fmtSet(p, ex.name)})`);
+  }
+  if (!body && hint && !S.active?.wF && w < hint.w - .01) { score -= 10; notes.push(`nhẹ hơn mức gợi ý ${fmtNum(hint.w)} kg`); }
+  if (s.rir === 0 && tr && r < tr[0]) { score -= 5; if (step) adj = -step; }
+  else if (s.rir != null && s.rir >= 3 && tr && r >= tr[0]) { score -= 5; notes.push('còn dư sức nhiều, tạ hơi nhẹ'); if (step) adj = step; }
+  else if (tr && r >= tr[1] && step && (s.rir == null || s.rir >= 2)) adj = step;
+  else if (tr && r < tr[0] - 1 && step) adj = -step;
+  score = Math.max(0, Math.min(100, Math.round(score)));
+  const label = score >= 90 ? 'Tốt' : score >= 70 ? 'Đạt' : score >= 50 ? 'Tạm' : 'Chưa đạt';
+  return { score, label, col: score >= 90 ? 'var(--ok)' : score >= 70 ? 'var(--accent)' : score >= 50 ? 'var(--warn)' : 'var(--danger)', notes, adj, next: !body && adj ? Math.max(0, w + adj) : null };
+}
+// feedback for the set just finished, shown during the rest with a one-tap fix for the next set
+function setFeedback() {
+  const a = S.active, ls = a?.lastSet; if (!ls) return '';
+  const ex = a.exercises[ls.i], g = ex && setGrade(ex, ls.j); if (!g) return '';
+  const nextJ = ex.sets.findIndex(s => !s.done), canAdj = g.next != null && nextJ >= 0;
+  return `<div class="sfb"><span class="sfb-s" style="background:${g.col}">${g.score}</span><div class="grow"><b style="color:${g.col}">Hiệp ${ls.j + 1}: ${g.label}</b><small>${esc(g.notes.join(' · '))}</small></div>
+    ${canAdj ? `<button class="sfb-adj" data-act="setAdj" data-w="${g.next}">Hiệp sau ${g.adj > 0 ? '↑' : '↓'} ${fmtNum(g.next)} kg</button>` : ''}</div>`;
+}
 function rirChips() {
   const a = S.active, ls = a?.lastSet; if (!ls) return '';
   const ex = a.exercises[ls.i], s = ex?.sets[ls.j]; if (!s || !s.done || isCardio(ex.name)) return '';
@@ -2423,7 +2464,7 @@ function slotPicker() {
 const mealOf = t => { const h = new Date(t).getHours(); return h < 10 ? 'Sáng' : h < 14 ? 'Trưa' : h < 17 ? 'Chiều' : 'Tối'; };
 function dayTotals(k) { return (S.food[k] || []).reduce((a, f) => ({ kcal: a.kcal + f.kcal, p: a.p + f.p, c: a.c + f.c, f: a.f + f.f }), { kcal: 0, p: 0, c: 0, f: 0 }); }
 function foodRow(f, thumb) {
-  return `<div class="fitem">${thumb ? foodThumb(f) : ''}<div class="grow">${esc(f.name)}<small>${hhmm(f.t)} · ${f.g ? fmtNum(f.g) + ' g · ' : ''}${fmtNum(Math.round(f.kcal))} kcal${f.p ? ' · ' + Math.round(f.p) + ' g đạm' : ''}</small></div>
+  return `<div class="fitem">${thumb ? foodThumb(f) : ''}<div class="grow fedit" data-act="foodEdit" data-id="${f.id}">${esc(f.name)}<small>${hhmm(f.t)} · ${f.g ? fmtNum(f.g) + ' g · ' : ''}${fmtNum(Math.round(f.kcal))} kcal${f.p ? ' · ' + Math.round(f.p) + ' g đạm' : ''}</small></div>
       <button class="del" data-act="delFood" data-id="${f.id}" aria-label="Xóa">${ic('x')}</button></div>`;
 }
 function foodGroups(items) {
@@ -2436,6 +2477,20 @@ function foodGroups(items) {
     } else out.push(foodRow(f, true));
   }
   return out.join('');
+}
+let foodEditing = null;
+function findFood(id) { for (const [k, l] of Object.entries(S.food)) { const f = l.find(x => x.id === id); if (f) return { k, f }; } return null; }
+function openFoodEdit(id) {
+  const x = findFood(id); if (!x) return; const f = x.f;
+  foodEditing = { id, base: { g: f.g || 0, kcal: f.kcal, p: f.p || 0, c: f.c || 0, f: f.f || 0 } };
+  const v = n => fmtNum(Math.round((n || 0) * 10) / 10);
+  openSheet(`<div class="sheet-h"><h3>Sửa món</h3><button class="link" data-act="closeSheet">Đóng</button></div>
+    <input id="feName" list="dishNames2" value="${esc(f.name)}" placeholder="Tên món"><datalist id="dishNames2">${DISHES.map(d => `<option value="${esc(d[0])}">`).join('')}</datalist>
+    <div class="mi-row mt"><label>Giờ ăn<input type="time" id="feTime" value="${hhmm(f.t)}"></label><label>Gram<input id="feG" inputmode="decimal" value="${v(f.g)}"></label><label>Kcal<input id="feK" inputmode="decimal" value="${v(f.kcal)}"></label></div>
+    <div class="mi-row mt"><label>Đạm g<input id="feP" inputmode="decimal" value="${v(f.p)}"></label><label>Tinh bột g<input id="feC" inputmode="decimal" value="${v(f.c)}"></label><label>Béo g<input id="feF" inputmode="decimal" value="${v(f.f)}"></label></div>
+    <div class="muted small mt">Đổi số gram thì calo và đạm tự tính lại theo tỉ lệ.</div>
+    <button class="btn primary big mt" data-act="foodEditSave">Lưu</button>
+    <button class="text-btn" data-act="foodEditDel" style="color:var(--danger)">Xóa món này</button>`, () => { foodEditing = null; });
 }
 function foodLogCard(t) {
   const list = S.food[foodDay] || [], tot = dayTotals(foodDay), isToday = foodDay === dayKey();
@@ -2505,11 +2560,14 @@ function renderMealSheet() {
       <div class="muted small" style="margin-top:6px;text-align:center">Ảnh được gửi tới ${aiProv() === 'gemini' ? 'Google (Gemini)' : 'Anthropic (Claude) · khoảng 500đ/ảnh'} để phân tích</div>`
     : m.stage === 'busy' ? `<div class="empty">${ic('refresh')} ${m.img ? 'AI đang xem ảnh…' : 'AI đang ước tính…'} <span class="ai-sec" data-t0="${Date.now()}"></span></div>`
     : `${m.note ? `<div class="muted small" style="margin:10px 0">${esc(m.note)}</div>` : ''}${lastAI && aiProv() === 'gemini' ? `<div class="muted small" style="margin:-4px 0 6px;font-size:11px">${esc(lastAI.model)} · ${(lastAI.ms / 1000).toFixed(1).replace('.', ',')} giây</div>` : ''}
-      <div class="muted small" style="margin:8px 0 4px">Sửa số gram nếu AI đoán sai, calo tự tính lại.</div>
-      ${m.items.map((it, i) => `<div class="mi"><input class="mi-name" data-mi="${i}" data-k="name" value="${esc(it.name)}">
-        <input class="mi-g" inputmode="decimal" data-mi="${i}" data-k="grams" value="${fmtNum(Math.round(it.grams))}"><span class="muted small">g</span>
-        <span class="mi-k" id="mik${i}">${fmtNum(Math.round(it.kcal))}</span><button class="del" data-act="mealDel" data-i="${i}" aria-label="Bỏ">${ic('x')}</button></div>`).join('') || '<div class="empty">Không nhận ra món nào</div>'}
-      <div class="row mt"><span class="grow muted">Tổng</span><b id="mealTot">${fmtNum(Math.round(tot))} kcal</b></div>
+      <datalist id="dishNames">${[...DISHES.map(d => d[0]), ...Object.keys(FOODS)].map(n => `<option value="${esc(n)}">`).join('')}</datalist>
+      ${m.items.map((it, i) => `<div class="mi2"><div class="row gap"><input class="mi-name grow" list="dishNames" data-mi="${i}" data-k="name" value="${esc(it.name)}" placeholder="Tên món"><button class="del" data-act="mealDel" data-i="${i}" aria-label="Bỏ">${ic('x')}</button></div>
+        <div class="mi-row"><label>Gram<input inputmode="decimal" data-mi="${i}" data-k="grams" id="mig${i}" value="${fmtNum(Math.round(it.grams))}"></label>
+          <label>Kcal<input inputmode="decimal" data-mi="${i}" data-k="kcal" id="mik${i}" value="${fmtNum(Math.round(it.kcal))}"></label>
+          <label>Đạm g<input inputmode="decimal" data-mi="${i}" data-k="protein" id="mip${i}" value="${fmtNum(Math.round(it.protein))}"></label></div></div>`).join('') || '<div class="empty">Không nhận ra món nào</div>'}
+      <button class="text-btn" data-act="mealAddItem" style="margin-top:4px">${ic('plus')} Thêm món AI bỏ sót</button>
+      <div class="fam-tot"><span class="grow">Tổng</span><b id="mealTot">${fmtNum(Math.round(tot))} kcal · ${Math.round(m.items.reduce((a, i) => a + (i.protein || 0), 0))} g đạm</b></div>
+      ${m.img || m.hint ? `<div class="mi-fix"><input id="mealFix" placeholder="AI nhìn sai? VD: đây là bún chả, không phải bún bò"><button class="btn" data-act="mealFix">${ic('bolt')} Tính lại</button></div>` : ''}
       <button class="btn primary big mt" data-act="mealSave" ${m.items.length ? '' : 'disabled'}>Thêm vào nhật ký</button>`}`, () => { mealDraft = null; slot = null; });
 }
 function openManualFood() {
@@ -2967,7 +3025,7 @@ function openExGrade(i) {
   openSheet(`<div class="sheet-h"><h3>Chấm bài</h3><button class="link" data-act="closeSheet">Đóng</button></div>
     <div style="margin-bottom:10px">${exTag(ex.name)}</div>
     <div class="score"><div class="ring" style="--p:${g.score}"><b>${g.score}</b></div><div><div class="title" style="color:${vc}">${g.verdict}</div>
-      <div class="muted small">${g.sets.map(s => `${fmtNum(s.w)}×${s.r}`).join(' · ')}${ex.reps ? ` · mục tiêu ${esc(ex.reps)}` : ''}</div></div></div>
+      <div class="muted small">${ex.sets.filter(s => s.done).map((s, k) => `${fmtNum(num(s.w))}×${num(s.r)}${s.g != null ? ` (${s.g})` : ''}`).join(' · ')}${ex.reps ? ` · mục tiêu ${esc(ex.reps)}` : ''}</div></div></div>
     <div class="rev">${g.issues.map(t => `<div class="rev-i"><span style="color:var(--danger)">${ic('info')}</span><span>${esc(t)}</span></div>`).join('')}
       ${g.good.map(t => `<div class="rev-i"><span style="color:var(--accent)">${ic('up')}</span><span>${esc(t)}</span></div>`).join('')}</div>
     ${g.extra ? `<div class="muted small mt">Tập bù ngay khi còn nóng người.</div>
@@ -3367,7 +3425,7 @@ const A = {
       if (s.r === '' || num(s.r) <= 0) { toast(isCardio(ex.name) ? 'Nhập số phút trước nhé' : 'Nhập số reps trước nhé'); return; }
       const w = num(s.w), maxW = bestOf(ex.name).maxW;
       if (!isCardio(ex.name) && (w > 300 || (maxW > 0 && w > maxW * 3)) && !confirm(`${fmtNum(w)} kg cho ${ex.name}${maxW ? ` (cao nhất trước đây ${fmtNum(maxW)} kg)` : ''}. Có đúng không?`)) return;
-      s.done = true; S.active.lastSet = { i: +d.i, j: +d.j }; if (!isCardio(ex.name)) startRest(ex.rest || S.settings.rest);
+      s.done = true; S.active.lastSet = { i: +d.i, j: +d.j }; s.g = setGrade(ex, +d.j)?.score; if (!isCardio(ex.name)) startRest(ex.rest || S.settings.rest);
       if (ex.sets.every(x => x.done) && focusEx === +d.i) focusEx = null;
       if (ex.sets.every(x => x.done) && !isCardio(ex.name)) setTimeout(() => openExGrade(+d.i), 250);
     } else s.done = false;
@@ -3422,8 +3480,28 @@ const A = {
     catch (e) { if ($('#aiBox')) $('#aiBox').innerHTML = `<div class="muted small" style="color:var(--danger);margin:10px 0">${esc(e.message)}</div><button class="btn big" data-act="aiReview" data-id="${d.id}">Thử lại</button>`; }
   },
   foodDay: d => { const t = new Date(foodDay + 'T12:00'); t.setDate(t.getDate() + +d.d); const k = dayKey(t); if (k <= dayKey()) { foodDay = k; render(); } },
+  foodEdit: d => openFoodEdit(d.id),
+  foodEditSave: () => {
+    const x = findFood(foodEditing?.id); if (!x) return; const f = x.f, k = num($('#feK').value);
+    if (!(k >= 0)) { toast('Kcal không hợp lệ'); return; }
+    const [hh, mm] = ($('#feTime').value || hhmm(f.t)).split(':').map(Number);
+    Object.assign(f, { name: $('#feName').value.trim() || f.name, g: Math.round(num($('#feG').value)) || 0, kcal: k, p: num($('#feP').value), c: num($('#feC').value), f: num($('#feF').value), t: dayStart(x.k) + hh * 36e5 + mm * 6e4, edited: true });
+    const dish = DISHES.find(z => z[0] === f.name); if (dish) f.dish = dish[0];
+    save(); sheetOnClose = null; closeSheet(); foodEditing = null; render(); toast('Đã sửa');
+  },
+  foodEditDel: () => { const x = findFood(foodEditing?.id); if (!x || !confirm('Xóa món này?')) return; S.food[x.k] = S.food[x.k].filter(f => f.id !== x.f.id); if (!S.food[x.k].length) delete S.food[x.k]; save(); sheetOnClose = null; closeSheet(); foodEditing = null; render(); },
   delFood: d => { S.food[foodDay] = (S.food[foodDay] || []).filter(f => f.id !== d.id); if (!S.food[foodDay].length) delete S.food[foodDay]; save(); render(); },
   snapMeal: () => { if (!hasKey()) { toast('Nhập API key trong Thêm → Cài đặt trước', 3500); return; } $('#mealFile').click(); },
+  mealAddItem: () => { mealDraft.items.push({ name: '', grams: 100, kcal: 0, protein: 0, carbs: 0, fat: 0, per: { kcal: 0, protein: 0, carbs: 0, fat: 0 } }); renderMealSheet(); setTimeout(() => { const ins = document.querySelectorAll('.mi-name'); ins[ins.length - 1]?.focus(); }, 50); },
+  mealFix: async () => {
+    const m = mealDraft, fix = $('#mealFix').value.trim(); if (!fix) { toast('Ghi chỗ AI nhìn sai trước'); return; }
+    const prev = m.items.map(i => `${i.name} ${Math.round(i.grams)} g`).join(', ');
+    const hint = [m.hint, `Lần trước bạn liệt kê: ${prev}. Người dùng sửa lại: ${fix}. Tính lại toàn bộ bữa theo lời sửa này.`].filter(Boolean).join('\n');
+    m.stage = 'busy'; renderMealSheet();
+    try { const r = await aiMeal(m.img, hint); m.items = (r.isFood ? r.items : []).filter(i => i.grams > 0).map(i => ({ ...i, per: { kcal: i.kcal / i.grams, protein: i.protein / i.grams, carbs: i.carbs / i.grams, fat: i.fat / i.grams } })); m.note = r.note; m.hint = [m.hint, fix].filter(Boolean).join('. '); }
+    catch (e) { toast(e.message, 6000); }
+    m.stage = 'edit'; if (mealDraft === m) renderMealSheet();
+  },
   mealAnalyze: async () => {
     const m = mealDraft; m.hint = $('#mealHint').value.trim(); m.stage = 'busy'; renderMealSheet();
     try {
@@ -3437,7 +3515,7 @@ const A = {
   mealSave: async () => {
     let ph = null;
     if (mealDraft.img) { const src = await thumbOf(mealDraft.img); if (src) { ph = uid(); S.photos = { ...(S.photos || {}), [ph]: { t: Date.now(), src } }; } }
-    addFood(mealDraft.items.filter(i => i.grams > 0).map(i => ({ name: i.name.trim() || 'Món ăn', g: Math.round(i.grams), kcal: i.kcal, p: i.protein, c: i.carbs, f: i.fat, src: 'ai', ...(ph ? { ph } : {}) })));
+    addFood(mealDraft.items.filter(i => i.grams > 0 || i.kcal > 0).map(i => ({ name: i.name.trim() || 'Món ăn', g: Math.round(i.grams), kcal: i.kcal, p: i.protein, c: i.carbs, f: i.fat, src: 'ai', ...(ph ? { ph } : {}) })));
     const lbl = `${slot.meal.toLowerCase()} ${dayLabel(slot.k).toLowerCase()} lúc ${slot.time}`; mealDraft = null; slot = null; sheetOnClose = null; closeSheet(); render(); toast(`Đã thêm vào bữa ${lbl}`);
   },
   addFoodManual: () => openManualFood(),
@@ -3641,7 +3719,7 @@ const A = {
     addFood(x.items.map(it => ({ name: it.name, g: Math.round(it.g), kcal: it.kcal, p: it.p, c: it.c, f: it.f, src: 'suggest', ...(it.dish ? { dish: it.dish } : {}) })));
     closeSheet(); render(); toast(`Đã ghi ${fmtNum(Math.round(x.tot.kcal))} kcal`);
   },
-  setRir: d => { const ls = S.active?.lastSet; if (!ls) return; S.active.exercises[ls.i].sets[ls.j].rir = +d.v; save(); const ab = $('.abot'); if (ab) ab.outerHTML = abot(); },
+  setRir: d => { const ls = S.active?.lastSet; if (!ls) return; const ex = S.active.exercises[ls.i]; ex.sets[ls.j].rir = +d.v; ex.sets[ls.j].g = setGrade(ex, ls.j)?.score; save(); render(); },
   deloadStart: () => { S.deload = { from: Date.now(), until: Date.now() + 7 * 864e5 }; save(); render(); toast('Bắt đầu tuần giảm tải 7 ngày', 3000); },
   deloadEnd: () => { if (confirm('Kết thúc tuần giảm tải?')) { S.deload.until = Date.now(); save(); render(); } },
   deloadSnooze: () => { S.deloadSnooze = Date.now(); save(); render(); },
@@ -3666,6 +3744,11 @@ const A = {
     goalDraft = null; save(); closeSheet(); render(); toast('Đã thêm mục tiêu');
   },
   goalDel: d => { if (confirm('Xóa mục tiêu này?')) { S.goals = S.goals.filter(g => g.id !== d.id); save(); render(); } },
+  setAdj: d => {
+    const ls = S.active?.lastSet; if (!ls) return; const ex = S.active.exercises[ls.i];
+    for (let k = 0; k < ex.sets.length; k++) if (!ex.sets[k].done) ex.sets[k].w = String(d.w);
+    save(); render(); toast(`Các hiệp sau: ${fmtNum(+d.w)} kg`);
+  },
   focusEx: d => { focusEx = +d.i; render(); requestAnimationFrame(() => $('#ex' + d.i)?.scrollIntoView({ block: 'start', behavior: 'smooth' })); },
   bump: d => {
     const ex = target().exercises[+d.i], cur = ex.sets.findIndex(s => !s.done); if (cur < 0) return;
@@ -3791,11 +3874,24 @@ document.addEventListener('input', e => {
   else if (t.id === 'slotTime' && slot && t.value) { slot.time = t.value; slot.meal = mealOf(slotTime()); slot.guessed = false; $('.slot-hint')?.remove();
     document.querySelectorAll('[data-act="setSlotMeal"]').forEach(b => b.classList.toggle('on', b.dataset.v === slot.meal)); }
   else if (t.id === 'mealHint' && mealDraft) mealDraft.hint = t.value;
+  else if (t.id === 'feG' && foodEditing) { const b = foodEditing.base, g = num(t.value); if (b.g > 0 && g > 0) { const k = g / b.g; $('#feK').value = fmtNum(Math.round(b.kcal * k)); $('#feP').value = fmtNum(Math.round(b.p * k * 10) / 10); $('#feC').value = fmtNum(Math.round(b.c * k * 10) / 10); $('#feF').value = fmtNum(Math.round(b.f * k * 10) / 10); } }
+  else if (t.id === 'feName' && foodEditing) { const dish = DISHES.find(x => x[0] === t.value); if (dish) { $('#feG').value = dish[2]; $('#feK').value = dish[3]; $('#feP').value = dish[4]; $('#feC').value = dish[5]; $('#feF').value = dish[6]; foodEditing.base = { g: dish[2], kcal: dish[3], p: dish[4], c: dish[5], f: dish[6] }; } }
   else if (d.mi != null && mealDraft) {
     const it = mealDraft.items[+d.mi]; if (!it) return;
-    if (d.k === 'name') it.name = t.value;
-    else { it.grams = num(t.value); for (const k of ['kcal', 'protein', 'carbs', 'fat']) it[k] = it.per[k] * it.grams;
-      $('#mik' + d.mi).textContent = fmtNum(Math.round(it.kcal)); $('#mealTot').textContent = fmtNum(Math.round(mealDraft.items.reduce((a, i) => a + i.kcal, 0))) + ' kcal'; }
+    if (d.k === 'name') {
+      it.name = t.value;
+      const dish = DISHES.find(x => x[0] === t.value), fd = FOODS[t.value];
+      if (dish || fd) {
+        if (dish) Object.assign(it, { grams: dish[2], kcal: dish[3], protein: dish[4], carbs: dish[5], fat: dish[6] });
+        else { const g = it.grams || 100; Object.assign(it, { grams: g, kcal: fd[0] * g / 100, protein: fd[1] * g / 100, carbs: fd[2] * g / 100, fat: fd[3] * g / 100 }); }
+        it.per = { kcal: it.kcal / it.grams, protein: it.protein / it.grams, carbs: it.carbs / it.grams, fat: it.fat / it.grams };
+        $('#mig' + d.mi).value = fmtNum(Math.round(it.grams)); $('#mik' + d.mi).value = fmtNum(Math.round(it.kcal)); $('#mip' + d.mi).value = fmtNum(Math.round(it.protein));
+      }
+    } else if (d.k === 'grams') {
+      it.grams = num(t.value); for (const k of ['kcal', 'protein', 'carbs', 'fat']) it[k] = (it.per[k] || 0) * it.grams;
+      $('#mik' + d.mi).value = fmtNum(Math.round(it.kcal)); $('#mip' + d.mi).value = fmtNum(Math.round(it.protein));
+    } else { const k = d.k, v = num(t.value); if (k === 'kcal' && it.kcal > 0) { const f = v / it.kcal; it.carbs *= f; it.fat *= f; } it[k] = v; if (it.grams > 0) it.per[k] = v / it.grams; }
+    $('#mealTot').textContent = `${fmtNum(Math.round(mealDraft.items.reduce((a, i) => a + (i.kcal || 0), 0)))} kcal · ${Math.round(mealDraft.items.reduce((a, i) => a + (i.protein || 0), 0))} g đạm`;
   }
   else if (t.id === 'libQ') { libQ = t.value; $('#libList').innerHTML = libList(); }
   else if (pDraft && { pAge: 'age', pHeight: 'height', pWeight: 'weight', pAct: 'act' }[t.id]) pDraft[{ pAge: 'age', pHeight: 'height', pWeight: 'weight', pAct: 'act' }[t.id]] = t.value;

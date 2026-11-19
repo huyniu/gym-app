@@ -500,6 +500,24 @@ h2{font-weight:600;font-size:18px}
 .stepper b{min-width:26px;text-align:center;font-size:15px}
 .fam-k{text-align:right;font-size:12px;font-weight:700;color:var(--accent)}
 .fam-tot{display:flex;align-items:center;margin-top:14px;padding:12px 14px;background:var(--card2);border-radius:12px}.fam-tot b{color:var(--accent)}
+.ai-sec{font-variant-numeric:tabular-nums;color:var(--muted);font-size:13px;font-weight:600}
+.cal2{padding:14px 14px 12px}.cal2-h{display:flex;align-items:center;gap:6px}.cal2-h .icon:disabled{opacity:.25}.cal-mode{width:130px}
+.cal2-t{font-size:22px;margin:10px 4px 12px;display:flex;align-items:baseline;gap:10px}.cal2-t small{font-size:13px;color:var(--muted);font-weight:500}
+.c2-w,.c2-g{display:grid;grid-template-columns:repeat(7,minmax(0,1fr))}.c2-w span{text-align:center;font-size:12px;color:var(--muted);padding-bottom:8px}
+.c2-g{row-gap:6px}.c2{display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--text);font:inherit;padding:0}
+.c2 span{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;font-size:15px;font-weight:600}
+.c2.tr span{background:var(--accent);color:#0b0d10;font-weight:800}.c2.now span{box-shadow:inset 0 0 0 2px var(--accent)}.c2.tr.now span{box-shadow:inset 0 0 0 2px #fff}
+.c2 i{width:5px;height:5px;border-radius:50%;display:block}.c2.off{opacity:.3}
+.c2-leg{display:flex;flex-wrap:wrap;justify-content:center;gap:14px;font-size:11px;color:var(--muted);margin-top:14px}.c2-leg span{display:flex;align-items:center;gap:4px}
+.c2-leg i{width:6px;height:6px;border-radius:50%;display:block}.c2-leg b{width:12px;height:12px;border-radius:50%;display:block}.c2-tr{background:var(--accent)}.c2-now{box-shadow:inset 0 0 0 2px var(--accent)}
+.cal-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.cal-stats div{background:var(--card);border-radius:14px;padding:12px;display:grid;grid-template-columns:auto 1fr;column-gap:10px;align-items:center}
+.cs-ic{grid-row:span 2;font-size:22px;display:grid}.cal-stats b{font-size:20px;line-height:1.1}.cal-stats b small{font-size:12px;color:var(--muted);font-weight:500}.cal-stats em{font-style:normal;font-size:11px;color:var(--muted)}
+.cal-wrow{display:flex;align-items:center;gap:12px;width:100%;padding:10px 4px;border-top:1px solid var(--line);text-align:left;color:var(--text);font:inherit}
+.cal-wrow.off{opacity:.45}.cal-wrow.now .wr-d b{color:var(--accent)}
+.wr-d{width:34px;display:flex;flex-direction:column;align-items:center}.wr-d small{font-size:11px;color:var(--muted)}.wr-d b{font-size:18px}
+.cal-wrow .grow b{display:block;font-size:14px}.cal-wrow .grow small{display:block;font-size:12px;color:var(--muted);margin-top:2px}
+.wr-s{font-size:13px;font-weight:800;padding:4px 9px;border-radius:99px}
 </style>
 </head>
 <body>
@@ -530,7 +548,7 @@ h2{font-weight:600;font-size:18px}
 <script>
 'use strict';
 const KEY = 'gymlog.v1';
-const APP_VERSION = '2026.11.21c';
+const APP_VERSION = '2026.11.21d';
 const DEFAULT_EX = EX_DB.map(e => e[0]);
 
 const $ = s => document.querySelector(s);
@@ -1120,29 +1138,66 @@ function dayHas(k) {
     w: (S.body || []).some(b => b.t >= t0 && b.t < t1), p: (S.vDays || []).includes(k) };
 }
 const scoreCol = s => s >= 70 ? 'var(--ok)' : s >= 50 ? 'var(--warn)' : 'var(--danger)';
+let calMode = 'month', calW = null;
+// Consecutive weeks with at least the planned number of sessions (this week counts once it is reached).
+function weekStreak() {
+  const per = schedSeq().length || 3, cnt = w => S.workouts.filter(x => x.startedAt >= w && x.startedAt < w + 7 * 864e5).length;
+  let w = weekStart(), n = cnt(w) >= per ? 1 : 0;
+  for (w -= 7 * 864e5; n < 520 && cnt(w) >= per; w -= 7 * 864e5) n++;
+  return n;
+}
+const trainedOn = k => { const t0 = dayStart(k); return S.workouts.filter(w => w.startedAt >= t0 && w.startedAt < t0 + 864e5); };
 function viewCalendar() {
-  const now = new Date(), cur = calM || new Date(now.getFullYear(), now.getMonth(), 1), y = cur.getFullYear(), m = cur.getMonth();
-  const first = firstDataDay(), today = dayKey(), fm = new Date(first + 'T12:00');
-  const canPrev = y * 12 + m > fm.getFullYear() * 12 + fm.getMonth(), canNext = y * 12 + m < now.getFullYear() * 12 + now.getMonth();
-  const days = new Date(y, m + 1, 0).getDate(), lead = (new Date(y, m, 1).getDay() + 6) % 7;
-  let cells = '<span></span>'.repeat(lead), n = 0, sum = 0, good = 0;
-  for (let d = 1; d <= days; d++) {
-    const k = dayKey(new Date(y, m, d, 12));
-    if (k > today || k < first) { cells += `<span class="cal-d off"><b>${d}</b></span>`; continue; }
+  const now = new Date(), today = dayKey(), first = firstDataDay(), fm = new Date(first + 'T12:00');
+  const seg = `<div class="seg mini cal-mode">${[['month', 'Tháng'], ['week', 'Tuần']].map(([k, l]) => `<button class="${calMode === k ? 'on' : ''}" data-act="calMode" data-v="${k}">${l}</button>`).join('')}</div>`;
+  const statCards = (days, label) => {
+    const past = days.filter(k => k <= today && k >= first), tr = past.filter(k => trainedOn(k).length).length;
+    const sc = past.filter(k => { const h = dayHas(k); return h.t || h.f || h.s || h.w; }).map(k => dayScore(k).score);
+    const avg = sc.length ? Math.round(sc.reduce((a, b) => a + b, 0) / sc.length) : null, good = sc.filter(s => s >= 70).length;
+    return `<div class="cal-stats">
+      <div><span class="cs-ic" style="color:#fb7185">${ic('flame')}</span><b>${weekStreak()}<small> tuần</small></b><em>liên tục đủ buổi</em></div>
+      <div><span class="cs-ic" style="color:var(--accent)">${ic('barbell')}</span><b>${tr}<small> / ${days.length} (${Math.round(tr / days.length * 100)}%)</small></b><em>ngày tập ${label}</em></div>
+      <div><span class="cs-ic" style="color:${avg == null ? 'var(--muted)' : scoreCol(avg)}">${ic('chart')}</span><b>${avg ?? '—'}<small>/100</small></b><em>điểm trung bình</em></div>
+      <div><span class="cs-ic" style="color:var(--ok)">${ic('check')}</span><b>${good}<small> ngày</small></b><em>đạt từ 70 điểm</em></div></div>`;
+  };
+  const cell = (k, label) => {
+    if (k > today || k < first) return `<span class="c2 off"><span>${label}</span></span>`;
     const has = dayHas(k), any = has.t || has.f || has.s || has.w, sc = any ? dayScore(k).score : null;
-    if (any) { n++; sum += sc; if (sc >= 70) good++; }
-    cells += `<button class="cal-d${k === today ? ' today' : ''}" data-act="calDay" data-k="${k}"${sc != null ? ` style="--c:${scoreCol(sc)}"` : ''}><b>${d}</b><i>${sc ?? ''}</i>
-      <em>${has.t ? '<u class="dt"></u>' : ''}${has.f ? '<u class="df"></u>' : ''}${has.s ? '<u class="ds"></u>' : ''}${has.w ? '<u class="dw"></u>' : ''}${has.p ? '<u class="dp"></u>' : ''}</em></button>`;
+    return `<button class="c2${has.t ? ' tr' : ''}${k === today ? ' now' : ''}" data-act="calDay" data-k="${k}"><span>${label}</span><i${sc != null ? ` style="background:${scoreCol(sc)}"` : ''}></i></button>`;
+  };
+  if (calMode === 'week') {
+    const ws = calW ?? weekStart(), days = Array.from({ length: 7 }, (_, i) => dayKey(ws + i * 864e5 + 12 * 36e5)), isNow = ws === weekStart();
+    const st = isNow ? schedState() : null, lbl = t => new Date(t).toLocaleDateString('vi-VN', { day: 'numeric', month: 'numeric' });
+    const row = (k, i) => {
+      const d = new Date(k + 'T12:00'), head = `<span class="wr-d"><small>${DOW_VI[i + 1]}</small><b>${d.getDate()}</b></span>`;
+      if (k > today || k < first) {
+        const plan = st?.plan[i + 1];
+        return `<div class="cal-wrow off">${head}<span class="grow muted small">${k > today ? (plan ? `Dự kiến: ${esc(plan.name)}` : 'Nghỉ') : 'Chưa dùng app'}</span></div>`;
+      }
+      const ws2 = trainedOn(k), tot = dayTotals(k), sl = S.sleep?.[k], has = dayHas(k), any = has.t || has.f || has.s || has.w, sc = any ? dayScore(k) : null;
+      const what = ws2.length ? ws2.map(w => `${esc(w.name)} · ${hhmm(w.startedAt)}`).join(', ') : sc?.planned ? `<span style="color:var(--danger)">Bỏ ${esc(sc.planned.name)}</span>` : 'Nghỉ';
+      const sub = [tot.kcal ? `${fmtNum(Math.round(tot.kcal))} kcal · ${Math.round(tot.p)} g đạm` : 'chưa ghi ăn', sl ? `ngủ ${fmtHM(sleepMin(sl))}` : ''].filter(Boolean).join(' · ');
+      return `<button class="cal-wrow${k === today ? ' now' : ''}" data-act="calDay" data-k="${k}">${head}
+        <span class="grow"><b class="${ws2.length ? 'lime' : ''}">${what}</b><small>${sub}</small></span>
+        ${sc ? `<span class="wr-s" style="color:${scoreCol(sc.score)};background:color-mix(in srgb, ${scoreCol(sc.score)} 16%, transparent)">${sc.score}</span>` : ''}</button>`;
+    };
+    return `<div class="card cal2">
+      <div class="cal2-h">${seg}<span class="grow"></span><button class="icon" data-act="calWeek" data-v="-1" ${ws > weekStart(dayStart(first)) ? '' : 'disabled'} aria-label="Tuần trước">${ic('back')}</button>
+        <button class="icon" data-act="calWeek" data-v="1" ${isNow ? 'disabled' : ''} aria-label="Tuần sau">${ic('chev')}</button></div>
+      <h3 class="cal2-t">${isNow ? 'Tuần này' : 'Tuần ' + lbl(ws)}<small>${lbl(ws)} – ${lbl(ws + 6 * 864e5)}</small></h3>
+      ${days.map(row).join('')}</div>${statCards(days, 'trong tuần')}`;
   }
-  const m0 = new Date(y, m, 1).getTime(), m1 = new Date(y, m + 1, 1).getTime(), wk = S.workouts.filter(w => w.startedAt >= m0 && w.startedAt < m1).length;
-  return `<div class="card">
-    <div class="cal-h"><button class="icon" data-act="calNav" data-v="-1" ${canPrev ? '' : 'disabled'} aria-label="Tháng trước">${ic('back')}</button>
-      <b>Tháng ${m + 1}/${y}</b><button class="icon" data-act="calNav" data-v="1" ${canNext ? '' : 'disabled'} aria-label="Tháng sau">${ic('chev')}</button></div>
-    <div class="muted small cal-sum">${wk} buổi tập · điểm TB ${n ? Math.round(sum / n) : '—'} · ${good}/${n} ngày từ 70 điểm</div>
-    <div class="cal-w">${DOW_VI.slice(1).map(x => `<span>${x}</span>`).join('')}</div>
-    <div class="cal-g">${cells}</div>
-    <div class="cal-leg"><span><u class="dt"></u>Tập</span><span><u class="df"></u>Ăn</span><span><u class="ds"></u>Ngủ</span><span><u class="dw"></u>Cân</span><span><u class="dp"></u>Ảnh body</span></div>
-  </div><div class="muted small" style="text-align:center">Bấm vào một ngày để xem lại toàn bộ ngày đó.</div>`;
+  const cur = calM || new Date(now.getFullYear(), now.getMonth(), 1), y = cur.getFullYear(), m = cur.getMonth();
+  const canPrev = y * 12 + m > fm.getFullYear() * 12 + fm.getMonth(), canNext = y * 12 + m < now.getFullYear() * 12 + now.getMonth();
+  const n = new Date(y, m + 1, 0).getDate(), lead = (new Date(y, m, 1).getDay() + 6) % 7, days = Array.from({ length: n }, (_, i) => dayKey(new Date(y, m, i + 1, 12)));
+  return `<div class="card cal2">
+    <div class="cal2-h">${seg}<span class="grow"></span><button class="icon" data-act="calNav" data-v="-1" ${canPrev ? '' : 'disabled'} aria-label="Tháng trước">${ic('back')}</button>
+      <button class="icon" data-act="calNav" data-v="1" ${canNext ? '' : 'disabled'} aria-label="Tháng sau">${ic('chev')}</button></div>
+    <h3 class="cal2-t">Tháng ${m + 1} ${y}</h3>
+    <div class="c2-w">${DOW_VI.slice(1).map(x => `<span>${x}</span>`).join('')}</div>
+    <div class="c2-g">${'<span></span>'.repeat(lead)}${days.map((k, i) => cell(k, i + 1)).join('')}</div>
+    <div class="c2-leg"><span><b class="c2-tr"></b>Có tập</span><span><i style="background:var(--ok)"></i><i style="background:var(--warn)"></i><i style="background:var(--danger)"></i>Điểm ngày</span><span><b class="c2-now"></b>Hôm nay</span></div>
+  </div>${statCards(days, 'trong tháng')}<div class="muted small" style="text-align:center">Bấm vào một ngày để xem lại toàn bộ ngày đó.</div>`;
 }
 // Everything logged on day k, read-only (edit buttons lead to the normal screens).
 function dayDetail(k) {
@@ -1646,7 +1701,7 @@ async function geminiAltModels() {
   } catch (e) { geminiAlts = []; }
   return geminiAlts;
 }
-async function askGemini({ system, content, schema, think = 'LOW' }) {
+async function askGemini({ system, content, schema, think = 'MINIMAL' }) {
   if (!hasKey()) throw new Error('Chưa có API key Gemini. Vào Thêm → Cài đặt để nhập.');
   if (!navigator.onLine) throw new Error('Không có mạng.');
   // generateContent: stable and callable straight from the browser (CORS allowed).
@@ -1668,7 +1723,8 @@ async function askGemini({ system, content, schema, think = 'LOW' }) {
   // each has its own free quota. Keep the main model's error to report if nothing works.
   const quota = o => o.res.status === 429 || o.d.error?.status === 'RESOURCE_EXHAUSTED';
   let out = await call(GEMINI_MAIN, true);
-  if (out.busy || out.res.status === 404) { await new Promise(r => setTimeout(r, 2500)); out = await call(GEMINI_MAIN, true); }
+  if (out.res.status === 400 && /thinking/i.test(out.d.error?.message || '') && think !== 'LOW') { think = 'LOW'; out = await call(GEMINI_MAIN, true); }
+  if (out.busy || out.res.status === 404) { await new Promise(r => setTimeout(r, 1200)); out = await call(GEMINI_MAIN, true); }
   const first = out;
   if (out.busy || quota(out) || out.res.status === 404) for (const m of await geminiAltModels()) { out = await call(m, false); if (!out.busy && !quota(out)) break; }
   if (!out.res.ok && first.res.status !== out.res.status && (quota(first) || first.busy)) out = first;
@@ -1744,7 +1800,7 @@ async function aiReviewWorkout(id) {
       '5) summary: 2 câu, giọng phũ, nói điều quan trọng nhất cần sửa. improve: tối đa 5 ý, mỗi ý 1 câu, ra lệnh rõ ràng. nextSession: mức tạ × rep cụ thể cho từng bài chính buổi sau. ' +
       '6) Chỉ nói điều có căn cứ trong dữ liệu, không bịa. Phũ về hiệu suất, không xúc phạm con người. ' +
       '7) An toàn trên hết: không bảo tập quá sức, không ép bỏ ngày nghỉ, không khuyên ăn ít đi. Nếu dữ liệu cho thấy tụt sức nhiều buổi liền, ra lệnh nghỉ/giảm tải và kiểm tra ngủ, ăn. Không chẩn đoán y tế; đau hoặc chấn thương thì bảo dừng và đi khám.',
-    content: [{ text: JSON.stringify(data) }], schema: REVIEW_SCHEMA, think: 'MEDIUM',
+    content: [{ text: JSON.stringify(data) }], schema: REVIEW_SCHEMA, think: 'LOW',
   });
 }
 
@@ -1819,9 +1875,9 @@ function foodLogCard(t) {
 function photoToJpeg(file) {
   return new Promise((ok, bad) => {
     const img = new Image(), url = URL.createObjectURL(file);
-    img.onload = () => { const k = Math.min(1, 1024 / Math.max(img.width, img.height)), c = document.createElement('canvas');
+    img.onload = () => { const k = Math.min(1, 768 / Math.max(img.width, img.height)), c = document.createElement('canvas');
       c.width = Math.round(img.width * k); c.height = Math.round(img.height * k); c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
-      URL.revokeObjectURL(url); ok(c.toDataURL('image/jpeg', .82)); };
+      URL.revokeObjectURL(url); ok(c.toDataURL('image/jpeg', .78)); };
     img.onerror = () => { URL.revokeObjectURL(url); bad(new Error('Không đọc được ảnh')); };
     img.src = url;
   });
@@ -1854,7 +1910,7 @@ function renderMealSheet() {
     ${m.stage === 'note' ? `<input id="mealHint" placeholder="Ghi chú (tùy chọn): VD ăn nửa bát cơm" value="${esc(m.hint)}">
       <button class="btn primary big mt" data-act="mealAnalyze">${ic('bolt')} AI tính calo</button>
       <div class="muted small" style="margin-top:6px;text-align:center">Ảnh được gửi tới ${aiProv() === 'gemini' ? 'Google (Gemini)' : 'Anthropic (Claude) · khoảng 500đ/ảnh'} để phân tích</div>`
-    : m.stage === 'busy' ? `<div class="empty">${ic('refresh')} ${m.img ? 'AI đang xem ảnh…' : 'AI đang ước tính…'}</div>`
+    : m.stage === 'busy' ? `<div class="empty">${ic('refresh')} ${m.img ? 'AI đang xem ảnh…' : 'AI đang ước tính…'} <span class="ai-sec" data-t0="${Date.now()}"></span></div>`
     : `${m.note ? `<div class="muted small" style="margin:10px 0">${esc(m.note)}</div>` : ''}
       <div class="muted small" style="margin:8px 0 4px">Sửa số gram nếu AI đoán sai, calo tự tính lại.</div>
       ${m.items.map((it, i) => `<div class="mi"><input class="mi-name" data-mi="${i}" data-k="name" value="${esc(it.name)}">
@@ -1922,7 +1978,7 @@ function renderFamily() {
   openSheet(`<div class="sheet-h"><h3>Mâm cơm gia đình</h3><button class="link" data-act="closeSheet">Hủy</button></div>
     ${m.img ? `<img class="meal-img" src="${m.img}" alt="Ảnh mâm cơm">` : ''}
     ${slotPicker()}
-    ${m.stage === 'busy' ? `<div class="empty">${ic('refresh')} AI đang nhận các món trên mâm…</div>` : `
+    ${m.stage === 'busy' ? `<div class="empty">${ic('refresh')} AI đang nhận các món trên mâm… <span class="ai-sec" data-t0="${Date.now()}"></span></div>` : `
       ${m.img ? (m.note ? `<div class="muted small" style="margin:8px 0">${esc(m.note)}</div>` : '') : `<button class="btn big mt" data-act="famSnap">${ic('camera')} Chụp mâm để AI nhận món</button>
         <div class="muted small" style="margin-top:6px;text-align:center">Hoặc chọn món bên dưới, không cần ảnh.</div>`}
       <div class="muted small" style="margin:12px 0 2px">Đếm phần <b>bạn</b> đã ăn:</div>
@@ -2265,7 +2321,7 @@ async function aiReviewDay(k) {
       'verdict: "Đạt" chỉ khi tập đúng lịch (hoặc nghỉ đúng lịch), calo trong ±10% mục tiêu, đạm ≥ 90%, ngủ ≥ 7 tiếng (nếu có ghi); thiếu dữ liệu hoặc lệch nhiều thì "Không đạt"; còn lại "Tạm". verdictReason: 1 câu có số liệu. ' +
       'summary: 2 câu phũ. biggestMistake: 1 lỗi quan trọng nhất kèm số liệu. tomorrow: 1–2 việc cụ thể phải làm ngày mai (hoặc tối nay nếu isToday). ' +
       'An toàn: không khuyên ăn dưới mục tiêu calo, không khuyên tập bù quá sức; không chẩn đoán y tế. Chỉ nói điều có trong dữ liệu.',
-    content: [{ text: JSON.stringify(data) }], schema: DAY_SCHEMA, think: 'MEDIUM',
+    content: [{ text: JSON.stringify(data) }], schema: DAY_SCHEMA, think: 'LOW',
   });
 }
 // Evening check: after 21:00 (or when opened with ?check), show today's sheet once per day if something is missing.
@@ -2535,7 +2591,7 @@ function bodyRevCard() {
 }
 async function bodyReviewUI(w) {
   const key = vault.key; if (!key) return;
-  openSheet(`<div class="sheet-h"><h3>AI đang chấm body…</h3></div><div class="empty">${ic('refresh')} Đang gửi ảnh và chờ AI soi từng vùng (10–40 giây)</div>`);
+  openSheet(`<div class="sheet-h"><h3>AI đang chấm body… <span class="ai-sec" data-t0="${Date.now()}"></span></h3></div><div class="empty">${ic('refresh')} Đang gửi ảnh và chờ AI soi từng vùng (10–40 giây)</div>`);
   try {
     const r = await runBodyReview(w), t = Date.now();
     r.score = Math.max(0, Math.min(100, Math.round(r.score || 0))); r.t = t;
@@ -2628,6 +2684,7 @@ function persistRest() { if (S.active) { S.active.restEnd = restEnd; S.active.re
 function startRest(sec) { restTotal = sec; restEnd = Date.now() + sec * 1000; persistRest(); tick(); }
 function stopRest() { restEnd = 0; persistRest(); tick(); }
 function tick() {
+  document.querySelectorAll('.ai-sec').forEach(s => { s.textContent = Math.floor((Date.now() - +s.dataset.t0) / 1000) + ' giây'; });
   const el = $('#elapsed'); if (el && S.active) el.textContent = fmtDur(Date.now() - S.active.startedAt);
   const bar = $('#rest');
   if (!restEnd || !S.active) { bar.hidden = true; document.body.classList.remove('has-rest'); return; }
@@ -2733,6 +2790,8 @@ const A = {
   histMode: d => { histMode = d.v; render(); },
   calNav: d => { const n = new Date(), c = calM || new Date(n.getFullYear(), n.getMonth(), 1); calM = new Date(c.getFullYear(), c.getMonth() + +d.v, 1); render(); },
   calDay: d => openDay(d.k),
+  calMode: d => { calMode = d.v; render(); },
+  calWeek: d => { calW = (calW ?? weekStart()) + +d.v * 7 * 864e5; if (calW >= weekStart()) calW = null; render(); },
   dayEditW: d => { closeSheet(); A.editWorkout(d); },
   setsNav: d => { setsWeek = (setsWeek ?? weekStart()) + +d.v * 7 * 864e5; if (setsWeek >= weekStart()) setsWeek = null; render(); },
   setsMuscle: d => openSetsMuscle(d.m, d.w),
@@ -2751,7 +2810,7 @@ const A = {
   },
   reviewOpen: d => openReview(d.id),
   aiReview: async d => {
-    const box = $('#aiBox'); box.innerHTML = `<div class="empty">${ic('refresh')} AI đang xem buổi tập…</div>`;
+    const box = $('#aiBox'); box.innerHTML = `<div class="empty">${ic('refresh')} AI đang xem buổi tập… <span class="ai-sec" data-t0="${Date.now()}"></span></div>`;
     try { const a = await aiReviewWorkout(d.id), w = S.workouts.find(x => x.id === d.id); if (w) { w.ai = a; save(); } if ($('#aiBox')) $('#aiBox').innerHTML = aiReviewHtml(a); }
     catch (e) { if ($('#aiBox')) $('#aiBox').innerHTML = `<div class="muted small" style="color:var(--danger);margin:10px 0">${esc(e.message)}</div><button class="btn big" data-act="aiReview" data-id="${d.id}">Thử lại</button>`; }
   },
@@ -2935,7 +2994,7 @@ const A = {
   },
   openDay: d => openDay(d.k),
   aiDay: async d => {
-    const box = $('#aiBox'); box.innerHTML = `<div class="empty">${ic('refresh')} AI đang chấm ngày…</div>`;
+    const box = $('#aiBox'); box.innerHTML = `<div class="empty">${ic('refresh')} AI đang chấm ngày… <span class="ai-sec" data-t0="${Date.now()}"></span></div>`;
     try { const a = await aiReviewDay(d.k); S.dayAI = { ...(S.dayAI || {}), [d.k]: a }; save(); if ($('#aiBox')) $('#aiBox').innerHTML = aiDayHtml(a); render(); }
     catch (e) { if ($('#aiBox')) $('#aiBox').innerHTML = `<div class="muted small" style="color:var(--danger);margin:10px 0">${esc(e.message)}</div><button class="btn big" data-act="aiDay" data-k="${d.k}">Thử lại</button>`; }
   },

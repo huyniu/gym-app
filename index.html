@@ -582,6 +582,14 @@ body.on-active main{padding-bottom:calc(170px + env(safe-area-inset-bottom))}
 .nm-left{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}.nm-left div{background:var(--card2);border-radius:12px;padding:10px;text-align:center}.nm-left b{font-size:22px;display:block}.nm-left small{font-size:11px;color:var(--muted)}
 .nm{background:var(--card2);border-radius:16px;padding:12px;margin-bottom:10px}.nm-h{display:flex;align-items:center;gap:10px}.nm-h small{display:block;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}.nm-h b{font-size:15px}
 .nm-k{text-align:right}.nm-k b{display:block;font-size:18px;color:var(--accent)}.nm-k small{font-size:11px;color:var(--sky)}.nm-items{font-size:12px;color:var(--muted);margin-top:8px;line-height:1.5}.nm .btn{width:100%}
+.abot{flex-direction:column;align-items:stretch}.ab-row{display:flex;align-items:center;gap:8px}
+.rir{display:flex;flex-direction:column;gap:6px;padding:2px 4px 8px}.rir span{font-size:12px;color:var(--muted);text-align:center}
+.rir div{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.rir button{background:var(--card2);border-radius:10px;padding:8px 2px;font-size:12px;font-weight:700;color:var(--text)}.rir button.on{background:var(--accent);color:#0b0d10}
+.deload{border:1px solid color-mix(in srgb,var(--sky) 45%,transparent)}.deload .qt-ic{color:var(--sky)}.deload b{display:block}.deload small{font-size:12px;color:var(--muted);line-height:1.4}
+.deload-line{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--sky);background:color-mix(in srgb,var(--sky) 12%,transparent);border-radius:12px;padding:8px 12px;margin-bottom:10px}.deload-line svg{width:16px;height:16px}
+.chip.on.danger{background:var(--danger);color:#fff}
+.st.pain{background:color-mix(in srgb,var(--danger) 20%,transparent);color:var(--danger)}
+.pain-w{display:flex;align-items:center;gap:8px;font-size:13px;background:color-mix(in srgb,var(--danger) 12%,transparent);border-radius:12px;padding:8px 10px;margin-bottom:8px}.pain-w svg{width:16px;height:16px;color:var(--danger);flex:none}.pain-w .btn{padding:7px 12px;font-size:13px}
 </style>
 </head>
 <body>
@@ -612,7 +620,7 @@ body.on-active main{padding-bottom:calc(170px + env(safe-area-inset-bottom))}
 <script>
 'use strict';
 const KEY = 'gymlog.v1';
-const APP_VERSION = '2026.11.22c';
+const APP_VERSION = '2026.11.22d';
 const DEFAULT_EX = EX_DB.map(e => e[0]);
 
 const $ = s => document.querySelector(s);
@@ -929,7 +937,7 @@ function viewWorkout() {
   const a = S.active;
   if (!a) {
     const g = homeSuggestion(), st = schedState(), todayPlan = st && !st.trainedToday ? st.plan[st.dow] : null;
-    return `${todayTasks()}${dayCard()}${weekStrip()}${sleepWarn()}
+    return `${todayTasks()}${deloadCard()}${dayCard()}${weekStrip()}${sleepWarn()}
     <div class="hero">${ic('barbell', 'hero-wm')}
       <div class="hero-top"><span class="hero-tag"><i></i>${esc(g.k)}</span>${g.tag ? `<span class="hero-tag2">${esc(g.tag)}</span>` : ''}</div>
       <h3>${esc(g.title)}</h3>
@@ -991,7 +999,7 @@ function openPos() {
 function setVal(ex, j, f) {
   const s = ex.sets[j]; if (s[f] !== '') return num(s[f]);
   const last = lastSets(ex.name), p = last && (last[j] || last[last.length - 1]);
-  if (f === 'w') { const hn = ex.reps ? weightHint(ex.name, ex.reps) : null; return hn ? hn.w : p ? p.w : 0; }
+  if (f === 'w') { const hn = ex.reps ? weightHint(ex.name, ex.reps) : null, base = hn ? hn.w : p ? p.w : 0; return S.active?.deload ? Math.round(base * .9 / 2.5) * 2.5 : base; }
   const r = parseReps(ex.reps); return p ? p.r : r ? r[1] : isCardio(ex.name) ? 20 : 10;
 }
 function abar2() {
@@ -1017,17 +1025,18 @@ function stepper(i, j, f, val, unit) {
 }
 function exCard2(ex, i, curI) {
   const cardio = isCardio(ex.name), body = isBodyEx(ex.name), n = ex.sets.filter(s => s.done).length, all = n === ex.sets.length;
-  const open = i === curI || exAllOpen, cur = ex.sets.findIndex(s => !s.done), last = lastSets(ex.name), hint = ex.reps ? weightHint(ex.name, ex.reps) : null;
+  const pain = painHit(ex.name), open = i === curI || exAllOpen, cur = ex.sets.findIndex(s => !s.done), last = lastSets(ex.name), hint = ex.reps ? weightHint(ex.name, ex.reps) : null;
   const st = all ? ['done', 'Xong'] : i === curI ? ['cur', 'Đang tập'] : n ? ['part', 'Dở'] : ['todo', 'Chưa'];
   const prevTxt = j => { const p = last && last[j]; return p ? fmtSet(p, ex.name) : '—'; };
   const unitW = cardio ? 'km' : 'kg', unitR = cardio ? 'phút' : 'reps';
   return `<div class="ec ${st[0]}${open ? ' open' : ''}" id="ex${i}">
     <div class="ec-h"><button class="ec-hb" data-act="focusEx" data-i="${i}">${exPic(ex.name)}
       <span class="grow"><b>${esc(exTitle(ex.name))}</b><small>${EX_VI[ex.name] ? esc(ex.name) : esc(exVi(ex.name))}</small>
-        <span class="ec-meta"><em class="st ${st[0]}">${st[1]}</em>${n}/${ex.sets.length} hiệp${ex.reps ? ` · ${esc(ex.reps)}` : ''}${!cardio ? ` <span class="rest-c">${ic('clock')}${fmtRest(ex.rest || S.settings.rest)}</span>` : ''}</span></span></button>
+        <span class="ec-meta"><em class="st ${st[0]}">${st[1]}</em>${pain ? `<em class="st pain">Đau ${esc(pain.area.toLowerCase())}</em>` : ''}${n}/${ex.sets.length} hiệp${ex.reps ? ` · ${esc(ex.reps)}` : ''}${!cardio ? ` <span class="rest-c">${ic('clock')}${fmtRest(ex.rest || S.settings.rest)}</span>` : ''}</span></span></button>
       <button class="icon" data-act="exMenu" data-i="${i}" aria-label="Tùy chọn">⋯</button></div>
     ${open ? `<div class="ec-b">
-      ${hint || (EX_LOAD[ex.name] && !body) ? `<div class="ec-note">${hint ? `<span class="up-pill${hint.up ? '' : ' hold'}">${ic(hint.up ? 'up' : 'minus')} ${hint.up ? 'Lên' : 'Giữ'} ${fmtNum(hint.w)} kg</span>` : ''}${EX_LOAD[ex.name] && !body ? `<span>${LOAD_NOTE[EX_LOAD[ex.name]]}</span>` : ''}</div>` : ''}
+      ${pain && !all ? `<div class="pain-w">${ic('info')}<span class="grow">${pain.level === 'p' ? `Bài này dồn lực vào ${esc(pain.area.toLowerCase())} đang đau${swapCandidates(ex.name).length ? '.' : ', không có bài thay an toàn: nên bỏ hôm nay.'}` : `Bài này có dùng tới ${esc(pain.area.toLowerCase())}: tập nhẹ, đau thì dừng.`}</span>${pain.level === 'p' ? (swapCandidates(ex.name).length ? `<button class="btn" data-act="exSwap" data-i="${i}">Đổi bài</button>` : `<button class="btn" data-act="exRemove" data-i="${i}">Bỏ bài</button>`) : ''}</div>` : ''}
+      ${hint || (EX_LOAD[ex.name] && !body) ? `<div class="ec-note">${hint ? `<span class="up-pill${hint.up ? '' : ' hold'}">${ic(hint.up ? 'up' : 'minus')} ${hint.up ? 'Lên' : hint.down ? 'Giảm' : 'Giữ'} ${fmtNum(hint.w)} kg</span>` : ''}${EX_LOAD[ex.name] && !body ? `<span>${LOAD_NOTE[EX_LOAD[ex.name]]}</span>` : ''}</div>` : ''}
       ${i === curI ? (wu => wu && wu.length ? `<div class="warm">${ic('flame')}<span>Khởi động: <b>${wu.map(([w, r]) => `${fmtNum(w)}×${r}`).join(' · ')}</b></span></div>` : '')(warmups(ex, i)) : ''}
       <div class="ec-cols"><span>Hiệp</span><span>Lần trước</span><span>${body ? '' : unitW}</span><span>${unitR}</span><span></span></div>
       ${ex.sets.map((s, j) => j === cur && i === curI ? `<div class="ec-cur">
@@ -1051,14 +1060,14 @@ function abot() {
   else if (ex && j >= 0) { const c = isCardio(ex.name), w = setVal(ex, j, 'w'), r = setVal(ex, j, 'r');
     main = `<button class="ab-main" data-act="completeSet"><b>${ic('check')} Hoàn thành hiệp</b><small>Hiệp ${j + 1} · ${c ? `${fmtNum(r)} phút` : isBodyEx(ex.name) ? `${fmtNum(r)} reps` : `${fmtNum(w)} kg × ${fmtNum(r)}`}</small></button>`; }
   else main = `<button class="ab-main" data-act="finishWorkout"><b>${ic('check')} Kết thúc buổi tập</b><small>Đã xong mọi hiệp</small></button>`;
-  return `<div class="abot" data-state="${a.pausedAt ? 'pause' : resting ? 'rest' : 'set'}">
+  return `<div class="abot" data-state="${a.pausedAt ? 'pause' : resting ? 'rest' : 'set'}">${resting ? rirChips() : ''}<div class="ab-row">
     <button class="ab-side" data-act="pauseWorkout">${ic(a.pausedAt ? 'play' : 'pause')}<span>${a.pausedAt ? 'Tiếp tục' : 'Tạm dừng'}</span></button>
     ${main}
-    <button class="ab-side end" data-act="finishWorkout"><i class="sq"></i><span>Kết thúc</span></button></div>`;
+    <button class="ab-side end" data-act="finishWorkout"><i class="sq"></i><span>Kết thúc</span></button></div></div>`;
 }
 function viewActive() {
   const a = S.active, curI = activePos().i, n = a.exercises.filter(e => e.sets.every(s => s.done)).length;
-  return `${sleepWarn()}${heroCard()}
+  return `${sleepWarn()}${a.deload ? `<div class="deload-line">${ic('drop')} Tuần giảm tải: ít hiệp hơn, tạ ~90%, đừng cố phá kỷ lục</div>` : ''}${heroCard()}
     <div class="ec-head"><span>Bài tập <b>${n}/${a.exercises.length}</b></span><span class="grow"></span>
       <button class="icon" data-act="exAll" aria-label="${exAllOpen ? 'Thu gọn' : 'Mở tất cả'}">${ic(exAllOpen ? 'minus' : 'grid')}</button>
       <button class="icon add" data-act="addExercise" aria-label="Thêm bài">${ic('plus')}</button></div>
@@ -1108,7 +1117,7 @@ function warmups(ex, i) {
 function swapCandidates(name) {
   const x = getEx(name); if (!x) return [];
   const used = new Set(S.active.exercises.map(e => e.name));
-  return EX_DB.map(e => getEx(e[0])).filter(y => y && y.name !== name && !used.has(y.name) && !isCardio(y.name) && y.p.some(m => x.p.includes(m)))
+  return EX_DB.map(e => getEx(e[0])).filter(y => y && y.name !== name && !used.has(y.name) && !isCardio(y.name) && y.p.some(m => x.p.includes(m)) && painHit(y.name)?.level !== 'p')
     .map(y => ({ n: y.name, s: 3 * y.p.filter(m => x.p.includes(m)).length + (y.s || []).filter(m => (x.s || []).includes(m)).length - y.p.filter(m => !x.p.includes(m)).length + (exImg(y.name, 0) ? .5 : 0) + (name.split(' ').slice(-1)[0] === y.name.split(' ').slice(-1)[0] ? 2 : 0) }))
     .sort((a, b) => b.s - a.s).slice(0, 8).map(o => o.n);
 }
@@ -1168,6 +1177,60 @@ function openNextMeal() {
       <button class="btn mt" data-act="nextMealAdd" data-i="${i}">${ic('plus')} Ghi bữa này</button></div>`).join('')}
     ${r.late ? '<div class="muted small mt">Đã sau 20h nên tinh bột được giảm bớt.</div>' : ''}`);
 }
+/* ---------- effort per set: reps left in the tank (RIR), asked during the rest ---------- */
+const RIR = [[0, 'Hết sức'], [1, 'Còn 1'], [2, 'Còn 2'], [3, 'Còn 3+']];
+function rirChips() {
+  const a = S.active, ls = a?.lastSet; if (!ls) return '';
+  const ex = a.exercises[ls.i], s = ex?.sets[ls.j]; if (!s || !s.done || isCardio(ex.name)) return '';
+  return `<div class="rir"><span>Hiệp vừa rồi còn sức mấy rep?</span><div>${RIR.map(([v, l]) => `<button class="${s.rir === v ? 'on' : ''}" data-act="setRir" data-v="${v}">${l}</button>`).join('')}</div></div>`;
+}
+
+/* ---------- deload week: suggested when lifts stall or after 6+ hard weeks ---------- */
+const deloadOn = () => S.deload && Date.now() < S.deload.until;
+function deloadCheck() {
+  if (deloadOn() || (S.deloadSnooze && Date.now() - S.deloadSnooze < 14 * 864e5) || S.workouts.length < 8) return null;
+  const since = Math.max(S.deload?.until || 0, Math.min(...S.workouts.map(w => w.startedAt))), weeks = Math.floor((Date.now() - since) / (7 * 864e5));
+  // stalled = best estimated 1RM of the last 3 sessions is not above the 3 before
+  const by = {};
+  for (const w of [...S.workouts].reverse()) for (const e of w.exercises) if (!isCardio(e.name) && e.sets.length) (by[e.name] = by[e.name] || []).push(Math.max(...e.sets.map(s => e1rm(s.w, s.r))));
+  const stalled = Object.entries(by).filter(([, v]) => v.length >= 6 && Math.max(...v.slice(-3)) <= Math.max(...v.slice(-6, -3)) * 1.005).map(([n]) => n);
+  const nights = [1, 2, 3, 4, 5, 6, 7].map(i => S.sleep?.[addDays(dayKey(), -i)]).filter(Boolean), shortSleep = nights.length >= 4 && nights.filter(e => sleepMin(e) < 360).length >= 4;
+  const why = [];
+  if (stalled.length >= 2) why.push(`${stalled.length} bài đứng yên hoặc tụt 3 buổi liền (${stalled.slice(0, 3).map(exTitle).join(', ')})`);
+  if (weeks >= 6) why.push(`đã tập liên tục ${weeks} tuần chưa nghỉ giảm tải`);
+  if (shortSleep && stalled.length) why.push('ngủ dưới 6 tiếng nhiều đêm trong tuần');
+  return why.length && (stalled.length >= 2 || weeks >= 6) ? why : null;
+}
+function deloadCard() {
+  if (deloadOn()) { const d = Math.ceil((S.deload.until - Date.now()) / 864e5);
+    return `<div class="card deload on"><div class="row gap"><span class="qt-ic">${ic('drop')}</span><div class="grow"><b>Tuần giảm tải</b><small>Còn ${d} ngày · bớt ~40% số hiệp, tạ ~90%</small></div>
+      <button class="link" data-act="deloadEnd">Kết thúc</button></div></div>`; }
+  const why = deloadCheck(); if (!why) return '';
+  return `<div class="card deload"><div class="row gap"><span class="qt-ic">${ic('drop')}</span><div class="grow"><b>Nên có 1 tuần giảm tải</b><small>${why.map(esc).join('; ')}</small></div></div>
+    <div class="row gap mt"><button class="btn" data-act="deloadSnooze">Để sau</button><button class="btn primary grow" data-act="deloadStart">Bắt đầu tuần nhẹ</button></div></div>`;
+}
+
+/* ---------- pain log: exercises loading a sore area are flagged and swaps avoid them ---------- */
+const PAIN = { 'Vai': ['frontDelt', 'sideDelt', 'rearDelt'], 'Khuỷu tay': ['biceps', 'triceps'], 'Cổ tay': ['forearms'], 'Cổ / cầu vai': ['traps'],
+  'Ngực': ['chest'], 'Lưng dưới': ['lowerBack'], 'Hông': ['glutes', 'adductors'], 'Gối': ['quads', 'hamstrings'], 'Cổ chân': ['calves'] };
+// heavy compound lifts that load the lower back / knees even when those are not listed as primary
+const PAIN_EX = { 'Lưng dưới': /Deadlift|Squat|Good Morning|Barbell Row|Rack Pull|Swing/i, 'Gối': /Squat|Lunge|Leg Press|Leg Extension|Step|Split/i, 'Vai': /Press|Dip|Push-up|Bench/i };
+const painNow = () => (S.pain || []).map(p => p.area);
+function painHit(name) {
+  const x = getEx(name); if (!x) return null;
+  for (const a of painNow()) {
+    const ms = PAIN[a] || [];
+    if (x.p.some(m => ms.includes(m)) || PAIN_EX[a]?.test(name)) return { area: a, level: 'p' };
+    if ((x.s || []).some(m => ms.includes(m))) return { area: a, level: 's' };
+  }
+  return null;
+}
+function painCard() {
+  const on = painNow();
+  return `<div class="card pain"><div class="row gap"><b class="grow">${ic('info')} Đang đau ở đâu?</b>${on.length ? `<span class="muted small">${on.length} vùng</span>` : ''}</div>
+    <div class="chips wrap mt">${Object.keys(PAIN).map(a => `<button class="chip${on.includes(a) ? ' on danger' : ''}" data-act="painToggle" data-a="${esc(a)}">${esc(a)}</button>`).join('')}</div>
+    ${on.length ? `<div class="muted small mt">Bài dồn lực vào ${on.map(esc).join(', ').toLowerCase()} sẽ bị đánh dấu khi tập và được gợi ý đổi. Đau nhói, sưng hoặc kéo dài hơn 1 tuần thì đi khám.</div>` : ''}</div>`;
+}
 function exThumbSm(name) { const src = exImg(name, 0); return src ? `<img src="${src}" alt="" loading="lazy">` : `<span class="ph">${ic('barbell')}</span>`; }
 function exRow2(ex, i) {
   const n = ex.sets.filter(s => s.done).length, all = n === ex.sets.length;
@@ -1208,7 +1271,7 @@ function exCard(ex, i) {
       ${i > 0 ? `<button class="icon" data-act="moveEx" data-i="${i}" aria-label="Chuyển lên">${ic('up')}</button>` : ''}
       <button class="icon" data-act="removeEx" data-i="${i}" aria-label="Xóa bài tập">${ic('x')}</button></div>
     ${img && !editing ? `<button class="demo ex-photo" data-act="showEx" data-name="${esc(ex.name)}"><img src="${img}" alt=""><img class="f2" src="${exImg(ex.name, 1)}" alt=""></button>` : ''}
-    ${ex.reps ? `<div class="target"><span>Mục tiêu: ${cardio ? '' : ex.sets.length + ' × '}${esc(ex.reps)}</span>${ex.rest ? `<span class="muted">Nghỉ ${fmtRest(ex.rest)}</span>` : ''}${hint ? `<span class="up-pill${hint.up ? '' : ' hold'}">${ic(hint.up ? 'up' : 'minus')} ${hint.up ? 'Lên' : 'Giữ'} ${fmtNum(hint.w)} kg</span>` : ''}</div>` : ''}
+    ${ex.reps ? `<div class="target"><span>Mục tiêu: ${cardio ? '' : ex.sets.length + ' × '}${esc(ex.reps)}</span>${ex.rest ? `<span class="muted">Nghỉ ${fmtRest(ex.rest)}</span>` : ''}${hint ? `<span class="up-pill${hint.up ? '' : ' hold'}">${ic(hint.up ? 'up' : 'minus')} ${hint.up ? 'Lên' : hint.down ? 'Giảm' : 'Giữ'} ${fmtNum(hint.w)} kg</span>` : ''}</div>` : ''}
     ${EX_LOAD[ex.name] ? `<div class="load-note">${ic('info')} ${LOAD_NOTE[EX_LOAD[ex.name]]}</div>` : ''}
     ${b.best && !cardio ? `<div class="pr-line">${ic('trophy')} Kỷ lục: ${fmtNum(b.maxW)} kg · 1RM ước tính ~${fmtNum(Math.round(b.best))} kg</div>` : ''}
     <div class="sets">
@@ -1703,6 +1766,7 @@ function viewRecovery() {
       <div class="legend"><span><i style="background:#22c55e"></i>Sẵn sàng (≥85%)</span><span><i style="background:#eab308"></i>Đang hồi (50–85%)</span><span><i style="background:#ef4444"></i>Cần nghỉ (&lt;50%)</span></div>
     </div>
     <div class="coach">${ic('bulb')}<div class="grow"><div class="coach-k">Khuyến nghị tập luyện<span>Hôm nay</span></div>${advice}</div></div>
+    ${painCard()}
     ${weekSetsCard()}
     <div class="section-h"><h2>Chi tiết các nhóm cơ</h2>${trained.length ? `<span class="count">${trained.length} vùng đã tập</span>` : ''}</div>
     ${[...trained, ...fresh].map(card).join('')}
@@ -1867,7 +1931,10 @@ function weightHint(name, reps) {
   if (!r || !last || isCardio(name)) return null;
   const top = Math.max(...last.map(s => s.w));
   if (!top) return null;
-  return last.every(s => s.r >= r[1]) ? { w: top + weightStep(name), up: true } : { w: top, up: false };
+  const rated = last.filter(s => s.rir != null), step = weightStep(name);
+  if (last.every(s => s.r >= r[1]) || (rated.length === last.length && rated.every(s => s.rir >= 3) && last.every(s => s.r >= r[0]))) return { w: top + step, up: true };
+  if (rated.filter(s => s.rir === 0).length >= 2 && last.some(s => s.r < r[0])) return { w: Math.max(0, Math.round(top * .95 / 2.5) * 2.5), up: false, down: true };
+  return { w: top, up: false };
 }
 function weeklySets(until) {
   const sets = {};
@@ -2097,6 +2164,7 @@ async function aiReviewWorkout(id) {
     previousScheduledSession: S.workouts.find(x => x.startedAt < w.startedAt && routineOfW(x))?.name || null,
     plannedMinutes: w.plan?.length ? estMinutes(w.plan) : null,
     weeklySchedule: S.routines.filter(r => r.day).map(r => r.name), history4Weeks: history,
+    painAreas: painNow(),
     sleepBeforeSession: (e => e ? { hours: Math.round(sleepMin(e) / 6) / 10, bed: e.bed, wake: e.wake } : 'không ghi')(S.sleep?.[dayKey(w.startedAt)]),
   };
   return askAI({
@@ -2664,7 +2732,7 @@ function exGrade(ex) {
   // Fail = not enough work for growth: fewer sets than planned, or total reps below plan × minimum reps
   // (an extra set can make that up), or clearly weaker than last time (one back-off set settles it).
   const under = r ? sets.filter(s => s.r < r[0]) : [], allTop = r ? sets.every(s => s.r >= r[1]) : false;
-  const short = r ? plan * r[0] - sets.reduce((a, s) => a + s.r, 0) : 0, drop = pe1 > 0 && e1 > 0 && e1 < pe1 * .97;
+  const short = r ? plan * r[0] - sets.reduce((a, s) => a + s.r, 0) : 0, drop = !S.active.deload && pe1 > 0 && e1 > 0 && e1 < pe1 * .97;
   let score = 100 - 15 * under.length - 15 * Math.max(0, plan - sets.length) - (drop ? 15 : 0), fail = false;
   if (sets.length < plan) { fail = true; issues.push(`Thiếu ${plan - sets.length} set so với kế hoạch`); }
   if (short > 0) { fail = true; issues.push(`${under.length} set dưới ${r[0]} rep, thiếu ${short} rep so với mức tối thiểu (${plan} × ${r[0]})`); }
@@ -3033,8 +3101,12 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
 function newSets(n, name) { return Array.from({ length: Math.max(1, n) }, () => ({ w: '', r: '', done: false })); }
 function startFrom(name, exercises, extra = {}) {
   focusEx = null;
-  S.active = { name, startedAt: Date.now(), exercises: exercises.map(e => ({ name: e.name, sets: newSets(e.sets), planSets: e.sets, ...(e.reps ? { reps: e.reps } : {}), ...(e.rest ? { rest: e.rest } : {}) })), ...extra };
+  const dl = deloadOn(), ns = n => dl ? Math.max(1, Math.round(n * .6)) : n;
+  S.active = { name, startedAt: Date.now(), ...(dl ? { deload: true } : {}), exercises: exercises.map(e => ({ name: e.name, sets: newSets(ns(e.sets)), planSets: ns(e.sets), ...(e.reps ? { reps: e.reps } : {}), ...(e.rest ? { rest: e.rest } : {}) })), ...extra };
   restEnd = 0; save(); tab = 'workout'; requestWake(); render(); window.scrollTo(0, 0);
+  const hurt = S.active.exercises.filter(e => painHit(e.name)?.level === 'p').length;
+  if (hurt) toast(`${hurt} bài dồn lực vào chỗ đang đau, có nút đổi bài trong từng bài`, 4000);
+  else if (dl) toast('Tuần giảm tải: đã bớt số hiệp', 3000);
 }
 const A = {
   tab: d => {
@@ -3077,7 +3149,7 @@ const A = {
       if (s.r === '' || num(s.r) <= 0) { toast(isCardio(ex.name) ? 'Nhập số phút trước nhé' : 'Nhập số reps trước nhé'); return; }
       const w = num(s.w), maxW = bestOf(ex.name).maxW;
       if (!isCardio(ex.name) && (w > 300 || (maxW > 0 && w > maxW * 3)) && !confirm(`${fmtNum(w)} kg cho ${ex.name}${maxW ? ` (cao nhất trước đây ${fmtNum(maxW)} kg)` : ''}. Có đúng không?`)) return;
-      s.done = true; if (!isCardio(ex.name)) startRest(ex.rest || S.settings.rest);
+      s.done = true; S.active.lastSet = { i: +d.i, j: +d.j }; if (!isCardio(ex.name)) startRest(ex.rest || S.settings.rest);
       if (ex.sets.every(x => x.done) && focusEx === +d.i) focusEx = null;
       if (ex.sets.every(x => x.done) && !isCardio(ex.name)) setTimeout(() => openExGrade(+d.i), 250);
     } else s.done = false;
@@ -3088,7 +3160,7 @@ const A = {
   cancelWorkout: () => { if (confirm('Hủy buổi tập này? Dữ liệu buổi này sẽ không được lưu.')) { S.active = null; restEnd = 0; save(); releaseWake(); render(); } },
   finishWorkout: () => {
     const a = S.active;
-    const exs = a.exercises.map(e => ({ name: e.name, sets: e.sets.filter(s => s.done).map(s => ({ w: num(s.w), r: num(s.r) })), ...(e.skipped ? { skipped: true } : {}) })).filter(e => e.sets.length);
+    const exs = a.exercises.map(e => ({ name: e.name, sets: e.sets.filter(s => s.done).map(s => ({ w: num(s.w), r: num(s.r), ...(s.rir != null ? { rir: s.rir } : {}) })), ...(e.skipped ? { skipped: true } : {}) })).filter(e => e.sets.length);
     if (!exs.length) { if (confirm('Chưa có set nào được tick ✓. Hủy buổi tập?')) { S.active = null; restEnd = 0; save(); releaseWake(); render(); } return; }
     if (!confirm('Kết thúc và lưu buổi tập?')) return;
     const prs = exs.filter(e => { const b = bestOf(e.name); return !isCardio(e.name) && b.maxW > 0 && Math.max(...e.sets.map(s => s.w)) > b.maxW; }).map(e => e.name);
@@ -3351,6 +3423,11 @@ const A = {
     addFood(x.items.map(it => ({ name: it.name, g: Math.round(it.g), kcal: it.kcal, p: it.p, c: it.c, f: it.f, src: 'suggest', ...(it.dish ? { dish: it.dish } : {}) })));
     closeSheet(); render(); toast(`Đã ghi ${fmtNum(Math.round(x.tot.kcal))} kcal`);
   },
+  setRir: d => { const ls = S.active?.lastSet; if (!ls) return; S.active.exercises[ls.i].sets[ls.j].rir = +d.v; save(); const ab = $('.abot'); if (ab) ab.outerHTML = abot(); },
+  deloadStart: () => { S.deload = { from: Date.now(), until: Date.now() + 7 * 864e5 }; save(); render(); toast('Bắt đầu tuần giảm tải 7 ngày', 3000); },
+  deloadEnd: () => { if (confirm('Kết thúc tuần giảm tải?')) { S.deload.until = Date.now(); save(); render(); } },
+  deloadSnooze: () => { S.deloadSnooze = Date.now(); save(); render(); },
+  painToggle: d => { S.pain = S.pain || []; const i = S.pain.findIndex(p => p.area === d.a); if (i >= 0) S.pain.splice(i, 1); else S.pain.push({ area: d.a, t: Date.now() }); save(); render(); },
   focusEx: d => { focusEx = +d.i; render(); requestAnimationFrame(() => $('#ex' + d.i)?.scrollIntoView({ block: 'start', behavior: 'smooth' })); },
   bump: d => {
     const ex = target().exercises[+d.i], cur = ex.sets.findIndex(s => !s.done); if (cur < 0) return;

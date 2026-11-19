@@ -491,6 +491,15 @@ h2{font-weight:600;font-size:18px}
 .badge-c .b-ic{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:var(--card2);color:var(--muted)}.badge-c.on .b-ic{background:color-mix(in srgb,var(--accent) 20%,transparent);color:var(--accent)}
 .badge-c b{font-size:12px;line-height:1.2}.badge-c small{font-size:10px;color:var(--muted);line-height:1.25}.badge-c em{font-style:normal;font-size:10px;color:var(--muted)}.badge-c .bar{width:100%;margin-top:2px}
 .badge-c .bar i{background:var(--accent)}
+.fam-btn{width:100%;margin:-4px 0 12px;justify-content:center}.fam-btn small{font-weight:500;color:var(--muted);margin-left:6px;font-size:12px}
+.fam-row{display:grid;grid-template-columns:40px minmax(0,1fr) auto 40px;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)}
+.fam-row b{font-size:14px;display:block}.fam-row small{font-size:11px;color:var(--muted);line-height:1.35}.fam-row small .link{font-size:11px;padding:0}
+.fam-row .fthumb{width:40px;height:40px}
+.stepper{display:flex;align-items:center;gap:2px;background:var(--card2);border-radius:12px;padding:2px}
+.stepper button{width:32px;height:32px;display:grid;place-items:center;border-radius:10px;color:var(--text)}.stepper button:active{background:var(--line)}
+.stepper b{min-width:26px;text-align:center;font-size:15px}
+.fam-k{text-align:right;font-size:12px;font-weight:700;color:var(--accent)}
+.fam-tot{display:flex;align-items:center;margin-top:14px;padding:12px 14px;background:var(--card2);border-radius:12px}.fam-tot b{color:var(--accent)}
 </style>
 </head>
 <body>
@@ -513,6 +522,7 @@ h2{font-weight:600;font-size:18px}
 <div id="flash" aria-hidden="true"></div>
 <input type="file" id="importFile" accept="application/json,.json" hidden>
 <input type="file" id="mealFile" accept="image/*" hidden>
+<input type="file" id="famFile" accept="image/*" hidden>
 <input type="file" id="vaultFile" accept="image/*" hidden>
 <input type="file" id="vaultImportFile" hidden>
 
@@ -520,7 +530,7 @@ h2{font-weight:600;font-size:18px}
 <script>
 'use strict';
 const KEY = 'gymlog.v1';
-const APP_VERSION = '2026.11.21';
+const APP_VERSION = '2026.11.21c';
 const DEFAULT_EX = EX_DB.map(e => e[0]);
 
 const $ = s => document.querySelector(s);
@@ -573,7 +583,7 @@ const volume = w => w.exercises.reduce((a, e) => a + (isCardio(e.name) ? 0 : e.s
 const fmtRest = s => s >= 60 ? (s % 60 ? `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}` : s / 60) + ' phút' : s + ' giây';
 // Search: case/diacritic-insensitive over English name, Vietnamese name, muscles and group; every word must match.
 const fold = s => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd');
-const MUSCLE_ALIAS = { biceps: 'bắp tay', triceps: 'bắp tay', forearms: 'cổ tay', lats: 'lưng', midBack: 'lưng', lowerBack: 'lưng', traps: 'vai', obliques: 'eo', abs: 'core', quads: 'chân', hamstrings: 'chân', glutes: 'chân', calves: 'chân', adductors: 'đùi trong' };
+const MUSCLE_ALIAS = { frontDelt: 'vai', sideDelt: 'vai', rearDelt: 'vai', biceps: 'bắp tay', triceps: 'bắp tay', forearms: 'cổ tay', lats: 'lưng', midBack: 'lưng', lowerBack: 'lưng', traps: 'vai', obliques: 'eo', abs: 'core', quads: 'chân', hamstrings: 'chân', glutes: 'chân', calves: 'chân', adductors: 'đùi trong' };
 function exMatch(n, q) {
   if (!q) return true;
   const x = getEx(n), hay = fold([n, EX_VI[n] || '', ...(x?.p || []).map(m => MUSCLES[m] + ' ' + (MUSCLE_ALIAS[m] || '')), GROUPS[x?.g] || ''].join(' '));
@@ -588,6 +598,7 @@ function load() {
   return defaults();
 }
 let S = load();
+for (const m of Object.values(S.exMeta || {})) for (const k of ['p', 's']) if ((m[k] || []).includes('shoulders')) m[k] = [...new Set(m[k].flatMap(x => x === 'shoulders' ? ['frontDelt', 'sideDelt'] : [x]))];
 // Meal photo thumbnails are kept 60 days so localStorage (≈5 MB) never fills up; the food entries stay.
 if (S.photos) { const cut = Date.now() - 60 * 864e5; for (const [id, p] of Object.entries(S.photos)) if (p.t < cut) delete S.photos[id]; }
 function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { toast('⚠️ Không lưu được dữ liệu'); } if (typeof queueBadges === 'function') queueBadges(); }
@@ -645,7 +656,7 @@ function bodySvg(fill, opts = {}) { // fill(muscle) -> color or null; opts.side 
 }
 /* ---------- exercise images & thumbnails ---------- */
 const exImg = (name, k) => EX_MAP[name] && !NO_IMG.includes(name) ? `img/ex/${exSlug(name)}-${k}.jpg` : null;
-const BACK_ONLY = ['traps', 'lats', 'midBack', 'triceps', 'lowerBack', 'glutes', 'hamstrings'];
+const BACK_ONLY = ['rearDelt', 'traps', 'lats', 'midBack', 'triceps', 'lowerBack', 'glutes', 'hamstrings'];
 function muscleThumb(name) {
   const x = getEx(name); if (!x || !x.p.length) return '';
   const side = x.p.filter(m => BACK_ONLY.includes(m)).length > x.p.length / 2 ? 'back' : 'front';
@@ -767,7 +778,7 @@ function dayTag(exs) {
   if (!tot) return '';
   const share = ms => ms.reduce((a, m) => a + (n[m] || 0), 0) / tot;
   const legs = share(['quads', 'hamstrings', 'glutes', 'calves', 'adductors']), core = share(['abs', 'obliques']);
-  const push = share(['chest', 'shoulders', 'triceps']), pull = share(['lats', 'midBack', 'biceps', 'traps', 'forearms', 'lowerBack']);
+  const push = share(['chest', 'frontDelt', 'sideDelt', 'triceps']), pull = share(['lats', 'midBack', 'biceps', 'traps', 'forearms', 'lowerBack']);
   if (legs >= .5) return 'Leg Day';
   if (core >= .5) return 'Core Day';
   if (legs > .25) return 'Full Body';
@@ -917,9 +928,9 @@ function exCard(ex, i) {
 }
 
 /* ---------- weekly sets per muscle: primary muscle 1 set, secondary ½ set ---------- */
-const SET_TARGET = { chest: [10, 20], lats: [10, 20], midBack: [8, 16], shoulders: [10, 20], biceps: [8, 16], triceps: [8, 16], quads: [10, 20], hamstrings: [8, 16],
+const SET_TARGET = { chest: [10, 20], lats: [10, 20], midBack: [8, 16], sideDelt: [8, 16], rearDelt: [6, 12], frontDelt: [4, 12], biceps: [8, 16], triceps: [8, 16], quads: [10, 20], hamstrings: [8, 16],
   glutes: [8, 16], calves: [6, 12], abs: [6, 12], obliques: [4, 10], traps: [4, 10], forearms: [4, 10], lowerBack: [4, 10], adductors: [4, 10] };
-const MAJOR = ['chest', 'lats', 'shoulders', 'biceps', 'triceps', 'quads', 'hamstrings'];
+const MAJOR = ['chest', 'lats', 'sideDelt', 'rearDelt', 'biceps', 'triceps', 'quads', 'hamstrings'];
 function weekSets(ws) {
   const out = Object.fromEntries(Object.keys(MUSCLES).map(m => [m, { n: 0, from: {} }]));
   for (const w of S.workouts) if (w.startedAt >= ws && w.startedAt < ws + 7 * 864e5)
@@ -1310,7 +1321,7 @@ function viewSettings() {
 }
 
 /* ---------- recovery ---------- */
-const MUS_EN = { chest: 'Pectorals', shoulders: 'Deltoids', traps: 'Traps', biceps: 'Biceps', triceps: 'Triceps', forearms: 'Forearms', abs: 'Abs', obliques: 'Obliques',
+const MUS_EN = { chest: 'Pectorals', frontDelt: 'Front delts', sideDelt: 'Side delts', rearDelt: 'Rear delts', traps: 'Traps', biceps: 'Biceps', triceps: 'Triceps', forearms: 'Forearms', abs: 'Abs', obliques: 'Obliques',
   lats: 'Lats', midBack: 'Mid back', lowerBack: 'Lower back', glutes: 'Glutes', quads: 'Quadriceps', adductors: 'Adductors', hamstrings: 'Hamstrings', calves: 'Calves' };
 function recOverall(r = recovery()) {
   const xs = Object.values(r).filter(x => x.lastH != null), use = xs.length ? xs : Object.values(r);
@@ -1321,7 +1332,7 @@ function viewRecovery() {
   const r = recovery();
   const trained = Object.keys(MUSCLES).filter(m => r[m].lastH != null).sort((a, b) => r[a].pct - r[b].pct || r[a].lastH - r[b].lastH);
   const fresh = Object.keys(MUSCLES).filter(m => r[m].lastH == null);
-  const split = [['thân trên (đẩy)', ['chest', 'shoulders', 'triceps']], ['lưng và tay trước (kéo)', ['lats', 'midBack', 'biceps']],
+  const split = [['thân trên (đẩy)', ['chest', 'frontDelt', 'triceps']], ['lưng và tay trước (kéo)', ['lats', 'midBack', 'biceps']],
     ['chân và mông', ['quads', 'hamstrings', 'glutes']], ['bụng', ['abs', 'obliques']]]
     .filter(([, g]) => g.every(m => r[m].pct >= 85)).map(([n]) => n);
   const tired = trained.filter(m => r[m].pct < 50).map(m => MUSCLES[m].toLowerCase());
@@ -1420,7 +1431,7 @@ function openMuscleChooser(name, cb, onCancel) {
     <div class="chips wrap">${Object.entries(MUSCLES).map(([k, l]) => `<button class="chip" data-act="chooseMuscle" data-m="${k}">${l}</button>`).join('')}</div>`,
     () => cb(name));
   muscleCb = m => {
-    const g = { chest: 'chest', shoulders: 'shoulders', traps: 'back', lats: 'back', midBack: 'back', lowerBack: 'back', biceps: 'arms', triceps: 'arms', forearms: 'arms', abs: 'core', obliques: 'core' }[m] || 'legs';
+    const g = { chest: 'chest', frontDelt: 'shoulders', sideDelt: 'shoulders', rearDelt: 'shoulders', traps: 'back', lats: 'back', midBack: 'back', lowerBack: 'back', biceps: 'arms', triceps: 'arms', forearms: 'arms', abs: 'core', obliques: 'core' }[m] || 'legs';
     S.exMeta[name] = { g, p: [m], s: [] }; save(); sheetOnClose = null; $('#sheet').hidden = true; cb(name);
   };
 }
@@ -1799,6 +1810,7 @@ function foodLogCard(t) {
     <div class="deficit">${ic('flame')}<span>${deficit >= 0 ? `Thâm hụt <b>${fmtNum(Math.round(deficit))} kcal</b>` : `Dư <b>${fmtNum(Math.round(-deficit))} kcal</b>`} so với mức tiêu hao ${fmtNum(t.tdee)} kcal/ngày${isToday ? ' (tính đến giờ)' : ''}.</span></div>
   </div>
   <div class="row gap meal-btns"><button class="btn primary" data-act="snapMeal">${ic('camera')} Chụp bữa ăn</button><button class="btn" data-act="addFoodManual">${ic('edit')} Nhập tay</button></div>
+  <button class="btn big fam-btn" data-act="famOpen">${ic('apple')} Mâm cơm gia đình <small>đếm phần mình ăn</small></button>
   ${['Sáng', 'Trưa', 'Chiều', 'Tối'].map(m => { const it = list.filter(f => mealOf(f.t) === m).sort((a, b) => a.t - b.t); return it.length ? `<div class="card meal-card">
     <div class="mh"><span>${ic(MEAL_IC[m])} Bữa ${m.toLowerCase()}</span><span class="chip-lime">${fmtNum(Math.round(it.reduce((a, f) => a + f.kcal, 0)))} kcal</span></div>
     ${foodGroups(it)}</div>` : ''; }).join('')}`;
@@ -1870,6 +1882,102 @@ function renderManualList(q) {
     dishes.map(([d, i]) => `<button class="pick dish" data-act="dishPick" data-i="${i}">${foodThumb({ dish: d[0] })}<span class="grow">${esc(d[0])}<br><span class="muted small">${esc(d[1])} · ${d[4]} g đạm</span></span><b class="small">${d[3]} kcal</b></button>`).join('') +
     foods.map(n => `<button class="pick dish" data-act="mfPick" data-name="${esc(n)}">${foodThumb({})}<span class="grow">${esc(n)}<br><span class="muted small">nguyên liệu, tính theo gram</span></span><b class="small">${FOODS[n][0]} kcal/100g</b></button>`).join('') +
     (f.length >= 2 ? `<button class="pick new" data-act="askDishAI">${ic('bolt')} Hỏi AI: "${esc(q.trim())}" bao nhiêu calo?</button>` : '');
+}
+/* ---------- family meal: dishes are shared, so you count your own portions (bowls, pieces, scoops) ---------- */
+// name, unit, grams per unit, kcal, protein, carbs, fat (per unit, home cooking, oil included)
+const FAM = [
+  ['Thịt kho', 'miếng', 35, 130, 6, 2, 11], ['Trứng kho', 'quả', 50, 90, 7, 1, 6], ['Cá kho', 'khúc', 80, 150, 15, 4, 8], ['Cá rán', 'khúc', 80, 170, 16, 2, 11],
+  ['Thịt luộc', 'miếng', 25, 75, 5, 0, 6], ['Thịt rang cháy cạnh', 'gắp', 30, 110, 6, 3, 8], ['Sườn xào chua ngọt', 'miếng', 50, 150, 8, 8, 10],
+  ['Gà luộc', 'miếng', 50, 105, 12, 0, 6], ['Gà rang gừng', 'miếng', 50, 130, 11, 3, 8], ['Bò xào', 'gắp', 30, 70, 6, 2, 4],
+  ['Trứng rán', 'quả', 60, 115, 7, 1, 9], ['Trứng luộc', 'quả', 50, 75, 6, 1, 5], ['Đậu phụ rán', 'miếng', 40, 80, 5, 1, 6], ['Đậu sốt cà chua', 'miếng', 50, 65, 4, 3, 4],
+  ['Tôm rang', 'con', 12, 25, 3, 0, 1.2], ['Chả lá lốt', 'cái', 35, 80, 5, 1, 6], ['Nem rán', 'cái', 40, 115, 4, 9, 7], ['Chả lợn / chả trứng', 'miếng', 40, 90, 6, 2, 6],
+  ['Rau luộc', 'gắp', 40, 10, 1, 2, 0], ['Rau xào', 'gắp', 40, 35, 1, 2, 3], ['Canh rau', 'bát', 250, 30, 2, 4, 1], ['Canh xương / sườn', 'bát', 250, 90, 6, 4, 5],
+  ['Canh chua cá', 'bát', 250, 80, 7, 6, 3], ['Canh cua / riêu', 'bát', 250, 90, 6, 6, 4], ['Dưa / cà muối', 'gắp', 25, 6, 0, 1, 0],
+  ['Lạc rang', 'thìa', 15, 85, 4, 2, 7], ['Nước kho chan cơm', 'thìa', 15, 25, 1, 1, 2], ['Nước mắm / chấm', 'thìa', 15, 10, 1, 1, 0],
+];
+const RICE = { kcal: 1.3, p: .027, c: .286, f: .003 }; // per gram, cooked white rice
+const bowlG = () => S.settings.bowlG || 150;
+const famPreset = x => ({ name: x[0], unit: x[1], g: x[2], kcal: x[3], p: x[4], c: x[5], f: x[6], n: 0 });
+let famDraft = null;
+const famStepOf = it => it.rice || it.unit === 'bát' ? .5 : 1;
+const famRowK = it => it.rice ? it.n * bowlG() * RICE.kcal : it.n * it.kcal;
+function famTotals() {
+  return famDraft.items.reduce((a, it) => it.rice ? { kcal: a.kcal + it.n * bowlG() * RICE.kcal, p: a.p + it.n * bowlG() * RICE.p }
+    : { kcal: a.kcal + it.n * it.kcal, p: a.p + it.n * it.p }, { kcal: 0, p: 0 });
+}
+function openFamily() {
+  slot = newSlot(foodDay); slot.meal = slot.k === dayKey() ? mealOf(Date.now()) : 'Tối'; if (slot.k !== dayKey()) slot.time = mealDefaultTime('Tối');
+  famDraft = { img: null, stage: 'edit', note: '', items: [{ name: 'Cơm trắng', unit: 'bát', rice: true, n: 0 }] };
+  renderFamily();
+}
+function renderFamily() {
+  const m = famDraft, t = famTotals(), have = new Set(m.items.map(i => fold(i.name)));
+  const extra = [...(S.famRecent || []), ...FAM.map(famPreset)].filter((x, i, a) => !have.has(fold(x.name)) && a.findIndex(y => fold(y.name) === fold(x.name)) === i);
+  const row = (it, i) => `<div class="fam-row">
+      ${it.rice ? `<span class="fthumb ph">${ic('apple')}</span>` : foodThumb({ dish: DISH_SRC[it.name] ? it.name : null })}
+      <div class="grow"><b>${esc(it.name)}</b><small>${it.rice ? `bát của bạn ${bowlG()} g ≈ ${fmtNum(Math.round(bowlG() * RICE.kcal))} kcal · <button class="link" data-act="famBowl">đổi cỡ bát</button>`
+        : `1 ${esc(it.unit)} ≈ ${fmtNum(Math.round(it.kcal))} kcal · ${fmtNum(Math.round(it.p * 10) / 10)} g đạm`}${it.ai ? ' · AI' : ''}</small></div>
+      <div class="stepper"><button data-act="famStep" data-i="${i}" data-d="-1" aria-label="Bớt">${ic('minus')}</button><b id="famN${i}">${fmtNum(it.n)}</b><button data-act="famStep" data-i="${i}" data-d="1" aria-label="Thêm">${ic('plus')}</button></div>
+      <span class="fam-k" id="famK${i}">${it.n ? fmtNum(Math.round(famRowK(it))) : ''}</span></div>`;
+  openSheet(`<div class="sheet-h"><h3>Mâm cơm gia đình</h3><button class="link" data-act="closeSheet">Hủy</button></div>
+    ${m.img ? `<img class="meal-img" src="${m.img}" alt="Ảnh mâm cơm">` : ''}
+    ${slotPicker()}
+    ${m.stage === 'busy' ? `<div class="empty">${ic('refresh')} AI đang nhận các món trên mâm…</div>` : `
+      ${m.img ? (m.note ? `<div class="muted small" style="margin:8px 0">${esc(m.note)}</div>` : '') : `<button class="btn big mt" data-act="famSnap">${ic('camera')} Chụp mâm để AI nhận món</button>
+        <div class="muted small" style="margin-top:6px;text-align:center">Hoặc chọn món bên dưới, không cần ảnh.</div>`}
+      <div class="muted small" style="margin:12px 0 2px">Đếm phần <b>bạn</b> đã ăn:</div>
+      ${m.items.map(row).join('')}
+      <div class="muted small" style="margin:14px 0 6px">Trên mâm còn món khác? Bấm để thêm:</div>
+      <div class="chips wrap">${extra.slice(0, 40).map((x, i) => `<button class="chip" data-act="famAdd" data-i="${i}">${esc(x.name)}</button>`).join('')}</div>
+      <div class="fam-tot"><span class="grow">Phần của bạn</span><b id="famTot">${fmtNum(Math.round(t.kcal))} kcal · ${Math.round(t.p)} g đạm</b></div>
+      <button class="btn primary big mt" data-act="famSave">Thêm vào nhật ký</button>`}`, () => { famDraft = null; slot = null; });
+  famDraft._extra = extra;
+}
+function famStep(i, d) {
+  const it = famDraft.items[i], s = famStepOf(it); it.n = Math.max(0, Math.round((it.n + d * s) * 2) / 2);
+  $('#famN' + i).textContent = fmtNum(it.n); $('#famK' + i).textContent = it.n ? fmtNum(Math.round(famRowK(it))) : '';
+  const t = famTotals(); $('#famTot').textContent = `${fmtNum(Math.round(t.kcal))} kcal · ${Math.round(t.p)} g đạm`;
+}
+const FAM_SCHEMA = obj({ isFood: { type: 'boolean' }, note: { type: 'string' },
+  dishes: { type: 'array', items: obj({ name: { type: 'string' }, unit: { type: 'string' }, unitGrams: { type: 'number' }, kcalPerUnit: { type: 'number' }, proteinPerUnit: { type: 'number' }, carbsPerUnit: { type: 'number' }, fatPerUnit: { type: 'number' } }) } });
+async function famAI(dataUrl) {
+  return askAI({
+    system: 'Bạn là chuyên gia dinh dưỡng Việt Nam. Ảnh là MÂM CƠM GIA ĐÌNH nhiều người ăn chung; người dùng sẽ tự đếm phần mình ăn, nên bạn KHÔNG ước tổng cả mâm. ' +
+      'Nhiệm vụ: nhận ra từng món trên mâm (bỏ qua cơm trắng vì app tính riêng theo bát). Với mỗi món chọn một đơn vị đếm tự nhiên khi gắp ăn: miếng, khúc, quả, con, cái, gắp (rau, món thái nhỏ), bát (canh), thìa (nước chấm, nước kho, lạc). ' +
+      'Ước khối lượng 1 đơn vị (gram) và calo, đạm, tinh bột, chất béo của 1 đơn vị đúng theo cách nấu thấy trong ảnh, đã tính dầu mỡ thấm vào món; khi không chắc thì chọn mức cao hơn. ' +
+      'Nếu trên mâm có bát nước chấm hoặc món kho có nước thì thêm một dòng "Nước kho chan cơm" hoặc "Nước mắm / chấm" đơn vị thìa. Tên món tiếng Việt ngắn gọn, ưu tiên dùng đúng tên trong danh sách sau nếu khớp: ' + FAM.map(x => x[0]).join(', ') + '. ' +
+      'Nếu ảnh không phải đồ ăn: isFood=false, dishes rỗng. note: 1 câu nhận xét thẳng về mâm (món nhiều dầu mỡ nên gắp ít, món nào nhiều đạm nên ưu tiên).',
+    content: [{ image: dataUrl.split(',')[1] }, { text: mealContext() + '\nNhận các món trên mâm này.' }], schema: FAM_SCHEMA, maxTokens: 3000,
+  });
+}
+async function famPhoto(f) {
+  const img = await photoToJpeg(f), lm = f.lastModified, age = Date.now() - lm;
+  if (age > 15 * 6e4 && age < 7 * 864e5) slot = { k: dayKey(lm), meal: mealOf(lm), time: hhmm(lm), guessed: true };
+  const m = famDraft; m.img = img; m.stage = 'busy'; renderFamily();
+  try {
+    const r = await famAI(img);
+    const ai = (r.isFood ? r.dishes : []).filter(x => x.kcalPerUnit > 0 && x.unitGrams > 0)
+      .map(x => ({ name: x.name.trim(), unit: x.unit.trim() || 'miếng', g: x.unitGrams, kcal: x.kcalPerUnit, p: x.proteinPerUnit || 0, c: x.carbsPerUnit || 0, f: x.fatPerUnit || 0, n: 0, ai: true }));
+    m.items = [m.items[0], ...ai, ...m.items.slice(1).filter(it => !ai.some(a => fold(a.name) === fold(it.name)))];
+    m.note = r.isFood ? r.note : 'Ảnh này không giống mâm cơm, hãy chọn món bằng tay.';
+  } catch (e) { m.note = 'AI lỗi: ' + e.message + ' · Vẫn chọn món bằng tay được.'; }
+  m.stage = 'edit'; if (famDraft === m) renderFamily();
+}
+async function famSave() {
+  const m = famDraft, eaten = m.items.filter(it => it.n > 0);
+  if (!eaten.length) { toast('Bấm + để đếm phần bạn đã ăn'); return; }
+  let ph = null;
+  if (m.img) { const src = await thumbOf(m.img); if (src) { ph = uid(); S.photos = { ...(S.photos || {}), [ph]: { t: Date.now(), src } }; } }
+  addFood(eaten.map(it => {
+    const g = it.rice ? it.n * bowlG() : it.n * it.g, k = it.rice ? g * RICE.kcal : it.n * it.kcal;
+    return { name: `${it.name} (${fmtNum(it.n)} ${it.unit})`, g: Math.round(g), kcal: k, p: it.rice ? g * RICE.p : it.n * it.p, c: it.rice ? g * RICE.c : it.n * it.c, f: it.rice ? g * RICE.f : it.n * it.f,
+      src: 'family', ...(DISH_SRC[it.name] ? { dish: it.name } : {}), ...(ph ? { ph } : {}) };
+  }));
+  // remember dishes the AI found (with their per-unit values) for next time
+  const learned = m.items.filter(it => it.ai).map(({ name, unit, g, kcal, p, c, f }) => ({ name, unit, g, kcal, p, c, f, n: 0 }));
+  if (learned.length) S.famRecent = [...learned, ...(S.famRecent || []).filter(x => !learned.some(y => fold(y.name) === fold(x.name)))].slice(0, 24);
+  const t = famTotals(), lbl = `${slot.meal.toLowerCase()} ${dayLabel(slot.k).toLowerCase()}`;
+  save(); famDraft = null; slot = null; sheetOnClose = null; closeSheet(); render(); toast(`Đã thêm ${fmtNum(Math.round(t.kcal))} kcal vào bữa ${lbl}`);
 }
 function addFood(items) {
   const s = slot || newSlot(foodDay), t = slot ? slotTime() : (foodDay === dayKey() ? Date.now() : dayStart(foodDay) + 12 * 36e5);
@@ -2667,6 +2775,12 @@ const A = {
     const lbl = `${slot.meal.toLowerCase()} ${dayLabel(slot.k).toLowerCase()} lúc ${slot.time}`; mealDraft = null; slot = null; sheetOnClose = null; closeSheet(); render(); toast(`Đã thêm vào bữa ${lbl}`);
   },
   addFoodManual: () => openManualFood(),
+  famOpen: () => openFamily(),
+  famSnap: () => { if (!hasKey()) { toast('Nhập API key trong Thêm → Cài đặt trước, hoặc chọn món bằng tay', 3500); return; } $('#famFile').click(); },
+  famStep: d => famStep(+d.i, +d.d),
+  famAdd: d => { const x = famDraft._extra[+d.i]; if (x) { famDraft.items.push({ ...x, n: 1 }); renderFamily(); const p = $('#sheetPanel'); if (p) p.scrollTop = p.scrollHeight; } },
+  famBowl: () => { const z = [120, 150, 180, 220, 250], i = z.indexOf(bowlG()); S.settings.bowlG = z[(i + 1) % z.length]; save(); renderFamily(); },
+  famSave: () => famSave(),
   dishPick: d => {
     const x = DISHES[+d.i], n = num(prompt(`${x[0]} (${x[1]} ≈ ${x[3]} kcal). Ăn bao nhiêu phần? 1 = cả phần, 0,5 = nửa phần`, '1')); if (n <= 0) return;
     addFood([{ name: n === 1 ? x[0] : `${x[0]} (${fmtNum(n)} phần)`, g: Math.round(x[2] * n), kcal: x[3] * n, p: x[4] * n, c: x[5] * n, f: x[6] * n, src: 'manual', dish: x[0] }]);
@@ -2941,6 +3055,10 @@ document.addEventListener('input', e => {
 });
 document.addEventListener('change', e => { if (e.target.dataset.bind === 'progEx') { progEx = e.target.value; render(); } });
 document.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.id === 'pickQ') { const f = document.querySelector('#pickList .pick, #pickList .ex-row'); if (f) f.click(); } });
+$('#famFile').addEventListener('change', async e => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f || !famDraft) return;
+  try { await famPhoto(f); } catch (err) { toast(err.message); }
+});
 $('#mealFile').addEventListener('change', async e => {
   const f = e.target.files[0]; e.target.value = ''; if (!f) return;
   try {

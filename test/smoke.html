@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gym Log – smoke tests</title>
+<style>
+  body { font: 14px/1.5 system-ui, sans-serif; background: #111; color: #eee; margin: 16px; }
+  h1 { font-size: 18px; } .ok { color: #4ade80; } .bad { color: #f87171; } pre { white-space: pre-wrap; color: #aaa; margin: 2px 0 8px 18px; }
+  iframe { width: 390px; height: 700px; border: 1px solid #333; display: block; margin-top: 16px; }
+</style>
+</head>
+<body>
+<h1>Gym Log – smoke tests</h1>
+<div id="sum">Đang chạy…</div>
+<div id="out"></div>
+<iframe id="app" src="../index.html?test"></iframe>
+<script>
+// Runs the real app in an iframe and drives it through its own functions.
+// The user's saved data is backed up before and restored after every run; the photo vault is never touched.
+const KEY = 'gymlog.v1', out = document.getElementById('out'), results = [];
+const frame = document.getElementById('app');
+let ev; // evaluates code inside the app (sees its top-level let/const)
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const eq = (a, b, msg) => { if (JSON.stringify(a) !== JSON.stringify(b)) throw new Error(`${msg || 'expected'}: ${JSON.stringify(a)} ≠ ${JSON.stringify(b)}`); };
+const ok = (v, msg) => { if (!v) throw new Error(msg || 'expected true'); };
+const PROFILE = { sex: 'm', age: 21, height: 172, weight: 72, act: 1.55, goal: 'cut' };
+// fresh, deterministic state for each test
+function fresh(extra = '') {
+  ev(`S = defaults(); S.profile = ${JSON.stringify(PROFILE)}; restEnd = 0; focusEx = null; foodDay = dayKey(); slot = null; mealDraft = null; famDraft = null; closeSheet(); tab = 'workout'; ${extra}; save(); render();`);
+}
+const daysAgo = n => `Date.now() - ${n} * 864e5`;
+const workout = (id, ago, exs) => `{ id: '${id}', name: 'Buổi ${id}', startedAt: ${daysAgo(ago)}, endedAt: ${daysAgo(ago)} + 36e5, prs: [], exercises: ${JSON.stringify(exs)} }`;
+
+const T = {
+  'App khởi động, mọi trang render không lỗi': () => {
+    fresh();
+    for (const t of ['workout', 'recovery', 'nutrition', 'library', 'more', 'body', 'history', 'progress', 'settings', 'profile'])
+      ev(`tab = '${t}'; render();`);
+    ok(ev(`document.querySelector('#main').innerHTML.length`) > 200, 'main rỗng');
+  },
+  'Tập trọn một buổi: hiệp → nghỉ → chấm → lưu': async () => {
+    fresh(`S.routines = [{ id: 'r1', name: 'Push', day: 1, exercises: [{ name: 'Bench Press', sets: 2, reps: '8–10' }, { name: 'Push-up', sets: 1, reps: '10–15' }] }];
+      S.workouts = [${workout('old', 3, [{ name: 'Bench Press', sets: [{ w: 60, r: 9 }, { w: 60, r: 8 }] }])}]`);
+    ev(`A.startRoutine({ id: 'r1' })`);
+    ok(ev(`!!document.querySelector('#sheetPanel .rd-res')`), 'không hiện bảng trạng thái');
+    ev(`A.readySkip()`);
+    eq(ev(`S.active.exercises.map(e => e.sets.length)`), [2, 1], 'số hiệp');
+    ev(`const ex = S.active.exercises[0]; ex.sets[0].w = '60'; ex.sets[0].r = '10'; A.completeSet();`);
+    eq(ev(`document.querySelector('.abot').dataset.state`), 'rest', 'không vào nghỉ');
+    ok(ev(`!!document.querySelector('.sfb')`), 'không chấm hiệp');
+    ev(`A.setRir({ v: '2' }); stopRest(); S.active.exercises[0].sets[1].r = '8'; A.completeSet(); stopRest();`);
+    await sleep(400);
+    ok(ev(`document.querySelector('#sheetPanel').innerText.includes('Chấm bài')`), 'không hiện chấm bài');
+    ev(`closeSheet(); A.completeSet(); stopRest(); A.finishWorkout();`);
+    eq(ev(`S.active`), null, 'chưa kết thúc');
+    eq(ev(`S.workouts[0].exercises.map(e => e.name + ':' + e.sets.length)`), ['Bench Press:2', 'Push-up:1']);
+    eq(ev(`S.workouts[0].exercises[0].sets[0]`), { w: 60, r: 10, rir: 2 });
+  },
+  'Chấm từng hiệp': () => {
+    fresh(`S.workouts = [${workout('o', 3, [{ name: 'Bench Press', sets: [{ w: 60, r: 9 }, { w: 60, r: 8 }] }])}];
+      S.active = { name: 'T', startedAt: Date.now(), exercises: [{ name: 'Bench Press', reps: '8–10', planSets: 2, sets: [{ w: '60', r: '10', done: true }, { w: '62.5', r: '6', done: true, rir: 0 }] }] }`);
+    const g0 = ev(`setGrade(S.active.exercises[0], 0)`), g1 = ev(`setGrade(S.active.exercises[0], 1)`);
+    eq(g0.score, 100); eq(g0.next, 62.5); eq(g1.label, 'Tạm'); eq(g1.next, 60);
+  },
+  'Gợi ý tạ: lên / giữ / giảm': () => {
+    fresh(`S.workouts = [${workout('a', 2, [{ name: 'Bench Press', sets: [{ w: 60, r: 10 }, { w: 60, r: 10 }] }])}]`);
+    eq(ev(`weightHint('Bench Press', '8–10')`), { w: 62.5, up: true });
+    fresh(`S.workouts = [${workout('a', 2, [{ name: 'Bench Press', sets: [{ w: 60, r: 9 }, { w: 60, r: 8 }] }])}]`);
+    eq(ev(`weightHint('Bench Press', '8–10')`), { w: 60, up: false });
+    fresh(`S.workouts = [${workout('a', 2, [{ name: 'Bench Press', sets: [{ w: 60, r: 6, rir: 0 }, { w: 60, r: 5, rir: 0 }] }])}]`);
+    eq(ev(`weightHint('Bench Press', '8–10')`), { w: 57.5, up: false, down: true });
+  },
+  'Điểm ngày cộng đúng 100 và có giấc ngủ': () => {
+    fresh(`S.sleepSince = addDays(dayKey(), -3); S.sleep = { [dayKey()]: { bed: '23:00', wake: '07:00' } }`);
+    const d = ev(`dayScore(dayKey())`);
+    eq(d.parts.reduce((a, p) => a + p[2], 0), 100, 'tổng điểm tối đa');
+    ok(d.parts.some(p => p[0] === 'Giấc ngủ' && p[1] === 15), 'ngủ 8 tiếng phải đủ 15');
+  },
+  'Lịch tuần: bỏ buổi thì lùi lịch': () => {
+    fresh(`S.routines = ['A', 'B', 'C'].map((n, i) => ({ id: n, name: n, day: i + 1, exercises: [{ name: 'Squat', sets: 3 }] }))`);
+    const st = ev(`schedState(weekStart() + 3 * 864e5 + 10 * 36e5)`); // Thursday, nothing trained
+    eq(st.due.name, 'A', 'buổi kế tiếp phải là A');
+    ok(st.lag >= 3, 'phải lùi 3 buổi');
+  },
+  'Ăn uống: ghi món, tổng ngày, sửa món': () => {
+    fresh();
+    ev(`addFood([{ name: 'Phở bò', g: 500, kcal: 450, p: 25, c: 60, f: 12 }])`);
+    eq(ev(`Math.round(dayTotals(dayKey()).kcal)`), 450);
+    ev(`openFoodEdit(S.food[dayKey()][0].id); const g = document.querySelector('#feG'); g.value = '250'; g.dispatchEvent(new Event('input', { bubbles: true })); A.foodEditSave();`);
+    eq(ev(`Math.round(S.food[dayKey()][0].kcal)`), 225, 'sửa gram phải chia đôi calo');
+  },
+  'Mâm cơm gia đình: đếm bát và miếng': () => {
+    fresh(`S.settings.bowlG = 150`);
+    ev(`openFamily(); famStep(0, 1); famStep(0, 1); famStep(0, 1); famStep(0, 1);`); // 2 bát
+    ev(`famDraft.items.push({ ...famPreset(FAM[0]), n: 2 }); renderFamily();`); // 2 miếng thịt kho
+    eq(Math.round(ev(`famTotals().kcal`)), 2 * 150 * 1.3 + 2 * 130);
+  },
+  'Gợi ý bữa tiếp vừa calo còn lại': () => {
+    fresh(`S.food[dayKey()] = [{ id: 'x', t: Date.now(), name: 'X', g: 100, kcal: 900, p: 40, c: 100, f: 20 }]`);
+    const r = ev(`nextMealIdeas()`);
+    ok(r.ideas.length >= 2, 'phải có ít nhất 2 gợi ý');
+    ok(r.ideas.every(x => x.tot.kcal <= r.Km * 1.15), 'gợi ý vượt calo bữa');
+  },
+  'Số set mỗi tuần: cơ chính 1, cơ phụ ½': () => {
+    fresh(`S.workouts = [${workout('a', 0, [{ name: 'Bench Press', sets: [{ w: 60, r: 8 }, { w: 60, r: 8 }] }])}]`);
+    const s = ev(`weekSets(weekStart())`);
+    eq(s.chest.n, 2); eq(s.triceps.n, 1); eq(s.frontDelt.n, 1);
+  },
+  'Khởi động và lắp bánh tạ': () => {
+    fresh(`S.active = { name: 'T', startedAt: Date.now(), exercises: [{ name: 'Bench Press', reps: '8–10', planSets: 3, sets: [{ w: '62.5', r: '', done: false }] }] }`);
+    eq(ev(`platesText(62.5, 'bb')`), 'Mỗi bên: 20 + 1,25');
+    eq(ev(`warmups(S.active.exercises[0], 0)`), [[20, 10], [25, 8], [37.5, 5], [50, 3]]);
+  },
+  'Đổi bài và né chỗ đau': () => {
+    fresh(`S.active = { name: 'T', startedAt: Date.now(), exercises: [{ name: 'Lat Pulldown', planSets: 3, sets: [{ w: '50', r: '10', done: true }, { w: '', r: '', done: false }] }] }`);
+    const c = ev(`swapCandidates('Lat Pulldown')`); ok(c.length >= 3, 'quá ít bài thay');
+    ev(`swapTo(0, '${c[0]}')`);
+    eq(ev(`S.active.exercises.map(e => e.sets.length)`), [1, 1], 'phải tách hiệp đã xong');
+    fresh(`S.pain = [{ area: 'Vai', t: Date.now() }]`);
+    eq(ev(`painHit('Overhead Press').level`), 'p');
+  },
+  'Hồ sơ: % mỡ, Big 3, mục tiêu, huy hiệu': () => {
+    fresh(`S.body = [{ id: 'b', t: Date.now(), w: 72, waist: 84, neck: 38 }];
+      S.workouts = [${workout('a', 1, [{ name: 'Bench Press', sets: [{ w: 70, r: 5 }] }])}];
+      S.goals = [{ id: 'g', kind: 'lift', ex: 'Bench Press', target: 80, start: 70, t: Date.now() }]`);
+    ok(Math.abs(ev(`bodyComp().bf`) - 17.5) < 1.5, '% mỡ thước dây lệch');
+    ok(ev(`big3().lifts.find(l => l.n === 'Bench Press').best`) > 75);
+    ok(ev(`goalStatus(S.goals[0]).pct`) >= 0);
+    ev(`checkBadges(true)`); ok(ev(`Object.keys(S.badges).includes('w1')`), 'thiếu huy hiệu buổi đầu');
+  },
+  'Lịch tháng, báo cáo tuần, nước uống': () => {
+    fresh(`S.workouts = [${workout('a', 1, [{ name: 'Squat', sets: [{ w: 80, r: 5 }] }])}]`);
+    ev(`tab = 'history'; histMode = 'cal'; calMode = 'month'; render();`);
+    ok(ev(`document.querySelectorAll('.c2.tr').length`) >= 1, 'không tô ngày đã tập');
+    ev(`calMode = 'week'; render(); calMode = 'month';`);
+    ev(`openWeekReport(); closeSheet();`);
+    ev(`tab = 'nutrition'; render(); A.water({ v: '250' }); A.water({ v: '250' });`);
+    eq(ev(`waterOf(dayKey())`), 500);
+  },
+  'Sao lưu: xuất ra JSON đọc lại được': () => {
+    fresh(`S.workouts = [${workout('a', 1, [{ name: 'Squat', sets: [{ w: 80, r: 5 }] }])}]`);
+    const json = ev(`JSON.stringify(S)`); const back = JSON.parse(json);
+    eq(back.workouts[0].exercises[0].name, 'Squat');
+  },
+};
+
+(async () => {
+  const backup = localStorage.getItem(KEY);
+  try {
+    await new Promise(r => frame.addEventListener('load', r, { once: true }));
+    const w = frame.contentWindow; ev = code => w.eval(code);
+    for (let i = 0; i < 50 && ev('typeof render') !== 'function'; i++) await sleep(100);
+    w.confirm = () => true; w.alert = () => {}; w.prompt = () => '1';
+    const errors = []; w.addEventListener('error', e => errors.push(e.message));
+    for (const [name, fn] of Object.entries(T)) {
+      try { await fn(); results.push([true, name]); } catch (e) { results.push([false, name, e.message]); }
+    }
+    if (errors.length) results.push([false, 'Lỗi JavaScript trong app', errors.join('\n')]);
+  } catch (e) { results.push([false, 'Không chạy được bộ test', e.message]); }
+  finally {
+    try { ev && ev('S.active = null; restEnd = 0'); } catch (e) {}
+    if (backup == null) localStorage.removeItem(KEY); else localStorage.setItem(KEY, backup);
+    try { ev && ev('S = load(); render()'); } catch (e) {}
+  }
+  const bad = results.filter(r => !r[0]);
+  document.getElementById('sum').innerHTML = `<b class="${bad.length ? 'bad' : 'ok'}">${results.length - bad.length}/${results.length} đạt</b>`;
+  out.innerHTML = results.map(([o, n, m]) => `<div class="${o ? 'ok' : 'bad'}">${o ? '✓' : '✗'} ${n}</div>${m ? `<pre>${m.replace(/</g, '&lt;')}</pre>` : ''}`).join('');
+  document.title = bad.length ? `FAIL ${bad.length}` : 'PASS';
+})();
+</script>
+</body>
+</html>

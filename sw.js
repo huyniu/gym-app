@@ -1,7 +1,8 @@
 // Network-first with cache fallback: always gets updates when online, works offline at the gym.
 importScripts('data.js'); // for EX_DB / exSlug: pre-cache every exercise image so demos work offline
-const CACHE = 'gymlog-v38';
-const ASSETS = ['./', './index.html', './data.js', './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png', './fonts/inter-latin.woff2', './fonts/inter-vi.woff2', './fonts/grotesk-latin.woff2', './fonts/grotesk-vi.woff2',
+const CACHE = 'gymlog-v39';
+const JS = ['core', 'ai', 'workout', 'coach', 'food', 'body', 'vault', 'days', 'views', 'main'].map(f => `./js/${f}.js`);
+const ASSETS = ['./', './index.html', './data.js', './css/app.css', ...JS, './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png', './fonts/inter-latin.woff2', './fonts/inter-vi.woff2', './fonts/grotesk-latin.woff2', './fonts/grotesk-vi.woff2',
   ...EX_DB.filter(([n]) => !NO_IMG.includes(n)).flatMap(([n]) => [0, 1].map(k => `./img/ex/${exSlug(n)}-${k}.jpg`)),
   ...Object.keys(DISH_SRC).map(n => `./img/food/${foodSlug(n)}.jpg`)];
 
@@ -18,7 +19,7 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET' || !e.request.url.startsWith(self.location.origin)) return;
   // App code always revalidates with the server (GitHub Pages lets browsers cache files for 10 min).
-  const code = /(\.html|\.js|\.webmanifest|\/)$/.test(new URL(e.request.url).pathname);
+  const code = /(\.html|\.js|\.css|\.webmanifest|\/)$/.test(new URL(e.request.url).pathname);
   e.respondWith(
     (code ? fetch(e.request.url, { cache: 'no-cache' }) : fetch(e.request))
       .then(res => { const copy = res.clone(); caches.open(CACHE).then(c => c.put(e.request, copy)); return res; })

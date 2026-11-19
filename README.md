@@ -75,8 +75,32 @@ node serve.js
 ```
 Lệnh sẽ in ra địa chỉ `http://192.168.x.x:8000`. Mở địa chỉ này trên iPhone khi cùng Wi-Fi với máy tính. Cách này chỉ để thử: dùng HTTP thường nên iOS không cho chạy offline.
 
+## Cấu trúc code
+Không có bước build: trình duyệt nạp thẳng các file theo thứ tự trong `index.html`. Các file JS là script thường, dùng chung phạm vi toàn cục, nên file sau dùng được hàm của file trước.
+
+| File | Nội dung |
+|---|---|
+| `index.html` | Khung trang, nạp CSS và JS |
+| `css/app.css` | Toàn bộ giao diện |
+| `data.js` | Dữ liệu tĩnh: bài tập, món ăn, lịch mẫu, hình cơ thể |
+| `js/core.js` | Trạng thái, lưu trữ, hàm định dạng, icon, ngày tháng, sheet, biểu đồ |
+| `js/ai.js` | Gọi Gemini (đổi model khi quá tải, đo tốc độ) và Claude |
+| `js/workout.js` | Trang chủ, lịch tuần, màn hình đang tập, routine, đồng hồ nghỉ |
+| `js/coach.js` | Chấm hiệp và bài, gợi ý tạ, khởi động, đổi bài, mức gắng sức, giảm tải, đau, trạng thái, số set tuần, AI chấm buổi |
+| `js/food.js` | Mục tiêu calo, nhật ký ăn, AI chụp bữa, mâm cơm, gợi ý bữa tiếp, nước |
+| `js/body.js` | Cân đo, giấc ngủ, % mỡ, Big 3, huy hiệu, hồ sơ, mục tiêu, báo cáo tuần |
+| `js/vault.js` | Kho ảnh body mã hóa, AI chấm ảnh, ảnh ghép trước–sau |
+| `js/days.js` | Điểm ngày, AI chấm ngày, lịch và lịch sử |
+| `js/views.js` | Các trang còn lại và `render()` |
+| `js/main.js` | Mọi hành động nút bấm (`A`), sự kiện, khởi động |
+
+Thêm file JS mới thì nhớ thêm vào `index.html` và danh sách `JS` trong `sw.js`.
+
+## Kiểm tra tự động
+Chạy `node serve.js`, mở `http://localhost:8000/test/smoke.html`. Trang chạy app thật trong khung và thử các luồng chính (tập một buổi, chấm hiệp, gợi ý tạ, điểm ngày, lịch, ăn uống, mâm cơm, hồ sơ…) rồi báo bao nhiêu mục đạt. Dữ liệu thật được sao lưu trước và trả lại sau khi chạy; kho ảnh không bị đụng tới. Chạy lại sau mỗi lần sửa code.
+
 ## Cập nhật app
-Sửa code, `git push`, rồi đổi `CACHE = 'gymlog-vN'` trong `sw.js` sang số mới. Mở app khi có mạng là iPhone tự nhận bản mới.
+Sửa code, chạy kiểm tra tự động, đổi `CACHE = 'gymlog-vN'` trong `sw.js` và `APP_VERSION` trong `js/core.js` sang số mới, rồi `git push`. Mở app khi có mạng là iPhone tự nhận bản mới.
 
 ## Lưu ý về dữ liệu
 - Dữ liệu nằm trong bộ nhớ của app trên iPhone. **Xóa app khỏi màn hình chính là mất dữ liệu.**

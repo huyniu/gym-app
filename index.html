@@ -596,6 +596,12 @@ body.on-active main{padding-bottom:calc(170px + env(safe-area-inset-bottom))}
 .wr-pj{background:color-mix(in srgb,var(--accent) 10%,var(--card2));border-radius:14px;padding:12px;margin-top:10px}.wr-pj-n{display:flex;align-items:baseline;gap:10px;margin:4px 0}.wr-pj-n b{font-size:28px;color:var(--accent)}.wr-pj-n span{font-size:13px;color:var(--muted)}
 .water .qt-ic svg{width:22px;height:22px}.water b{font-size:15px}.cups{display:flex;flex-wrap:wrap;gap:3px;margin-top:5px}.cups i{width:12px;height:16px;border-radius:2px 2px 4px 4px;background:var(--card2)}.cups i.on{background:var(--sky)}
 .water .icon{width:38px;height:38px;border-radius:50%;background:var(--card2)}.water .icon.add{background:color-mix(in srgb,var(--sky) 25%,transparent);color:var(--sky)}
+.rd-q{margin-bottom:12px}.rd-q>span{display:block;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em}.rd-q>b{font-size:18px}
+.rd-quick{display:flex;align-items:center;gap:12px;width:100%;background:var(--card2);border-radius:14px;padding:12px;text-align:left;color:var(--text);border:1.5px solid transparent}.rd-quick.on{border-color:var(--warn)}
+.rd-quick>svg{color:var(--warn);width:20px;height:20px}.rd-quick b{display:block;font-size:14px}.rd-quick small{font-size:12px;color:var(--muted)}.rd-quick i{width:24px;height:24px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center}.rd-quick.on i{background:var(--warn);border-color:var(--warn);color:#0b0d10}
+.rd-res{margin-top:12px;border-radius:14px;padding:12px;background:color-mix(in srgb,var(--ok) 12%,transparent)}.rd-res.lv1{background:color-mix(in srgb,var(--warn) 14%,transparent)}.rd-res.lv2{background:color-mix(in srgb,var(--danger) 14%,transparent)}
+.rd-res b{display:block;font-size:15px}.rd-res span{display:block;font-size:13px;margin-top:2px}.rd-res small{display:block;font-size:12px;color:var(--muted);margin-top:4px}
+.goal{padding:8px 0;border-bottom:1px solid var(--line)}.goal:last-child{border:0}.goal b{font-size:14px}.goal .bar{margin:6px 0}.goal .row.small{font-size:12px;gap:8px}
 </style>
 </head>
 <body>
@@ -626,7 +632,7 @@ body.on-active main{padding-bottom:calc(170px + env(safe-area-inset-bottom))}
 <script>
 'use strict';
 const KEY = 'gymlog.v1';
-const APP_VERSION = '2026.11.22e';
+const APP_VERSION = '2026.11.23';
 const DEFAULT_EX = EX_DB.map(e => e[0]);
 
 const $ = s => document.querySelector(s);
@@ -1007,7 +1013,7 @@ function openPos() {
 function setVal(ex, j, f) {
   const s = ex.sets[j]; if (s[f] !== '') return num(s[f]);
   const last = lastSets(ex.name), p = last && (last[j] || last[last.length - 1]);
-  if (f === 'w') { const hn = ex.reps ? weightHint(ex.name, ex.reps) : null, base = hn ? hn.w : p ? p.w : 0; return S.active?.deload ? Math.round(base * .9 / 2.5) * 2.5 : base; }
+  if (f === 'w') { const hn = ex.reps ? weightHint(ex.name, ex.reps) : null, base = hn ? hn.w : p ? p.w : 0; return S.active?.wF ? Math.round(base * S.active.wF / 2.5) * 2.5 : base; }
   const r = parseReps(ex.reps); return p ? p.r : r ? r[1] : isCardio(ex.name) ? 20 : 10;
 }
 function abar2() {
@@ -1075,7 +1081,7 @@ function abot() {
 }
 function viewActive() {
   const a = S.active, curI = activePos().i, n = a.exercises.filter(e => e.sets.every(s => s.done)).length;
-  return `${sleepWarn()}${a.deload ? `<div class="deload-line">${ic('drop')} Tuần giảm tải: ít hiệp hơn, tạ ~90%, đừng cố phá kỷ lục</div>` : ''}${heroCard()}
+  return `${sleepWarn()}${a.deload ? `<div class="deload-line">${ic('drop')} Tuần giảm tải: ít hiệp hơn, tạ ~90%, đừng cố phá kỷ lục</div>` : a.wF ? `<div class="deload-line">${ic('drop')} Buổi nhẹ theo trạng thái hôm nay: ít hiệp hơn, tạ ~${Math.round(a.wF * 100)}%</div>` : ''}${a.quick ? `<div class="deload-line" style="color:var(--warn);background:color-mix(in srgb,var(--warn) 12%,transparent)">${ic('clock')} Buổi nhanh ~30 phút: chỉ giữ bài chính</div>` : ''}${heroCard()}
     <div class="ec-head"><span>Bài tập <b>${n}/${a.exercises.length}</b></span><span class="grow"></span>
       <button class="icon" data-act="exAll" aria-label="${exAllOpen ? 'Thu gọn' : 'Mở tất cả'}">${ic(exAllOpen ? 'minus' : 'grid')}</button>
       <button class="icon add" data-act="addExercise" aria-label="Thêm bài">${ic('plus')}</button></div>
@@ -1285,6 +1291,7 @@ function openWeekReport(ws) {
       ${line(r.sleep != null ? r.sleep >= 420 : null, 'Ngủ TB', r.sleep != null ? `${fmtHM(r.sleep)} (${r.nights} đêm)` : 'không ghi')}
       ${line(r.wNow != null && r.wPrev != null ? (S.profile?.goal === 'bulk' ? r.wNow > r.wPrev : r.wNow <= r.wPrev) : null, 'Cân nặng TB tuần', r.wNow != null ? `${fmtNum(Math.round(r.wNow * 10) / 10)} kg${r.wPrev != null ? ` (${fmtSigned(Math.round((r.wNow - r.wPrev) * 10) / 10)})` : ''}` : 'cân chưa đủ 3 lần')}
       ${r.rev && !r.rev.retake ? line(r.rev.score >= 60, 'AI chấm body', `${r.rev.score}/100 · ${esc(r.rev.verdict)}`) : ''}
+      ${(S.goals || []).map(g => { const s = goalStatus(g); return line(s.done || s.ok ? true : s.cur == null ? null : false, `Mục tiêu ${g.kind === 'lift' ? esc(exTitle(g.ex)) : GOAL_KIND[g.kind][0].toLowerCase()} ${fmtNum(g.target)}`, esc(s.txt)); }).join('')}
     </div>
     <div class="wr-pj">${pj ? `<div class="muted small">Dự đoán tới Tết (${fmtNum(Math.round(pj.weeks))} tuần nữa) nếu giữ nhịp ${fmtSigned(Math.round(pj.perWeek * 100) / 100)} kg/tuần:</div>
       <div class="wr-pj-n"><b>${fmtNum(Math.round(pj.at * 10) / 10)} kg</b>${pj.bfAt != null ? `<span>~${fmtNum(Math.round(pj.bfAt))}% mỡ nếu giữ được cơ</span>` : ''}</div>
@@ -1342,6 +1349,94 @@ function waterCard(k) {
       <div class="grow"><b>Nước ${fmtNum(ml / 1000)} / ${fmtNum(goal / 1000)} lít</b><div class="cups">${Array.from({ length: Math.max(cups, have) }, (_, i) => `<i class="${i < have ? 'on' : ''}"></i>`).join('')}</div></div>
       <button class="icon" data-act="water" data-v="-250" aria-label="Bớt 1 ly">${ic('minus')}</button><button class="icon add" data-act="water" data-v="250" aria-label="Thêm 1 ly">${ic('plus')}</button></div>
     ${supps.length ? `<div class="chips wrap mt">${supps.map(s => `<button class="chip${suppsOf(k).includes(s) ? ' on' : ''}" data-act="supp" data-s="${esc(s)}">${suppsOf(k).includes(s) ? ic('check') + ' ' : ''}${esc(s)}</button>`).join('')}</div>` : ''}</div>`;
+}
+/* ---------- readiness check + quick 30-minute mode, asked when a planned session starts ---------- */
+let readyDraft = null;
+const READY_E = [['Mệt', -2], ['Bình thường', 0], ['Sung', 1]], READY_S = [['Không', 0], ['Hơi mỏi', -1], ['Đau nhiều', -2]];
+function readyPlan(r) {
+  const sl = lastNight(), h = sl ? sleepMin(sl) / 60 : r.sleepAns;
+  const pts = (h == null ? 0 : h < 6 ? -2 : h < 7 ? -1 : 0) + READY_E[r.energy][1] + READY_S[r.sore][1];
+  const level = pts <= -3 ? 2 : pts <= -1 ? 1 : 0;
+  return { pts, level, setsF: [1, .75, .6][level], wF: [1, .95, .9][level], h };
+}
+function quickExs(exs) { return exs.slice(0, 3).map(e => ({ ...e, sets: Math.min(3, e.sets), rest: Math.min(e.rest || S.settings.rest, 75) })); }
+function openReady(name, exercises, extra) {
+  readyDraft = readyDraft && readyDraft.name === name ? { ...readyDraft, exercises, extra } : { name, exercises, extra, energy: 1, sore: 0, sleepAns: null, quick: false };
+  renderReady();
+}
+function renderReady() {
+  const r = readyDraft, p = readyPlan(r), sl = lastNight(), exs = r.quick ? quickExs(r.exercises) : r.exercises;
+  const seg = (k, opts) => `<div class="seg">${opts.map(([l], i) => `<button class="${r[k] === i ? 'on' : ''}" data-act="readySet" data-k="${k}" data-v="${i}">${l}</button>`).join('')}</div>`;
+  const msg = [['Bình thường', 'Tập đủ kế hoạch.' + (READY_E[r.energy][1] > 0 && p.pts >= 0 ? ' Hôm nay khỏe: thử lên tạ nếu được gợi ý.' : '')],
+    ['Buổi nhẹ', 'Bớt ~25% số hiệp, tạ ~95%.'], ['Buổi rất nhẹ', 'Bớt ~40% số hiệp, tạ ~90%. Tập cho có, đừng cố.']][p.level];
+  openSheet(`<div class="sheet-h"><h3>Trước khi tập</h3><button class="link" data-act="closeSheet">Đóng</button></div>
+    <div class="rd-q"><span>Đêm qua ngủ</span>${sl ? `<b>${fmtHM(sleepMin(sl))}</b>` : `<div class="seg">${[['Dưới 6 tiếng', 5], ['Khoảng 6–7', 6.5], ['Đủ 7+', 8]].map(([l, v]) => `<button class="${r.sleepAns === v ? 'on' : ''}" data-act="readySleep" data-v="${v}">${l}</button>`).join('')}</div>`}</div>
+    <div class="rd-q"><span>Năng lượng</span>${seg('energy', READY_E)}</div>
+    <div class="rd-q"><span>Đau mỏi cơ</span>${seg('sore', READY_S)}</div>
+    <button class="rd-quick${r.quick ? ' on' : ''}" data-act="readyQuick">${ic('clock')}<span class="grow"><b>Chỉ có khoảng 30 phút</b><small>Giữ 3 bài đầu (bài chính), tối đa 3 hiệp, nghỉ 75 giây</small></span><i>${r.quick ? ic('check') : ''}</i></button>
+    <div class="rd-res lv${p.level}"><b>${msg[0]}</b><span>${msg[1]}</span><small>${exs.length} bài · ~${estMinutes(exs.map(e => ({ ...e, sets: Math.max(1, Math.round(e.sets * p.setsF)) })))} phút</small></div>
+    <button class="btn primary big mt" data-act="readyGo">${ic('play')} Bắt đầu</button>
+    <button class="text-btn" data-act="readySkip">Bỏ qua, tập theo kế hoạch</button>`, () => { readyDraft = null; });
+}
+function readyGo(skip) {
+  const r = readyDraft; if (!r) return;
+  const p = readyPlan(r), mode = skip ? null : { setsF: p.setsF, wF: p.wF, quick: r.quick, ready: { energy: READY_E[r.energy][0], sore: READY_S[r.sore][0], level: p.level } };
+  readyDraft = null; sheetOnClose = null; closeSheet();
+  startFrom(r.name, r.exercises, { ...r.extra, ...(mode ? { mode } : {}) });
+}
+
+/* ---------- personal goals to Tết ---------- */
+const GOAL_KIND = { lift: ['Tạ', 'kg', 1], weight: ['Cân nặng', 'kg', -1], waist: ['Vòng bụng', 'cm', -1], bf: ['% mỡ', '%', -1] };
+function goalNow(g) {
+  if (g.kind === 'lift') { const m = bestOf(g.ex).maxW; return m || null; }
+  if (g.kind === 'weight') { const s = weightSlope(); return s ? s.now : (bodyLog().filter(b => b.w).pop() || {}).w ?? null; }
+  if (g.kind === 'waist') return (bodyLog().filter(b => b.waist).pop() || {}).waist ?? null;
+  return bodyComp().bf;
+}
+// change per week from a straight line through recent points
+function slopeOf(pts) {
+  if (pts.length < 3 || pts[pts.length - 1][0] - pts[0][0] < 10 * 864e5) return null;
+  const mx = pts.reduce((a, p) => a + p[0], 0) / pts.length, my = pts.reduce((a, p) => a + p[1], 0) / pts.length;
+  return pts.reduce((a, p) => a + (p[0] - mx) * (p[1] - my), 0) / pts.reduce((a, p) => a + (p[0] - mx) ** 2, 0) * 7 * 864e5;
+}
+function goalRate(g) {
+  const since = Date.now() - 56 * 864e5;
+  if (g.kind === 'weight') return weightSlope()?.perWeek ?? null;
+  if (g.kind === 'waist') return slopeOf(bodyLog().filter(b => b.waist && b.t > since).map(b => [b.t, b.waist]));
+  if (g.kind === 'bf') return slopeOf(bfSeries().filter(x => x.t > since).map(x => [x.t, x.bf]));
+  return slopeOf(S.workouts.filter(w => w.startedAt > since).map(w => { const e = w.exercises.find(e => e.name === g.ex); return e ? [w.startedAt, Math.max(...e.sets.map(s => s.w))] : null; }).filter(Boolean).reverse());
+}
+function goalStatus(g) {
+  const cur = goalNow(g), dir = GOAL_KIND[g.kind][2], weeks = Math.max(0, (new Date(TET + 'T00:00') - Date.now()) / (7 * 864e5));
+  if (cur == null) return { cur, pct: 0, txt: 'Chưa có số liệu' };
+  const done = dir > 0 ? cur >= g.target : cur <= g.target, span = g.target - g.start;
+  const pct = done ? 100 : span ? Math.max(0, Math.min(100, (cur - g.start) / span * 100)) : 0;
+  if (done) return { cur, pct, done, txt: 'Đã đạt 🎉' };
+  const r0 = goalRate(g), rate = g.kind === 'lift' && r0 != null ? Math.min(r0, weightStep(g.ex) / 2) : r0, need = weeks ? (g.target - cur) / weeks : null, at = rate != null ? cur + rate * weeks : null;
+  const ok = at != null && (dir > 0 ? at >= g.target : at <= g.target), u = GOAL_KIND[g.kind][1];
+  return { cur, pct, ok, txt: at == null ? `Cần ${fmtSigned(Math.round(need * 100) / 100)} ${u}/tuần` : ok ? `Kịp Tết (dự kiến ${fmtNum(Math.round(at * 10) / 10)} ${u})` : `Chưa kịp: dự kiến ${fmtNum(Math.round(at * 10) / 10)} ${u}, cần ${fmtSigned(Math.round(need * 100) / 100)} ${u}/tuần` };
+}
+function goalsCard() {
+  const gs = S.goals || [];
+  return `<div class="section-h"><h2>Mục tiêu tới Tết</h2><button class="link" data-act="goalAdd">${ic('plus')} Thêm</button></div>
+    ${gs.length ? `<div class="card">${gs.map(g => { const s = goalStatus(g), [lbl, u] = GOAL_KIND[g.kind];
+      return `<div class="goal"><div class="row"><b class="grow">${g.kind === 'lift' ? esc(exTitle(g.ex)) : lbl}: ${fmtNum(g.target)} ${u}</b><button class="del" data-act="goalDel" data-id="${g.id}" aria-label="Xóa">${ic('x')}</button></div>
+        <div class="bar thin"><i style="width:${s.pct}%;background:${s.done || s.ok ? 'var(--ok)' : 'var(--warn)'}"></i></div>
+        <div class="small muted">Hiện tại ${s.cur != null ? fmtNum(Math.round(s.cur * 10) / 10) + ' ' + u : '—'} · bắt đầu ${fmtNum(g.start)} ${u}</div><div class="small" style="color:${s.done || s.ok ? 'var(--ok)' : 'var(--warn)'};margin-top:2px">${s.txt}</div></div>`; }).join('')}</div>`
+    : `<button class="next-meal" data-act="goalAdd">${ic('trophy')}<span class="grow"><b>Đặt mục tiêu</b><small>VD: Bench 80 kg, vòng bụng 78 cm, cân 66 kg</small></span>${ic('chev')}</button>`}`;
+}
+let goalDraft = null;
+function openGoalAdd() {
+  goalDraft = goalDraft || { kind: 'lift', ex: 'Bench Press' };
+  const done = [...new Set(S.workouts.flatMap(w => w.exercises.map(e => e.name)))].filter(n => !isCardio(n) && EX_LOAD[n] !== 'body');
+  const lifts = [...new Set(['Bench Press', 'Squat', 'Deadlift', 'Overhead Press', ...done])];
+  const g = goalDraft, cur = goalNow({ kind: g.kind, ex: g.ex }), u = GOAL_KIND[g.kind][1];
+  openSheet(`<div class="sheet-h"><h3>Mục tiêu tới Tết</h3><button class="link" data-act="closeSheet">Đóng</button></div>
+    <div class="seg" style="margin-bottom:10px">${Object.entries(GOAL_KIND).map(([k, [l]]) => `<button class="${g.kind === k ? 'on' : ''}" data-act="goalKind" data-v="${k}">${l}</button>`).join('')}</div>
+    ${g.kind === 'lift' ? `<select id="goalEx" style="margin-bottom:10px">${lifts.map(n => `<option value="${esc(n)}" ${n === g.ex ? 'selected' : ''}>${esc(exTitle(n))}</option>`).join('')}</select>` : ''}
+    <div class="small" style="margin-bottom:8px">Hiện tại: <b>${cur != null ? fmtNum(Math.round(cur * 10) / 10) + ' ' + u : 'chưa có số liệu'}</b>${g.kind === 'lift' ? ' (tạ nặng nhất từng làm)' : ''}</div>
+    <label class="small">Mục tiêu (${u})<input id="goalT" inputmode="decimal" placeholder="${cur != null ? esc(fmtNum(Math.round(cur * (GOAL_KIND[g.kind][2] > 0 ? 1.1 : .95)))) : ''}"></label>
+    <button class="btn primary big mt" data-act="goalSave">Lưu mục tiêu</button>`);
 }
 function exThumbSm(name) { const src = exImg(name, 0); return src ? `<img src="${src}" alt="" loading="lazy">` : `<span class="ph">${ic('barbell')}</span>`; }
 function exRow2(ex, i) {
@@ -1564,7 +1659,7 @@ const queueBadges = () => { clearTimeout(badgeTimer); badgeTimer = setTimeout(()
 function viewProfile() {
   const c = bodyComp(), b3 = big3(), st = badgeStats(), got = S.badges || {}, n = BADGES.filter(b => got[b[0]]).length;
   const delta = (v, unit, goodDown) => v == null || Math.abs(v) < .05 ? '' : `<em class="${(v < 0) === goodDown ? 'lime' : 'bad'}">${v > 0 ? '+' : ''}${fmtNum(Math.round(v * 10) / 10)}${unit} / 3 tuần</em>`;
-  return `<div class="card stats-card"><div class="stats" style="grid-template-columns:repeat(3,1fr)">
+  return `${goalsCard()}<div class="card stats-card"><div class="stats" style="grid-template-columns:repeat(3,1fr)">
       <div class="stat"><b>${c.w ? fmtNum(c.w) : '—'}<small>kg</small></b><span>Cân nặng</span>${delta(c.dW, ' kg', S.profile?.goal !== 'bulk')}</div>
       <div class="stat"><b>${c.lean ? fmtNum(c.lean) : '—'}<small>kg</small></b><span>Khối nạc</span>${delta(c.dLean, ' kg', false)}</div>
       <div class="stat"><b>${c.bf != null ? fmtNum(c.bf) : '—'}<small>%</small></b><span>Tỷ lệ mỡ</span>${delta(c.dBF, '%', true)}</div></div>
@@ -2281,6 +2376,7 @@ async function aiReviewWorkout(id) {
     plannedMinutes: w.plan?.length ? estMinutes(w.plan) : null,
     weeklySchedule: S.routines.filter(r => r.day).map(r => r.name), history4Weeks: history,
     painAreas: painNow(),
+    readiness: w.ready || null, quickSession: !!w.quick,
     sleepBeforeSession: (e => e ? { hours: Math.round(sleepMin(e) / 6) / 10, bed: e.bed, wake: e.wake } : 'không ghi')(S.sleep?.[dayKey(w.startedAt)]),
   };
   return askAI({
@@ -2850,7 +2946,7 @@ function exGrade(ex) {
   // Fail = not enough work for growth: fewer sets than planned, or total reps below plan × minimum reps
   // (an extra set can make that up), or clearly weaker than last time (one back-off set settles it).
   const under = r ? sets.filter(s => s.r < r[0]) : [], allTop = r ? sets.every(s => s.r >= r[1]) : false;
-  const short = r ? plan * r[0] - sets.reduce((a, s) => a + s.r, 0) : 0, drop = !S.active.deload && pe1 > 0 && e1 > 0 && e1 < pe1 * .97;
+  const short = r ? plan * r[0] - sets.reduce((a, s) => a + s.r, 0) : 0, drop = !S.active.wF && pe1 > 0 && e1 > 0 && e1 < pe1 * .97;
   let score = 100 - 15 * under.length - 15 * Math.max(0, plan - sets.length) - (drop ? 15 : 0), fail = false;
   if (sets.length < plan) { fail = true; issues.push(`Thiếu ${plan - sets.length} set so với kế hoạch`); }
   if (short > 0) { fail = true; issues.push(`${under.length} set dưới ${r[0]} rep, thiếu ${short} rep so với mức tối thiểu (${plan} × ${r[0]})`); }
@@ -3220,12 +3316,15 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
 function newSets(n, name) { return Array.from({ length: Math.max(1, n) }, () => ({ w: '', r: '', done: false })); }
 function startFrom(name, exercises, extra = {}) {
   focusEx = null;
-  const dl = deloadOn(), ns = n => dl ? Math.max(1, Math.round(n * .6)) : n;
-  S.active = { name, startedAt: Date.now(), ...(dl ? { deload: true } : {}), exercises: exercises.map(e => ({ name: e.name, sets: newSets(ns(e.sets)), planSets: ns(e.sets), ...(e.reps ? { reps: e.reps } : {}), ...(e.rest ? { rest: e.rest } : {}) })), ...extra };
+  const { mode, ...rest } = extra; extra = rest;
+  const dl = deloadOn(), sf = Math.min(dl ? .6 : 1, mode?.setsF || 1), wf = Math.min(dl ? .9 : 1, mode?.wF || 1), ns = n => Math.max(1, Math.round(n * sf));
+  if (mode?.quick) exercises = quickExs(exercises);
+  S.active = { name, startedAt: Date.now(), ...(dl ? { deload: true } : {}), ...(wf < 1 ? { wF: wf } : {}), ...(mode?.quick ? { quick: true } : {}), ...(mode?.ready ? { ready: mode.ready } : {}), exercises: exercises.map(e => ({ name: e.name, sets: newSets(ns(e.sets)), planSets: ns(e.sets), ...(e.reps ? { reps: e.reps } : {}), ...(e.rest ? { rest: e.rest } : {}) })), ...extra };
   restEnd = 0; save(); tab = 'workout'; requestWake(); render(); window.scrollTo(0, 0);
   const hurt = S.active.exercises.filter(e => painHit(e.name)?.level === 'p').length;
   if (hurt) toast(`${hurt} bài dồn lực vào chỗ đang đau, có nút đổi bài trong từng bài`, 4000);
   else if (dl) toast('Tuần giảm tải: đã bớt số hiệp', 3000);
+  else if (sf < 1) toast('Buổi nhẹ: đã bớt số hiệp và mức tạ', 3000);
 }
 const A = {
   tab: d => {
@@ -3252,8 +3351,8 @@ const A = {
   },
   delSetAt: d => { const ex = target().exercises[+d.i]; if (ex.sets.length > 1) { ex.sets.splice(+d.j, 1); render(); } else toast('Mỗi bài cần ít nhất 1 set (hoặc xóa cả bài)'); },
   startEmpty: () => startFrom('Buổi tập ' + new Date().toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }), []),
-  startRoutine: d => { const r = S.routines.find(x => x.id === d.id); if (r) startFrom(r.name, r.exercises, { routineId: r.id }); },
-  startSplit: d => { const sp = SPLITS[d.k]; if (sp) startFrom(sp.name, sp.ex.map(name => ({ name, sets: 3 }))); },
+  startRoutine: d => { const r = S.routines.find(x => x.id === d.id); if (r) openReady(r.name, r.exercises, { routineId: r.id }); },
+  startSplit: d => { const sp = SPLITS[d.k]; if (sp) openReady(sp.name, sp.ex.map(name => ({ name, sets: 3 })), {}); },
   addExercise: () => openPicker(name => { target().exercises.push({ name, sets: newSets(lastSets(name)?.length || 3) }); save(); render(); window.scrollTo(0, document.body.scrollHeight); }),
   removeEx: d => { const ex = target().exercises[+d.i]; if (confirm(`Xóa "${ex.name}" khỏi buổi tập?`)) { target().exercises.splice(+d.i, 1); focusEx = null; save(); render(); } },
   moveEx: d => { const i = +d.i, a = target().exercises; [a[i - 1], a[i]] = [a[i], a[i - 1]]; focusEx = null; save(); render(); },
@@ -3284,7 +3383,7 @@ const A = {
     if (!confirm('Kết thúc và lưu buổi tập?')) return;
     const prs = exs.filter(e => { const b = bestOf(e.name); return !isCardio(e.name) && b.maxW > 0 && Math.max(...e.sets.map(s => s.w)) > b.maxW; }).map(e => e.name);
     const w = { id: uid(), name: a.name.trim() || 'Buổi tập', startedAt: a.startedAt, endedAt: a.startedAt + activeMs(a), exercises: exs, prs,
-      plan: a.exercises.map(e => ({ name: e.name, sets: e.sets.length, ...(e.reps ? { reps: e.reps } : {}) })), ...(a.routineId ? { routineId: a.routineId } : {}) };
+      plan: a.exercises.map(e => ({ name: e.name, sets: e.sets.length, ...(e.reps ? { reps: e.reps } : {}) })), ...(a.routineId ? { routineId: a.routineId } : {}), ...(a.ready ? { ready: a.ready } : {}), ...(a.quick ? { quick: true } : {}) };
     S.workouts.unshift(w); S.active = null; restEnd = 0; save(); releaseWake();
     tab = 'history'; openId = w.id; render(); window.scrollTo(0, 0);
     toast(prs.length ? `🏆 PR mới: ${prs.join(', ')}` : 'Đã lưu buổi tập 🎉');
@@ -3553,6 +3652,20 @@ const A = {
   collageSave: () => saveCollage(),
   water: d => { const k = tab === 'nutrition' ? foodDay : dayKey(); S.water = S.water || {}; S.water[k] = Math.max(0, waterOf(k) + +d.v); save(); render(); if (+d.v > 0 && waterOf(k) >= waterGoal() && waterOf(k) - +d.v < waterGoal()) toast('Đủ nước hôm nay 💧'); },
   supp: d => { const k = foodDay; S.suppLog = S.suppLog || {}; const l = S.suppLog[k] = suppsOf(k).slice(); const i = l.indexOf(d.s); if (i >= 0) l.splice(i, 1); else l.push(d.s); save(); render(); },
+  readySet: d => { readyDraft[d.k] = +d.v; renderReady(); },
+  readySleep: d => { readyDraft.sleepAns = +d.v; renderReady(); },
+  readyQuick: () => { readyDraft.quick = !readyDraft.quick; renderReady(); },
+  readyGo: () => readyGo(false),
+  readySkip: () => readyGo(true),
+  goalAdd: () => { goalDraft = null; openGoalAdd(); },
+  goalKind: d => { goalDraft.kind = d.v; openGoalAdd(); },
+  goalSave: () => {
+    const g = goalDraft, t = num($('#goalT').value), cur = goalNow({ kind: g.kind, ex: g.ex });
+    if (!(t > 0)) { toast('Nhập con số mục tiêu'); return; }
+    S.goals = [...(S.goals || []), { id: uid(), kind: g.kind, ...(g.kind === 'lift' ? { ex: g.ex } : {}), target: t, start: cur != null ? Math.round(cur * 10) / 10 : t, t: Date.now() }];
+    goalDraft = null; save(); closeSheet(); render(); toast('Đã thêm mục tiêu');
+  },
+  goalDel: d => { if (confirm('Xóa mục tiêu này?')) { S.goals = S.goals.filter(g => g.id !== d.id); save(); render(); } },
   focusEx: d => { focusEx = +d.i; render(); requestAnimationFrame(() => $('#ex' + d.i)?.scrollIntoView({ block: 'start', behavior: 'smooth' })); },
   bump: d => {
     const ex = target().exercises[+d.i], cur = ex.sets.findIndex(s => !s.done); if (cur < 0) return;
@@ -3670,6 +3783,7 @@ document.addEventListener('input', e => {
   else if (t.id === 'mfQ') renderManualList(t.value);
   else if (t.id === 'progQ') renderProgList(t.value);
   else if (t.id === 'calcW' || t.id === 'calcR') calcOut();
+  else if (t.id === 'goalEx' && goalDraft) { goalDraft.ex = t.value; openGoalAdd(); }
   else if (t.id === 'setBed' && t.value) { S.settings.sleepBed = t.value; save(); }
   else if (t.id === 'setSupps') { S.settings.supps = t.value.split(',').map(x => x.trim()).filter(Boolean).slice(0, 8); save(); }
   else if ((t.id === 'vCmpA' || t.id === 'vCmpB') && vault.key) { vault.cmp = [+$('#vCmpA').value, +$('#vCmpB').value]; render(); }

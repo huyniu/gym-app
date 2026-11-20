@@ -77,6 +77,37 @@ const T = {
     eq(d.parts.reduce((a, p) => a + p[2], 0), 100, 'tổng điểm tối đa');
     ok(d.parts.some(p => p[0] === 'Giấc ngủ' && p[1] === 15), 'ngủ 8 tiếng phải đủ 15');
   },
+  'Ngủ trưa: cộng vào giờ ngủ, tối đa 90 phút': () => {
+    const pts = naps => { fresh(`S.sleepSince = addDays(dayKey(), -3); S.sleep = { [dayKey()]: { bed: '23:00', wake: '05:00' } }; S.naps = { [dayKey()]: ${JSON.stringify(naps)} }`); return ev(`dayScore(dayKey()).parts.find(p => p[0] === 'Giấc ngủ')[1]`); };
+    eq(pts([]), 8, 'đêm 6 tiếng, không ngủ trưa');
+    eq(pts([{ s: '12:30', e: '13:30' }]), 12, '6h + 60 phút = 7h');
+    eq(pts([{ s: '12:00', e: '14:30' }]), 15, '150 phút chỉ tính 90 → 7,5h');
+    ok(ev(`dayScore(dayKey()).items.some(i => /quá dài/.test(i[1]))`), 'phải nhắc ngủ trưa quá dài');
+    pts([{ s: '17:00', e: '17:30' }]);
+    ok(ev(`dayScore(dayKey()).items.some(i => /sau 16 giờ/.test(i[1]))`), 'phải nhắc ngủ muộn');
+    // logging through the sheet: quick button, manual times, delete
+    fresh();
+    ev(`openNap(dayKey()); document.querySelector('[data-act="napQuick"][data-v="30"]').click()`);
+    eq(ev(`napMin(dayKey())`), 30, 'nút 30 phút');
+    ev(`document.querySelector('#napS').value = '14:00'; document.querySelector('#napE').value = '14:20'; document.querySelector('[data-act="saveNap"]').click()`);
+    eq(ev(`napMin(dayKey())`), 50, 'thêm 20 phút bằng giờ');
+    ok(ev(`dayDetail(dayKey())`).includes('Ngủ trưa <b>50 phút</b>'), 'chi tiết ngày có ngủ trưa');
+    ev(`tab = 'body'; render()`); ok(ev(`!!document.querySelector('[data-act="napLog"]')`), 'trang Cơ thể có nút ngủ trưa');
+    ev(`openNap(dayKey()); document.querySelector('[data-act="delNap"]').click()`);
+    eq(ev(`napsOf(dayKey()).length`), 1, 'xóa một lần ngủ trưa');
+  },
+  'Món ăn vặt: tìm không dấu, có ảnh': async () => {
+    fresh();
+    ev(`openManualFood()`);
+    const names = q => { ev(`renderManualList(${JSON.stringify(q)})`); return ev(`document.querySelector('#mfList').textContent`); };
+    ok(names('tieu pho mai').includes('Bánh tiêu phô mai'), 'tìm "tieu pho mai"');
+    ok(names('chuoi').includes('Bánh chuối nướng') && names('chuoi').includes('Bánh chuối chiên'), 'tìm "chuoi"');
+    ok(names('ca vien').includes('Cá viên chiên'), 'tìm "ca vien"');
+    for (const n of ['Bánh chuối nướng', 'Bánh tiêu phô mai', 'Nem chua rán']) {
+      const src = ev(`dishImg(${JSON.stringify(n)})`); ok(src, 'thiếu ảnh ' + n);
+      ok((await fetch('../' + src)).ok, 'không tải được ' + src);
+    }
+  },
   'Lịch tuần: bỏ buổi thì lùi lịch': () => {
     fresh(`S.routines = ['A', 'B', 'C'].map((n, i) => ({ id: n, name: n, day: i + 1, exercises: [{ name: 'Squat', sets: 3 }] }))`);
     const st = ev(`schedState(weekStart() + 3 * 864e5 + 10 * 36e5)`); // Thursday, nothing trained

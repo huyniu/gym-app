@@ -303,6 +303,18 @@ const A = {
     toast(`Đã ghi: ngủ ${fmtHM(m)}${m < 360 ? '. Ngủ thiếu, hôm nay đừng ép tạ' : ''}`, 3000);
   },
   sleepLog: d => openSleep(d.k),
+  napLog: d => openNap(d.k),
+  napQuick: d => { const now = new Date(), nm = now.getHours() * 60 + now.getMinutes(), e = m2hm(nm), s = m2hm(nm - +d.v); A.addNap(d.k, s, e); },
+  saveNap: d => { const s = $('#napS').value, e = $('#napE').value; if (!s || !e) { toast('Nhập giờ bắt đầu và kết thúc'); return; } A.addNap(d.k, s, e); },
+  addNap: (k, s, e) => {
+    const m = sleepMin({ bed: s, wake: e });
+    if (m < 5 || m > 4 * 60) { toast(`${m} phút nghe không hợp lý, kiểm tra lại giờ`); return; }
+    S.naps = S.naps || {}; S.naps[k] = [...napsOf(k), { s, e }].sort((a, b) => hm2m(a.s) - hm2m(b.s));
+    save(); openNap(k); render();
+    const bad = napBad(k);
+    toast(bad === 'long' ? `Đã ghi. Tổng ${napMin(k)} phút, chỉ tính ${NAP_CAP}; ngủ trưa dài dễ khó ngủ tối` : bad === 'late' ? 'Đã ghi. Ngủ sau 16 giờ dễ làm tối khó ngủ' : `Đã ghi ngủ trưa ${m} phút`, 3000);
+  },
+  delNap: d => { const l = napsOf(d.k).filter((_, i) => i !== +d.i); if (l.length) S.naps[d.k] = l; else delete S.naps[d.k]; save(); openNap(d.k); render(); },
   delSleep: d => { if (!confirm('Xóa lần ghi giấc ngủ này?')) return; delete S.sleep[d.k]; save(); closeSheet(); render(); },
   setSleepH: d => { S.settings.sleepH = +d.v; save(); render(); },
   step: d => {
@@ -457,6 +469,8 @@ const A = {
     const bids = new Set((S.body || []).map(b => b.id)); S.body = [...(S.body || []), ...(d.body || []).filter(b => !bids.has(b.id))];
     if (d.photoAt && !(S.photoAt > d.photoAt)) S.photoAt = d.photoAt;
     S.photos = { ...(d.photos || {}), ...(S.photos || {}) };
+    S.sleep = { ...(d.sleep || {}), ...(S.sleep || {}) }; S.naps = { ...(d.naps || {}), ...(S.naps || {}) };
+    if (d.sleepSince && !(S.sleepSince <= d.sleepSince)) S.sleepSince = d.sleepSince;
     for (const [k, v] of Object.entries(d.food || {})) { const have = new Set((S.food[k] || []).map(f => f.id)); S.food[k] = [...(S.food[k] || []), ...v.filter(f => !have.has(f.id))]; }
     recomputePRs(); save(); sheetOnClose = null; closeSheet(); render(); toast(`Đã thêm ${add.length} buổi tập mới`);
   },

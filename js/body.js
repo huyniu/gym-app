@@ -313,12 +313,19 @@ const lastNight = () => S.sleep?.[dayKey()] || null;
 const shortSleep = () => { const e = lastNight(); return e && sleepMin(e) < 360 ? e : null; };
 // minutes later than the goal bedtime (negative = earlier), wrapped to −12h…+12h
 const bedLate = e => (hm2m(e.bed) - hm2m(sleepGoal().bed) + 2160) % 1440 - 720;
+// Naps: S.naps[day] = [{ s: 'HH:MM', e: 'HH:MM' }]. Up to NAP_CAP minutes a day count toward the sleep goal.
+const NAP_CAP = 90;
+const napsOf = k => S.naps?.[k] || [];
+const napMin = k => napsOf(k).reduce((a, n) => a + sleepMin({ bed: n.s, wake: n.e }), 0);
+// a nap is "bad" when it is long or late, because it makes falling asleep at night harder
+const napBad = k => { const m = napMin(k), late = napsOf(k).some(n => hm2m(n.s) >= 16 * 60); return m > NAP_CAP ? 'long' : late ? 'late' : ''; };
 function sleepPts(k) { // out of 15
   const e = S.sleep?.[k]; if (!e) return null;
-  const hrs = sleepMin(e) / 60, g = sleepGoal(), late = bedLate(e);
+  const nap = napMin(k), napUsed = Math.min(nap, NAP_CAP);
+  const hrs = (sleepMin(e) + napUsed) / 60, g = sleepGoal(), late = bedLate(e);
   let p = hrs >= g.h ? 15 : hrs >= 7 ? 12 : hrs >= 6 ? 8 : 3;
   if (late > 60) p = Math.max(0, p - 3);
-  return { p, hrs, late, e };
+  return { p, hrs, late, e, nap, napUsed };
 }
 function sleepPrefill(k) {
   const e = S.sleep?.[k]; if (e) return e;
@@ -336,20 +343,50 @@ function openSleep(k) {
     ${sleepInputs(k, 'sh')}
     ${e ? `<button class="text-btn" data-act="delSleep" data-k="${k}">Xóa lần ghi này</button>` : ''}`);
 }
+function openNap(k) {
+  const today = k === dayKey(), list = napsOf(k), m = napMin(k), bad = napBad(k);
+  openSheet(`<div class="sheet-h"><h3>Ngủ trưa</h3><button class="link" data-act="closeSheet">Đóng</button></div>
+    <div class="muted small" style="margin-bottom:8px">${esc(new Date(k + 'T12:00').toLocaleDateString('vi-VN', { weekday: 'long', day: 'numeric', month: 'numeric' }))} · tối đa ${NAP_CAP} phút được cộng vào giờ ngủ. Tốt nhất 20–30 phút, trước 15 giờ.</div>
+    ${today ? `<div class="small" style="margin-bottom:6px">Vừa ngủ dậy:</div><div class="chips wrap">${[20, 30, 60, 90].map(v => `<button class="chip" data-act="napQuick" data-k="${k}" data-v="${v}">${v} phút</button>`).join('')}</div>
+      <div class="small" style="margin:14px 0 0">Hoặc nhập giờ:</div>` : ''}
+    <div class="sleep-in">
+      <label class="slot-time">Từ<input type="time" id="napS" value="13:00" aria-label="Giờ bắt đầu ngủ trưa"></label>
+      <label class="slot-time">Đến<input type="time" id="napE" value="13:30" aria-label="Giờ thức dậy"></label>
+      <button class="btn primary" data-act="saveNap" data-k="${k}">Thêm</button></div>
+    ${list.length ? `<div class="mt">${list.map((n, i) => `<div class="food" style="align-items:center"><span class="grow">${esc(n.s)}–${esc(n.e)}</span><span class="muted small">${sleepMin({ bed: n.s, wake: n.e })} phút</span>
+      <button class="del" data-act="delNap" data-k="${k}" data-i="${i}" aria-label="Xóa">${ic('x')}</button></div>`).join('')}</div>
+      <div class="small mt" style="color:${bad ? 'var(--warn)' : 'var(--muted)'}">Tổng ${m} phút${bad === 'long' ? `: quá ${NAP_CAP} phút, chỉ tính ${NAP_CAP}, và dễ khó ngủ tối nay` : bad === 'late' ? ': ngủ sau 16 giờ dễ làm tối khó ngủ' : ''}</div>` : ''}`);
+}
 function sleepWarn() {
   const e = shortSleep(); if (!e) return '';
   return `<div class="card remind sleep-warn"><span class="qt-ic">${ic('moon')}</span><span class="grow"><b>Đêm qua chỉ ngủ ${fmtHM(sleepMin(e))}</b>
-    <small>Giữ mức tạ như buổi trước, đừng cố lên tạ hay ép PR. Thấy chóng mặt, tim đập bất thường thì dừng.</small></span></div>`;
+    <small>Giữ mức tạ như buổi trước, đừng cố lên tạ hay ép PR. Thấy chóng mặt, tim đập bất thường thì dừng.${napMin(dayKey()) ? '' : ' Chiều nay chợp mắt 20–30 phút sẽ đỡ hơn.'}</small></span>
+    ${napMin(dayKey()) ? '' : `<button class="btn" data-act="napLog" data-k="${dayKey()}">Ngủ trưa</button>`}</div>`;
 }
 function sleepSection() {
   if (!S.profile && !S.workouts.length) return '';
   const g = sleepGoal(), days = []; for (let i = 13; i >= 0; i--) days.push(addDays(dayKey(), -i));
   const have = days.filter(k => S.sleep?.[k]), last7 = days.slice(-7).filter(k => S.sleep?.[k]);
-  const avg = last7.length ? last7.reduce((a, k) => a + sleepMin(S.sleep[k]), 0) / last7.length : 0;
+  const avg = last7.length ? last7.reduce((a, k) => a + sleepMin(S.sleep[k]) + Math.min(napMin(k), NAP_CAP), 0) / last7.length : 0;
   return `<div class="section-h"><h2>Giấc ngủ</h2><span class="muted small">${last7.length ? `TB 7 ngày ${fmtHM(avg)} · mục tiêu ${fmtNum(g.h)}h` : `Mục tiêu ${fmtNum(g.h)}h`}</span></div>
-    <div class="card">${have.length >= 2 ? chart(have.map(k => Math.round(sleepMin(S.sleep[k]) / 6) / 10), have.map(k => new Date(k + 'T12:00').toLocaleDateString('vi-VN', { day: 'numeric', month: 'numeric' })))
-      : '<div class="muted small">Ghi giấc ngủ 2 đêm trở lên để xem biểu đồ.</div>'}
+    <div class="card">${have.length >= 2 ? sleepBars(days) : '<div class="muted small">Ghi giấc ngủ 2 đêm trở lên để xem biểu đồ.</div>'}
       ${avg && avg < g.h * 60 - 30 ? `<div class="small mt" style="color:var(--warn)">Thiếu trung bình ${fmtHM(g.h * 60 - avg)} mỗi đêm. Ngủ thiếu làm phục hồi chậm và dễ đói hơn.</div>` : ''}
-      <button class="btn mt" data-act="sleepLog" data-k="${dayKey()}">${ic('moon')} ${lastNight() ? 'Sửa giấc ngủ đêm qua' : 'Ghi giấc ngủ đêm qua'}</button></div>`;
+      <div class="row gap mt"><button class="btn grow" data-act="sleepLog" data-k="${dayKey()}">${ic('moon')} ${lastNight() ? 'Sửa đêm qua' : 'Ghi đêm qua'}</button>
+      <button class="btn grow" data-act="napLog" data-k="${dayKey()}">${ic('clock')} ${napMin(dayKey()) ? `Trưa ${napMin(dayKey())}p` : 'Ngủ trưa'}</button></div></div>`;
+}
+// 14 days of sleep as stacked bars: night (lime) + counted nap (blue), dashed line at the goal.
+function sleepBars(days) {
+  const W = 320, H = 150, P = 20, g = sleepGoal().h, n = days.length, bw = (W - 2 * P) / n;
+  const tot = days.map(k => (S.sleep?.[k] ? sleepMin(S.sleep[k]) : 0) / 60 + Math.min(napMin(k), NAP_CAP) / 60);
+  const mx = Math.max(g + 1, ...tot), y = h => H - P - h / mx * (H - 2 * P), lbl = k => new Date(k + 'T12:00').toLocaleDateString('vi-VN', { day: 'numeric', month: 'numeric' });
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Biểu đồ giờ ngủ 14 ngày">
+    <line x1="${P}" x2="${W - P}" y1="${y(g)}" y2="${y(g)}" stroke="#8b93a3" stroke-dasharray="3 4"/>
+    <text x="${W - P}" y="${y(g) - 5}" fill="#8b93a3" font-size="11" text-anchor="end">${fmtNum(g)}h</text>
+    ${days.map((k, i) => { const nt = (S.sleep?.[k] ? sleepMin(S.sleep[k]) : 0) / 60, np = Math.min(napMin(k), NAP_CAP) / 60, x = (P + i * bw + 2).toFixed(1), w = (bw - 4).toFixed(1);
+      return (nt ? `<rect x="${x}" y="${y(nt)}" width="${w}" height="${(y(0) - y(nt)).toFixed(1)}" rx="2" fill="#c6f432"/>` : '') +
+        (np ? `<rect x="${x}" y="${y(nt + np)}" width="${w}" height="${(y(nt) - y(nt + np)).toFixed(1)}" rx="2" fill="#5ab0ff"/>` : ''); }).join('')}
+    <text x="${P}" y="${H - 4}" fill="#8b93a3" font-size="11">${esc(lbl(days[0]))}</text>
+    <text x="${W - P}" y="${H - 4}" fill="#8b93a3" font-size="11" text-anchor="end">${esc(lbl(days[n - 1]))}</text>
+  </svg>${days.some(k => napMin(k)) ? '<div class="muted small"><span style="color:#c6f432">■</span> đêm <span style="color:#5ab0ff">■</span> ngủ trưa</div>' : ''}`;
 }
 

@@ -3,7 +3,7 @@
 
 'use strict';
 const KEY = 'gymlog.v1';
-const APP_VERSION = '2026.11.24';
+const APP_VERSION = '2026.11.25';
 const DEFAULT_EX = EX_DB.map(e => e[0]);
 
 const $ = s => document.querySelector(s);
@@ -180,7 +180,7 @@ const TIPS = {
   comp: ['Khối nạc và % mỡ', '% mỡ tính bằng thước dây theo công thức Hải quân Mỹ (chiều cao, vòng cổ, vòng bụng; nữ thêm vòng hông). AI cũng ước lượng % mỡ từ ảnh body hằng tuần để đối chiếu.<br><br>Khối nạc = cân nặng × (1 − % mỡ). Giảm cân mà khối nạc giữ nguyên là đang mất mỡ, không mất cơ.'],
   big3: ['Big 3', 'Mức sức mạnh = 1RM ước tính (từ các set đã tập) chia cho cân nặng, so với bảng chuẩn phổ biến: Mới tập → Cơ bản → Trung bình → Khá → Giỏi.'],
   ai: ['AI', 'Dùng để chụp bữa ăn tính calo, nhận món trên mâm, chấm buổi tập, chấm ngày và chấm ảnh body.<br><br><b>Gemini</b> (miễn phí): vào <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" style="color:var(--accent)">aistudio.google.com</a> → Get API key → Create API key. Key bắt đầu bằng AQ. hoặc AIza. Gói miễn phí giới hạn số lượt mỗi phút và mỗi ngày.<br><br><b>Claude</b>: tạo key tại <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener" style="color:var(--accent)">console.anthropic.com</a> (cần nạp trước).<br><br>Key chỉ lưu trên máy này, không nằm trong file sao lưu.'],
-  sleep: ['Giấc ngủ', 'Mỗi sáng trang chủ có nút ghi giờ ngủ, giờ dậy. Giấc ngủ chiếm 15/100 điểm ngày; ngủ dưới 6 tiếng thì màn hình tập cảnh báo giữ mức tạ.<br><br>Muốn được nhắc đi ngủ: tạo một tự động hóa trong app Phím tắt (xem mục Nhắc ghi chép), đặt trước giờ ngủ 30 phút.'],
+  sleep: ['Giấc ngủ', 'Mỗi sáng trang chủ có nút ghi giờ ngủ, giờ dậy. Giấc ngủ chiếm 15/100 điểm ngày; ngủ dưới 6 tiếng thì màn hình tập cảnh báo giữ mức tạ.<br><br>Ngủ trưa: bấm Ngủ trưa ở mục Giấc ngủ (trang Cơ thể). Tối đa 90 phút mỗi ngày được cộng vào giờ ngủ; ngủ 20–30 phút trước 15 giờ là tốt nhất.<br><br>Muốn được nhắc đi ngủ: tạo một tự động hóa trong app Phím tắt (xem mục Nhắc ghi chép), đặt trước giờ ngủ 30 phút.'],
   backup: ['Sao lưu', 'Dữ liệu chỉ nằm trên iPhone này. <b style="color:var(--warn)">Xóa app khỏi màn hình chính là mất toàn bộ dữ liệu.</b> Sao lưu mỗi tuần: Xuất dữ liệu → Lưu vào Tệp → iCloud Drive.'],
   body: ['Cách đo', 'Cân buổi sáng sau khi đi vệ sinh, trước khi ăn.<br>Vòng bụng: ngang rốn, thở ra bình thường, 2 tuần một lần.<br>Vòng cổ: ngay dưới yết hầu. Có vòng cổ thì app tính được % mỡ (Thêm → Hồ sơ).'],
   photo: ['Ảnh body', 'Chụp 3 tư thế (trước, nghiêng, sau) mỗi tuần, cùng chỗ, cùng ánh sáng, cùng giờ (sáng, trước khi ăn).<br><br>Chọn ảnh xong được xem lại trước khi lưu. Đủ 3 tư thế là AI chấm ngay, khắt khe; ảnh xấu thì bắt chụp lại.<br><br>Ảnh được mã hóa bằng mật khẩu kho. Kho ảnh không nằm trong file sao lưu thường: dùng nút Xuất kho ảnh.'],

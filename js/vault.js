@@ -186,7 +186,7 @@ const BODY_SCHEMA = obj({
   weakest: { type: 'string' }, posture: { type: 'string' }, vsLast: { type: 'string' },
   nextWeek: { type: 'array', items: { type: 'string' } },
 });
-async function runBodyReview(w) {
+async function runBodyReview(w, onPartial) {
   const cur = posesOf(w); if (cur.some(x => !x)) throw new Error('Cần đủ 3 tư thế: ' + POSES.join(', '));
   const weeks = [...new Set(vault.items.map(i => weekStart(i.t)))].filter(x => x < w).sort((a, b) => b - a);
   const prevW = weeks.find(x => vault.reviews[x] && vault.reviews[x].photoQuality !== 'Chụp lại') ?? weeks[weeks.length - 1] ?? null;
@@ -212,11 +212,11 @@ async function runBodyReview(w) {
       'Bước 1, kiểm tra ảnh: nếu ảnh quá tối, mờ, bị che, không thấy rõ thân người, sai tư thế, hoặc góc/khoảng cách/ánh sáng khác hẳn ảnh lần trước đến mức không so sánh được thì photoQuality="Chụp lại", photoIssue nói rõ phải sửa gì, score=0, verdict="Không đạt", các mục khác ghi ngắn "Chưa chấm được". Ảnh dùng được thì photoQuality="Đạt", photoIssue="". ' +
       'Bước 2, chấm khắt khe. Thang điểm: 50 = không thấy thay đổi so với lần trước; dưới 50 = xấu đi (mỡ bụng nhiều hơn, mềm hơn); 60–70 = tiến bộ nhỏ nhưng thấy được; trên 80 chỉ khi tiến bộ rõ ràng nhìn bằng mắt VÀ khớp số liệu (cân/vòng bụng); trên 90 gần như không cho. Lần đầu (không có ảnh trước) thì chấm theo khoảng cách tới mục tiêu, tối đa 60. Nghi ngờ thì chấm thấp. ' +
       'verdict so với tốc độ cần để kịp mục tiêu Tết (daysUntilTetGoal): "Đạt" khi tiến bộ đúng tốc độ, "Tạm" khi chậm, "Không đạt" khi đứng yên hoặc xấu đi. verdictReason: 1 câu có căn cứ. ' +
-      'bodyFat: ước lượng % mỡ bằng khoảng, ví dụ "18–21%". summary: 2 câu phũ, nói điều quan trọng nhất. areas: đúng 6 mục theo thứ tự Bụng, Ngực, Vai, Lưng, Tay, Chân; mỗi note 1 câu thẳng (vùng không thấy rõ thì ghi "không thấy rõ trong ảnh"). ' +
+      'Viết NGẮN. bodyFat: ước lượng % mỡ bằng khoảng, ví dụ "18–21%". summary: 2 câu phũ, tổng dưới 40 từ, nói điều quan trọng nhất. areas: đúng 6 mục theo thứ tự Bụng, Ngực, Vai, Lưng, Tay, Chân; mỗi note 1 câu thẳng dưới 15 từ (vùng không thấy rõ thì ghi "không thấy rõ trong ảnh"). ' +
       'weakest: vùng yếu nhất và lý do. posture: lệch vai, gù, nghiêng hông, bụng đẩy trước nếu thấy; không có thì ghi "Không thấy lỗi rõ". vsLast: so với ảnh lần trước cụ thể chỗ nào thay đổi, không có ảnh trước thì ghi "Lần đầu, chưa so sánh". ' +
-      'nextWeek: đúng 3 lệnh cụ thể cho tuần tới (tập, ăn, ngủ), dựa trên dữ liệu kèm theo. ' +
+      'nextWeek: đúng 3 lệnh cụ thể cho tuần tới (tập, ăn, ngủ), mỗi lệnh dưới 15 từ, dựa trên dữ liệu kèm theo. ' +
       'Luật: cấm khen xã giao và câu an ủi; chỉ khen khi thấy rõ trong ảnh. Phũ về kết quả, KHÔNG chế giễu hay xúc phạm cơ thể con người. Không khuyên ăn dưới kcalTarget, không khuyên nhịn ăn, không khuyên thuốc hay chất bổ trợ; không chẩn đoán y tế. Chỉ nói điều thấy trong ảnh hoặc có trong dữ liệu.',
-    content, schema: BODY_SCHEMA, think: 'MEDIUM', maxTokens: 4000,
+    content, schema: BODY_SCHEMA, think: 'MEDIUM', maxTokens: 4000, onPartial, media: 'MEDIA_RESOLUTION_MEDIUM',
   });
 }
 const VC = { 'Đạt': 'var(--ok)', 'Tạm': 'var(--warn)', 'Không đạt': 'var(--danger)' };
@@ -251,13 +251,13 @@ function bodyRevCard() {
 }
 async function bodyReviewUI(w) {
   const key = vault.key; if (!key) return;
-  openSheet(`<div class="sheet-h"><h3>AI đang chấm body… <span class="ai-sec" data-t0="${Date.now()}"></span></h3></div><div class="empty">${ic('refresh')} Đang gửi ảnh và chờ AI soi từng vùng (10–40 giây)</div>`);
+  openSheet(`<div class="sheet-h"><h3>AI đang chấm body… <span class="ai-sec" data-t0="${Date.now()}"></span></h3></div><div class="empty">${ic('refresh')} Đang gửi ảnh và chờ AI soi từng vùng (10–40 giây)</div><div id="aiPart" class="ai-part"></div>`);
   try {
-    const r = await runBodyReview(w), t = Date.now();
+    const r = await runBodyReview(w, txt => { const p = partialJSON(txt), box = $('#aiPart'); if (box && p?.summary) box.innerHTML = `${p.score != null ? `<div class="ai-part-i"><span class="grow">Điểm</span><b>${esc(p.score)}/100 · ${esc(p.verdict || '')}</b></div>` : ''}<p class="small">${esc(p.summary)}</p>`; }), t = Date.now();
     r.score = Math.max(0, Math.min(100, Math.round(r.score || 0))); r.t = t;
     vault.reviews = vault.reviews || {}; vault.reviews[w] = r; await saveReviews(key);
     S.bodyRev = S.bodyRev || {}; S.bodyRev[w] = { t, score: r.score, verdict: r.verdict, bodyFat: r.bodyFat, retake: r.photoQuality === 'Chụp lại' }; save();
-    if (vault.key) { openSheet(bodyRevHtml(r, w)); render(); }
+    if (vault.key) { openSheet(bodyRevHtml(r, w) + aiStamp()); render(); }
     else toast('Đã chấm xong. Mở kho ảnh để xem kết quả.', 3500);
   } catch (e) {
     openSheet(`<div class="sheet-h"><h3>Chưa chấm được</h3><button class="link" data-act="closeSheet">Đóng</button></div>

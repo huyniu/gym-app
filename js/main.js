@@ -95,10 +95,11 @@ const A = {
       exercises: t.ex.map(([name, sets, reps, rest]) => ({ name, sets, reps, ...(rest ? { rest } : {}) })) }));
     save(); render(); toast('Đã thêm 5 routine theo lịch');
   },
-  reviewOpen: d => openReview(d.id),
+  reviewOpen: d => { aiWarm(); openReview(d.id); },
   aiReview: async d => {
-    const box = $('#aiBox'); box.innerHTML = `<div class="empty">${ic('refresh')} AI đang xem buổi tập… <span class="ai-sec" data-t0="${Date.now()}"></span></div>`;
-    try { const a = await aiReviewWorkout(d.id), w = S.workouts.find(x => x.id === d.id); if (w) { w.ai = a; save(); } if ($('#aiBox')) $('#aiBox').innerHTML = aiReviewHtml(a); }
+    const spin = `<div class="empty">${ic('refresh')} AI đang xem buổi tập… <span class="ai-sec" data-t0="${Date.now()}"></span></div>`; $('#aiBox').innerHTML = spin;
+    const part = t => { const p = partialJSON(t), box = $('#aiBox'); if (box && p?.summary) box.innerHTML = aiReviewHtml({ ...p, nextSession: (p.nextSession || []).filter(n => n.advice) }) + spin; };
+    try { const a = await aiReviewWorkout(d.id, part), w = S.workouts.find(x => x.id === d.id); if (w) { w.ai = a; save(); } if ($('#aiBox')) $('#aiBox').innerHTML = aiReviewHtml(a) + aiStamp(); }
     catch (e) { if ($('#aiBox')) $('#aiBox').innerHTML = `<div class="muted small" style="color:var(--danger);margin:10px 0">${esc(e.message)}</div><button class="btn big" data-act="aiReview" data-id="${d.id}">Thử lại</button>`; }
   },
   foodDay: d => { const t = new Date(foodDay + 'T12:00'); t.setDate(t.getDate() + +d.d); const k = dayKey(t); if (k <= dayKey()) { foodDay = k; render(); } },
@@ -113,21 +114,21 @@ const A = {
   },
   foodEditDel: () => { const x = findFood(foodEditing?.id); if (!x || !confirm('Xóa món này?')) return; S.food[x.k] = S.food[x.k].filter(f => f.id !== x.f.id); if (!S.food[x.k].length) delete S.food[x.k]; save(); sheetOnClose = null; closeSheet(); foodEditing = null; render(); },
   delFood: d => { S.food[foodDay] = (S.food[foodDay] || []).filter(f => f.id !== d.id); if (!S.food[foodDay].length) delete S.food[foodDay]; save(); render(); },
-  snapMeal: () => { if (!hasKey()) { toast('Nhập API key trong Thêm → Cài đặt trước', 3500); return; } $('#mealFile').click(); },
+  snapMeal: () => { if (!hasKey()) { toast('Nhập API key trong Thêm → Cài đặt trước', 3500); return; } aiWarm(); $('#mealFile').click(); },
   mealAddItem: () => { mealDraft.items.push({ name: '', grams: 100, kcal: 0, protein: 0, carbs: 0, fat: 0, per: { kcal: 0, protein: 0, carbs: 0, fat: 0 } }); renderMealSheet(); setTimeout(() => { const ins = document.querySelectorAll('.mi-name'); ins[ins.length - 1]?.focus(); }, 50); },
   mealFix: async () => {
     const m = mealDraft, fix = $('#mealFix').value.trim(); if (!fix) { toast('Ghi chỗ AI nhìn sai trước'); return; }
     const prev = m.items.map(i => `${i.name} ${Math.round(i.grams)} g`).join(', ');
     const hint = [m.hint, `Lần trước bạn liệt kê: ${prev}. Người dùng sửa lại: ${fix}. Tính lại toàn bộ bữa theo lời sửa này.`].filter(Boolean).join('\n');
     m.stage = 'busy'; renderMealSheet();
-    try { const r = await aiMeal(m.img, hint); m.items = (r.isFood ? r.items : []).filter(i => i.grams > 0).map(i => ({ ...i, per: { kcal: i.kcal / i.grams, protein: i.protein / i.grams, carbs: i.carbs / i.grams, fat: i.fat / i.grams } })); m.note = r.note; m.hint = [m.hint, fix].filter(Boolean).join('. '); }
+    try { const r = await aiMeal(m.img, hint, mealPart); m.items = (r.isFood ? r.items : []).filter(i => i.grams > 0).map(i => ({ ...i, per: { kcal: i.kcal / i.grams, protein: i.protein / i.grams, carbs: i.carbs / i.grams, fat: i.fat / i.grams } })); m.note = r.note; m.hint = [m.hint, fix].filter(Boolean).join('. '); }
     catch (e) { toast(e.message, 6000); }
     m.stage = 'edit'; if (mealDraft === m) renderMealSheet();
   },
   mealAnalyze: async () => {
     const m = mealDraft; m.hint = $('#mealHint').value.trim(); m.stage = 'busy'; renderMealSheet();
     try {
-      const r = await aiMeal(m.img, m.hint);
+      const r = await aiMeal(m.img, m.hint, mealPart);
       m.items = (r.isFood ? r.items : []).filter(i => i.grams > 0).map(i => ({ ...i, per: { kcal: i.kcal / i.grams, protein: i.protein / i.grams, carbs: i.carbs / i.grams, fat: i.fat / i.grams } }));
       m.note = r.isFood ? r.note : 'Ảnh này không giống đồ ăn.'; m.stage = 'edit';
     } catch (e) { m.stage = 'note'; toast(e.message, 9000); }
@@ -142,7 +143,7 @@ const A = {
   },
   addFoodManual: () => openManualFood(),
   famOpen: () => openFamily(),
-  famSnap: () => { if (!hasKey()) { toast('Nhập API key trong Thêm → Cài đặt trước, hoặc chọn món bằng tay', 3500); return; } $('#famFile').click(); },
+  famSnap: () => { if (!hasKey()) { toast('Nhập API key trong Thêm → Cài đặt trước, hoặc chọn món bằng tay', 3500); return; } aiWarm(); $('#famFile').click(); },
   famStep: d => famStep(+d.i, +d.d),
   famAdd: d => { const x = famDraft._extra[+d.i]; if (x) { famDraft.items.push({ ...x, n: 1 }); renderFamily(); const p = $('#sheetPanel'); if (p) p.scrollTop = p.scrollHeight; } },
   famBowl: () => { const z = [120, 150, 180, 220, 250], i = z.indexOf(bowlG()); S.settings.bowlG = z[(i + 1) % z.length]; save(); renderFamily(); },
@@ -157,7 +158,7 @@ const A = {
     if (!hasKey()) { toast('Nhập API key trong Thêm → Cài đặt trước', 3500); return; }
     const m = mealDraft = { img: null, stage: 'busy', hint: q, items: [] }; renderMealSheet();
     try {
-      const r = await aiMeal(null, q);
+      const r = await aiMeal(null, q, mealPart);
       m.items = (r.isFood ? r.items : []).filter(i => i.grams > 0).map(i => ({ ...i, per: { kcal: i.kcal / i.grams, protein: i.protein / i.grams, carbs: i.carbs / i.grams, fat: i.fat / i.grams } }));
       m.note = r.isFood ? r.note : 'Không nhận ra món ăn này.'; m.stage = 'edit';
     } catch (e) { m.stage = 'edit'; m.note = e.message; }
@@ -394,10 +395,11 @@ const A = {
     const r = S.routines.find(x => x.id === d.id); if (!r || !confirm(`Bỏ qua "${r.name}" tuần này và chuyển sang buổi kế tiếp?`)) return;
     S.skips = [...(S.skips || []).filter(s => s.t >= weekStart()), { id: r.id, t: Date.now() }]; save(); render(); toast('Đã bỏ qua, chuyển sang buổi kế tiếp');
   },
-  openDay: d => openDay(d.k),
+  openDay: d => { aiWarm(); openDay(d.k); },
   aiDay: async d => {
-    const box = $('#aiBox'); box.innerHTML = `<div class="empty">${ic('refresh')} AI đang chấm ngày… <span class="ai-sec" data-t0="${Date.now()}"></span></div>`;
-    try { const a = await aiReviewDay(d.k); S.dayAI = { ...(S.dayAI || {}), [d.k]: a }; save(); if ($('#aiBox')) $('#aiBox').innerHTML = aiDayHtml(a); render(); }
+    const spin = `<div class="empty">${ic('refresh')} AI đang chấm ngày… <span class="ai-sec" data-t0="${Date.now()}"></span></div>`; $('#aiBox').innerHTML = spin;
+    const part = t => { const p = partialJSON(t), box = $('#aiBox'); if (box && p?.verdict && p.summary) box.innerHTML = aiDayHtml(p) + spin; };
+    try { const a = await aiReviewDay(d.k, part); S.dayAI = { ...(S.dayAI || {}), [d.k]: a }; save(); render(); if ($('#aiBox')) $('#aiBox').innerHTML = aiDayHtml(a) + aiStamp(); }
     catch (e) { if ($('#aiBox')) $('#aiBox').innerHTML = `<div class="muted small" style="color:var(--danger);margin:10px 0">${esc(e.message)}</div><button class="btn big" data-act="aiDay" data-k="${d.k}">Thử lại</button>`; }
   },
   gotoFood: d => { foodDay = d.k; sheetOnClose = null; closeSheet(); tab = 'nutrition'; render(); window.scrollTo(0, 0); },

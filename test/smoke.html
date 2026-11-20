@@ -174,6 +174,56 @@ const T = {
     const json = ev(`JSON.stringify(S)`); const back = JSON.parse(json);
     eq(back.workouts[0].exercises[0].name, 'Squat');
   },
+  'AI: đọc JSON đang viết dở': () => {
+    eq(ev(`partialJSON('{"items":[{"name":"Phở","kcal":450},{"name":"Trà', true)`), { items: [{ name: 'Phở', kcal: 450 }] }, 'strict chỉ lấy món đã xong');
+    eq(ev(`partialJSON('{"verdict":"Tạm","summary":"Ngủ ít')`), { verdict: 'Tạm', summary: 'Ngủ ít' }, 'chữ đang viết vẫn hiện');
+    eq(ev(`partialJSON('{"a":1,"b":')`), { a: 1 }, 'khóa chưa có giá trị thì bỏ');
+    eq(ev(`partialJSON('{"a":')`), null, 'chưa có gì thì không hiện');
+  },
+  // Gemini is replaced by a fake inside the app frame; the real key (if any) is put back afterwards.
+  'AI: trả lời dần, model dự phòng khi chậm, đổi model khi quá tải': async () => {
+    fresh();
+    const w = frame.contentWindow, realFetch = w.fetch, realKey = w.localStorage.getItem('gymlog.geminikey'), calls = [];
+    const enc = new TextEncoder(), json = (o, status = 200) => new w.Response(JSON.stringify(o), { status, headers: { 'content-type': 'application/json' } });
+    const sse = (chunks, signal, gap = 30) => new w.Response(new w.ReadableStream({ async start(c) {
+      for (const t of chunks) { await sleep(gap); if (signal?.aborted) { c.error(new DOMException('aborted', 'AbortError')); return; } c.enqueue(enc.encode(`data: ${JSON.stringify({ candidates: [{ content: { parts: [{ text: t }] } }], modelVersion: 'fake' })}\r\n\r\n`)); }
+      c.close(); } }));
+    const MEAL = JSON.stringify({ isFood: true, note: 'Ổn', items: [{ name: 'Phở', grams: 500, kcal: 450, protein: 25, carbs: 60, fat: 12 }, { name: 'Quẩy', grams: 50, kcal: 200, protein: 3, carbs: 20, fat: 12 }] });
+    const pieces = s => [s.slice(0, 40), s.slice(40, 120), s.slice(120)];
+    let mode = 'ok';
+    w.fetch = async (url, opt) => {
+      url = String(url); const model = (url.match(/models\/([^:?]+)/) || [])[1];
+      if (/\/models\?/.test(url)) return json({ models: [{ name: 'models/gemini-backup-flash', supportedGenerationMethods: ['generateContent'] }] });
+      calls.push({ model, body: JSON.parse(opt.body), signal: opt.signal });
+      if (mode === 'slow' && model !== 'gemini-backup-flash') return new Promise((_, bad) => opt.signal.addEventListener('abort', () => bad(new DOMException('aborted', 'AbortError'))));
+      if (mode === 'busy' && model !== 'gemini-backup-flash') return json({ error: { code: 503, status: 'UNAVAILABLE', message: 'high demand' } }, 503);
+      return sse(pieces(MEAL), opt.signal);
+    };
+    w.localStorage.setItem('gymlog.geminikey', 'AIza-test');
+    try {
+      ev(`S.settings.ai = 'gemini'; geminiAlts = null; HEDGE_MS.MINIMAL = 200; window.__parts = []`);
+      // 1) streamed: partial results arrive before the end, photo calls ask for lighter images
+      let r = await ev(`aiMeal('data:image/jpeg;base64,AAAA', '', t => __parts.push((partialJSON(t, true)?.items || []).length))`);
+      eq(r.items.length, 2, 'đủ 2 món');
+      ok(ev(`__parts.length`) >= 2 && ev(`__parts[0]`) < 2, 'phải thấy kết quả dở trước khi xong');
+      eq(calls[0].body.generationConfig.mediaResolution, 'MEDIA_RESOLUTION_MEDIUM', 'ảnh gửi ở độ phân giải vừa');
+      // 2) main model silent: the backup starts, wins, and the main request is cancelled
+      mode = 'slow'; calls.length = 0;
+      r = await ev(`aiMeal(null, 'phở')`);
+      eq(r.items.length, 2, 'dự phòng trả lời');
+      ok(ev(`lastAI.backup`), 'phải ghi là dùng model dự phòng');
+      ok(calls[0].signal.aborted, 'model chính phải bị hủy');
+      ok(ev(`aiStamp()`).includes('dự phòng'), 'dòng thời gian ghi dự phòng');
+      // 3) main model overloaded: retried once, then the backup answers
+      mode = 'busy'; calls.length = 0;
+      r = await ev(`aiMeal(null, 'phở')`);
+      eq(r.items.length, 2, 'quá tải vẫn có kết quả');
+      eq(calls.map(c => c.model).slice(-1)[0], 'gemini-backup-flash');
+    } finally {
+      w.fetch = realFetch; ev(`HEDGE_MS.MINIMAL = 8000; geminiAlts = null; lastAI = null`);
+      if (realKey == null) w.localStorage.removeItem('gymlog.geminikey'); else w.localStorage.setItem('gymlog.geminikey', realKey);
+    }
+  },
 };
 
 (async () => {

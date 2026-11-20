@@ -205,7 +205,7 @@ function aiDayHtml(a) {
     <p>${esc(a.summary)}</p><h4>Lỗi lớn nhất</h4><p>${esc(a.biggestMistake)}</p><h4>Ngày mai phải làm</h4><p>${esc(a.tomorrow)}</p></div>`;
 }
 const DAY_SCHEMA = obj({ verdict: { type: 'string', enum: ['Đạt', 'Tạm', 'Không đạt'] }, verdictReason: { type: 'string' }, summary: { type: 'string' }, biggestMistake: { type: 'string' }, tomorrow: { type: 'string' } });
-async function aiReviewDay(k) {
+async function aiReviewDay(k, onPartial) {
   const d = dayScore(k), p = S.profile, t = p ? targets(p) : null, tot = dayTotals(k);
   const data = {
     date: k, isToday: k === dayKey(), nowHour: new Date().getHours(), autoScore: d.score, breakdown: d.parts.map(([n, v, m]) => `${n} ${v}/${m}`), findings: d.items.map(i => i[1]),
@@ -223,9 +223,9 @@ async function aiReviewDay(k) {
     system: 'Bạn là huấn luyện viên kiêm chuyên gia dinh dưỡng cực kỳ khó tính, nói tiếng Việt, phũ và thẳng. Chấm một NGÀY của người tập dựa trên JSON: buổi tập, bữa ăn đã ghi, giấc ngủ đêm trước (sleepNightBefore, so với sleepGoal; hours đã cộng tối đa 90 phút ngủ trưa trong naps), tổng calo/đạm so với mục tiêu, cân nặng, điểm tự động. ' +
       'Luật: cấm khen xã giao và câu an ủi; không ghi bữa ăn = coi như không kiểm soát được ăn uống, phải chê; bỏ buổi tập theo lịch là lỗi nặng; ngủ dưới 6 tiếng hoặc lên giường muộn hơn mục tiêu quá 1 tiếng là lỗi phải chê (không ghi giấc ngủ thì nhắc phải ghi); nếu isToday=true và còn sớm (nowHour < 20) thì đánh giá phần đã qua và nói còn phải làm gì trong ngày. ' +
       'verdict: "Đạt" chỉ khi tập đúng lịch (hoặc nghỉ đúng lịch), calo trong ±10% mục tiêu, đạm ≥ 90%, ngủ ≥ 7 tiếng (nếu có ghi); thiếu dữ liệu hoặc lệch nhiều thì "Không đạt"; còn lại "Tạm". verdictReason: 1 câu có số liệu. ' +
-      'summary: 2 câu phũ. biggestMistake: 1 lỗi quan trọng nhất kèm số liệu. tomorrow: 1–2 việc cụ thể phải làm ngày mai (hoặc tối nay nếu isToday). ' +
+      'Viết NGẮN. summary: 2 câu phũ, tổng dưới 35 từ. biggestMistake: 1 lỗi quan trọng nhất kèm số liệu, dưới 20 từ. tomorrow: 1–2 việc cụ thể phải làm ngày mai (hoặc tối nay nếu isToday), dưới 25 từ. ' +
       'An toàn: không khuyên ăn dưới mục tiêu calo, không khuyên tập bù quá sức; không chẩn đoán y tế. Chỉ nói điều có trong dữ liệu.',
-    content: [{ text: JSON.stringify(data) }], schema: DAY_SCHEMA, think: 'LOW',
+    content: [{ text: JSON.stringify(data) }], schema: DAY_SCHEMA, think: 'LOW', onPartial,
   });
 }
 // Evening check: after 21:00 (or when opened with ?check), show today's sheet once per day if something is missing.

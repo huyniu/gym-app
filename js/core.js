@@ -3,7 +3,7 @@
 
 'use strict';
 const KEY = 'gymlog.v1';
-const APP_VERSION = '2026.11.26';
+const APP_VERSION = '2026.11.27';
 const DEFAULT_EX = EX_DB.map(e => e[0]);
 
 const $ = s => document.querySelector(s);

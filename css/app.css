@@ -547,3 +547,6 @@ body.on-active main{padding-bottom:calc(170px + env(safe-area-inset-bottom))}
 .sfb b{display:block;font-size:14px}.sfb small{display:block;font-size:12px;color:var(--muted);line-height:1.35}
 .sfb-adj{flex:none;background:var(--card2);border-radius:10px;padding:8px 10px;font-size:12px;font-weight:800;color:var(--accent);white-space:nowrap}
 .ring-btn b{font-size:12px;font-weight:800;color:#0b0d10}
+.ai-stamp{font-size:11px;color:var(--muted);margin:6px 0}
+.ai-part{margin-top:4px}.ai-part:empty{display:none}.ai-part-i{display:flex;gap:8px;padding:7px 0;border-bottom:1px solid var(--line);font-size:14px;animation:fadeIn .25s}.ai-part-i b{white-space:nowrap}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1}}

@@ -305,7 +305,7 @@ function aiReviewHtml(a) {
 
 const REVIEW_SCHEMA = obj({ verdict: { type: 'string', enum: ['Đạt', 'Tạm', 'Không đạt'] }, verdictReason: { type: 'string' }, summary: { type: 'string' }, good: { type: 'array', items: { type: 'string' } }, improve: { type: 'array', items: { type: 'string' } },
   nextSession: { type: 'array', items: obj({ exercise: { type: 'string' }, advice: { type: 'string' } }) } });
-async function aiReviewWorkout(id) {
+async function aiReviewWorkout(id, onPartial) {
   const w = S.workouts.find(x => x.id === id);
   const sess = x => ({ date: new Date(x.startedAt).toISOString().slice(0, 10), name: x.name, minutes: Math.round((x.endedAt - x.startedAt) / 6e4),
     exercises: x.exercises.map(e => ({ name: e.name, sets: e.sets.map(s => isCardio(e.name) ? `${s.r} phút${s.w ? ' ' + s.w + ' km' : ''}` : `${s.w}kg×${s.r}`), ...(e.skipped ? { skippedRequiredExtraSet: true } : {}) })) });
@@ -330,13 +330,13 @@ async function aiReviewWorkout(id) {
       'Nếu ngủ dưới 6 tiếng: tụt sức có thể do ngủ thiếu, nói thẳng việc ngủ ít là lỗi, buổi sau giữ tạ chứ không ép tăng. ' +
       'Luật bắt buộc: ' +
       '1) Cấm khen xã giao và cấm câu đệm an ủi ("không sao", "bạn đã cố gắng", "cứ từ từ", "tốt lắm", "tuyệt vời"). Không mở đầu bằng lời khen. ' +
-      '2) Chỉ khen khi có số liệu chứng minh tiến bộ thật (ví dụ tăng tạ mà vẫn đủ rep). Không có thì good = []. ' +
+      '2) Chỉ khen khi có số liệu chứng minh tiến bộ thật (ví dụ tăng tạ mà vẫn đủ rep), tối đa 2 ý. Không có thì good = []. ' +
       '3) Soi và gọi thẳng tên mọi lỗi có trong dữ liệu: bỏ bài, thiếu set, rep dưới mục tiêu, tạ đứng yên 3 buổi trở lên, tạ hoặc 1RM giảm, buổi tập ngắn/dài lệch nhiều so với plannedMinutes, nhảy cóc thứ tự lịch tuần (bỏ qua cả buổi). Lưu ý: người tập được phép lùi lịch khi bận, tập bù đúng thứ tự vào ngày khác hoặc ngày nghỉ là HỢP LỆ, không bắt lỗi điểm này; nhóm cơ dưới 10 set/tuần. Mỗi lỗi kèm con số và cách sửa cụ thể. ' +
       '4) verdict: "Đạt" chỉ khi làm đủ kế hoạch và đạt rep mục tiêu; "Không đạt" khi bỏ bài, thiếu nhiều set, hoặc tụt sức rõ; còn lại "Tạm". Chấm khắt khe, nghi ngờ thì hạ bậc. verdictReason: 1 câu, có số liệu. ' +
-      '5) summary: 2 câu, giọng phũ, nói điều quan trọng nhất cần sửa. improve: tối đa 5 ý, mỗi ý 1 câu, ra lệnh rõ ràng. nextSession: mức tạ × rep cụ thể cho từng bài chính buổi sau. ' +
+      '5) Viết NGẮN. summary: 2 câu, tổng dưới 40 từ, giọng phũ, nói điều quan trọng nhất cần sửa. improve: tối đa 3 ý, mỗi ý dưới 20 từ, ra lệnh rõ ràng. nextSession: chỉ tối đa 4 bài chính, advice dưới 12 từ, ghi mức tạ × rep cụ thể. ' +
       '6) Chỉ nói điều có căn cứ trong dữ liệu, không bịa. Phũ về hiệu suất, không xúc phạm con người. ' +
       '7) An toàn trên hết: không bảo tập quá sức, không ép bỏ ngày nghỉ, không khuyên ăn ít đi. Nếu dữ liệu cho thấy tụt sức nhiều buổi liền, ra lệnh nghỉ/giảm tải và kiểm tra ngủ, ăn. Không chẩn đoán y tế; đau hoặc chấn thương thì bảo dừng và đi khám.',
-    content: [{ text: JSON.stringify(data) }], schema: REVIEW_SCHEMA, think: 'LOW',
+    content: [{ text: JSON.stringify(data) }], schema: REVIEW_SCHEMA, think: 'LOW', onPartial,
   });
 }
 

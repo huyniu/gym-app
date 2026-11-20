@@ -211,7 +211,7 @@ function foodLogCard(t) {
     <div class="mh"><span>${ic(MEAL_IC[m])} Bữa ${m.toLowerCase()}</span><span class="chip-lime">${fmtNum(Math.round(it.reduce((a, f) => a + f.kcal, 0)))} kcal</span></div>
     ${foodGroups(it)}</div>` : ''; }).join('')}`;
 }
-// Downscale a photo to ≤1024px JPEG so upload is fast and cheap.
+// Downscale a photo to ≤768px JPEG so upload is fast and cheap.
 function photoToJpeg(file) {
   return new Promise((ok, bad) => {
     const img = new Image(), url = URL.createObjectURL(file);
@@ -222,19 +222,26 @@ function photoToJpeg(file) {
     img.src = url;
   });
 }
+// While the AI is still answering: list the dishes it has finished so far.
+function aiPartList(text, key, kcalOf) {
+  const box = $('#aiPart'), p = partialJSON(text, true); if (!box || !p) return;
+  const xs = (p[key] || []).filter(x => x.name && kcalOf(x) > 0);
+  box.innerHTML = xs.map(x => `<div class="ai-part-i"><span class="grow">${esc(x.name)}</span><b>${fmtNum(Math.round(kcalOf(x)))} kcal</b></div>`).join('');
+}
+const mealPart = t => aiPartList(t, 'items', x => x.kcal);
 const MEAL_SCHEMA = obj({ isFood: { type: 'boolean' }, note: { type: 'string' },
   items: { type: 'array', items: obj({ name: { type: 'string' }, grams: { type: 'number' }, kcal: { type: 'number' }, protein: { type: 'number' }, carbs: { type: 'number' }, fat: { type: 'number' } }) } });
-async function aiMeal(dataUrl, hint) {
+async function aiMeal(dataUrl, hint, onPartial) {
   return askAI({
     system: 'Bạn là chuyên gia dinh dưỡng Việt Nam khó tính, nói thẳng. Người dùng đang theo dõi calo để giảm mỡ, nên ước THẤP là lỗi nghiêm trọng hơn ước cao. ' +
       'Nhìn ảnh bữa ăn, liệt kê từng món/thành phần riêng (cơm, thịt, rau, canh, nước chấm, dầu mỡ…) với khối lượng đã nấu chín ước tính theo gram, và calo, đạm, tinh bột, chất béo (gram) của đúng khối lượng đó. ' +
       'Ước khẩu phần theo kích thước khay, bát đĩa, đũa thìa trong ảnh. Khi không chắc về khẩu phần, dầu mỡ, nước sốt hay độ béo của thịt thì chọn mức CAO hơn, không chọn mức thấp. ' +
       'Món chiên, xào, kho, rim luôn có dầu mỡ: ghi thành một dòng riêng tên "Dầu mỡ (…)" với lượng hợp lý, không bỏ qua. Cơm suất/cơm quán thường nhiều cơm hơn cơm nhà. Tên món tiếng Việt, ngắn gọn. ' +
       'Theo ghi chú của người dùng nếu có (ví dụ ăn một nửa, bỏ da). Nếu ảnh không phải đồ ăn: isFood=false, items rỗng. ' +
-      'note: 1–2 câu, giọng thẳng, không an ủi: so bữa này với mục tiêu ngày được cung cấp (nhiều calo, ít đạm, nhiều tinh bột hay dầu mỡ thì nói rõ) và nêu 1 việc cụ thể nên đổi lần sau. Nếu có phần khó nhìn thì nói đã ước theo mức cao.',
+      'note: 1 câu dưới 30 từ, giọng thẳng, không an ủi: so bữa này với mục tiêu ngày được cung cấp (nhiều calo, ít đạm, nhiều tinh bột hay dầu mỡ thì nói rõ) và nêu 1 việc cụ thể nên đổi lần sau. Nếu có phần khó nhìn thì nói đã ước theo mức cao.',
     content: dataUrl ? [{ image: dataUrl.split(',')[1] }, { text: mealContext() + (hint ? '\nGhi chú của tôi: ' + hint : '\nƯớc tính bữa ăn này.') }]
       : [{ text: mealContext() + '\nKhông có ảnh. Món tôi ăn: ' + hint + '. Nếu tôi không nói khẩu phần, dùng khẩu phần phổ biến ở Việt Nam (theo mức cao).' }],
-    schema: MEAL_SCHEMA, maxTokens: 3000,
+    schema: MEAL_SCHEMA, maxTokens: 3000, onPartial, ...(dataUrl ? { media: 'MEDIA_RESOLUTION_MEDIUM' } : {}),
   });
 }
 function mealContext() {
@@ -250,8 +257,8 @@ function renderMealSheet() {
     ${m.stage === 'note' ? `<input id="mealHint" placeholder="Ghi chú (tùy chọn): VD ăn nửa bát cơm" value="${esc(m.hint)}">
       <button class="btn primary big mt" data-act="mealAnalyze">${ic('bolt')} AI tính calo</button>
       <div class="muted small" style="margin-top:6px;text-align:center">Ảnh được gửi tới ${aiProv() === 'gemini' ? 'Google (Gemini)' : 'Anthropic (Claude) · khoảng 500đ/ảnh'} để phân tích</div>`
-    : m.stage === 'busy' ? `<div class="empty">${ic('refresh')} ${m.img ? 'AI đang xem ảnh…' : 'AI đang ước tính…'} <span class="ai-sec" data-t0="${Date.now()}"></span></div>`
-    : `${m.note ? `<div class="muted small" style="margin:10px 0">${esc(m.note)}</div>` : ''}${lastAI && aiProv() === 'gemini' ? `<div class="muted small" style="margin:-4px 0 6px;font-size:11px">${esc(lastAI.model)} · ${(lastAI.ms / 1000).toFixed(1).replace('.', ',')} giây</div>` : ''}
+    : m.stage === 'busy' ? `<div class="empty">${ic('refresh')} ${m.img ? 'AI đang xem ảnh…' : 'AI đang ước tính…'} <span class="ai-sec" data-t0="${Date.now()}"></span></div><div id="aiPart" class="ai-part"></div>`
+    : `${m.note ? `<div class="muted small" style="margin:10px 0">${esc(m.note)}</div>` : ''}${aiStamp()}
       <datalist id="dishNames">${[...DISHES.map(d => d[0]), ...Object.keys(FOODS)].map(n => `<option value="${esc(n)}">`).join('')}</datalist>
       ${m.items.map((it, i) => `<div class="mi2"><div class="row gap"><input class="mi-name grow" list="dishNames" data-mi="${i}" data-k="name" value="${esc(it.name)}" placeholder="Tên món"><button class="del" data-act="mealDel" data-i="${i}" aria-label="Bỏ">${ic('x')}</button></div>
         <div class="mi-row"><label>Gram<input inputmode="decimal" data-mi="${i}" data-k="grams" id="mig${i}" value="${fmtNum(Math.round(it.grams))}"></label>
@@ -320,7 +327,7 @@ function renderFamily() {
   openSheet(`<div class="sheet-h"><h3>Mâm cơm gia đình</h3><button class="link" data-act="closeSheet">Hủy</button></div>
     ${m.img ? `<img class="meal-img" src="${m.img}" alt="Ảnh mâm cơm">` : ''}
     ${slotPicker()}
-    ${m.stage === 'busy' ? `<div class="empty">${ic('refresh')} AI đang nhận các món trên mâm… <span class="ai-sec" data-t0="${Date.now()}"></span></div>` : `
+    ${m.stage === 'busy' ? `<div class="empty">${ic('refresh')} AI đang nhận các món trên mâm… <span class="ai-sec" data-t0="${Date.now()}"></span></div><div id="aiPart" class="ai-part"></div>` : `
       ${m.img ? (m.note ? `<div class="muted small" style="margin:8px 0">${esc(m.note)}</div>` : '') : `<button class="btn big mt" data-act="famSnap">${ic('camera')} Chụp mâm để AI nhận món</button>
         <div class="muted small" style="margin-top:6px;text-align:center">Hoặc chọn món bên dưới, không cần ảnh.</div>`}
       <div class="muted small" style="margin:12px 0 2px">Đếm phần <b>bạn</b> đã ăn:</div>
@@ -338,14 +345,14 @@ function famStep(i, d) {
 }
 const FAM_SCHEMA = obj({ isFood: { type: 'boolean' }, note: { type: 'string' },
   dishes: { type: 'array', items: obj({ name: { type: 'string' }, unit: { type: 'string' }, unitGrams: { type: 'number' }, kcalPerUnit: { type: 'number' }, proteinPerUnit: { type: 'number' }, carbsPerUnit: { type: 'number' }, fatPerUnit: { type: 'number' } }) } });
-async function famAI(dataUrl) {
+async function famAI(dataUrl, onPartial) {
   return askAI({
     system: 'Bạn là chuyên gia dinh dưỡng Việt Nam. Ảnh là MÂM CƠM GIA ĐÌNH nhiều người ăn chung; người dùng sẽ tự đếm phần mình ăn, nên bạn KHÔNG ước tổng cả mâm. ' +
       'Nhiệm vụ: nhận ra từng món trên mâm (bỏ qua cơm trắng vì app tính riêng theo bát). Với mỗi món chọn một đơn vị đếm tự nhiên khi gắp ăn: miếng, khúc, quả, con, cái, gắp (rau, món thái nhỏ), bát (canh), thìa (nước chấm, nước kho, lạc). ' +
       'Ước khối lượng 1 đơn vị (gram) và calo, đạm, tinh bột, chất béo của 1 đơn vị đúng theo cách nấu thấy trong ảnh, đã tính dầu mỡ thấm vào món; khi không chắc thì chọn mức cao hơn. ' +
       'Nếu trên mâm có bát nước chấm hoặc món kho có nước thì thêm một dòng "Nước kho chan cơm" hoặc "Nước mắm / chấm" đơn vị thìa. Tên món tiếng Việt ngắn gọn, ưu tiên dùng đúng tên trong danh sách sau nếu khớp: ' + FAM.map(x => x[0]).join(', ') + '. ' +
       'Nếu ảnh không phải đồ ăn: isFood=false, dishes rỗng. note: 1 câu nhận xét thẳng về mâm (món nhiều dầu mỡ nên gắp ít, món nào nhiều đạm nên ưu tiên).',
-    content: [{ image: dataUrl.split(',')[1] }, { text: mealContext() + '\nNhận các món trên mâm này.' }], schema: FAM_SCHEMA, maxTokens: 3000,
+    content: [{ image: dataUrl.split(',')[1] }, { text: mealContext() + '\nNhận các món trên mâm này.' }], schema: FAM_SCHEMA, maxTokens: 3000, onPartial, media: 'MEDIA_RESOLUTION_MEDIUM',
   });
 }
 async function famPhoto(f) {
@@ -353,7 +360,7 @@ async function famPhoto(f) {
   if (age > 15 * 6e4 && age < 7 * 864e5) slot = { k: dayKey(lm), meal: mealOf(lm), time: hhmm(lm), guessed: true };
   const m = famDraft; m.img = img; m.stage = 'busy'; renderFamily();
   try {
-    const r = await famAI(img);
+    const r = await famAI(img, t => aiPartList(t, 'dishes', x => x.kcalPerUnit));
     const ai = (r.isFood ? r.dishes : []).filter(x => x.kcalPerUnit > 0 && x.unitGrams > 0)
       .map(x => ({ name: x.name.trim(), unit: x.unit.trim() || 'miếng', g: x.unitGrams, kcal: x.kcalPerUnit, p: x.proteinPerUnit || 0, c: x.carbsPerUnit || 0, f: x.fatPerUnit || 0, n: 0, ai: true }));
     m.items = [m.items[0], ...ai, ...m.items.slice(1).filter(it => !ai.some(a => fold(a.name) === fold(it.name)))];
